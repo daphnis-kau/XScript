@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\src\common\Help.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\CVirtualFun.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\CJson.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\CodeCvs.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\CThread.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\Memory.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\common\CommonType.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\Help.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\GammaCpp.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\GammaCppFunArg.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\GammaCppParser.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\GammaCppTemplateHelp.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\TList.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\TRBTree.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\CJson.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\TTinyList.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\CodeCvs.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\TConstString.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\CThread.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\Memory.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="inlude">
+      <UniqueIdentifier>{2e3f5b6c-c4d2-4eac-bc61-d281e8c72c7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{9172c6ca-712c-462e-a2eb-59614293104c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
