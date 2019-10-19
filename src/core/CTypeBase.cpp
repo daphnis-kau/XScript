@@ -1,4 +1,4 @@
-﻿#include "CTypeBase.h"
+﻿#include "core/CTypeBase.h"
 
 namespace Gamma
 {

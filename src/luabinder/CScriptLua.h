@@ -7,7 +7,7 @@
 // 2007-10-16
 //=====================================================================
 
-#include "CScriptBase.h"
+#include "core/CScriptBase.h"
 
 struct lua_State;
 struct lua_Debug;

@@ -1,6 +1,6 @@
-﻿#include "CCallBase.h"
-#include "CScriptBase.h"
-#include "CClassRegistInfo.h"
+﻿#include "core/CCallBase.h"
+#include "core/CScriptBase.h"
+#include "core/CClassRegistInfo.h"
 
 namespace Gamma
 {

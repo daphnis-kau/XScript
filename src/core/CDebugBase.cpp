@@ -1,7 +1,7 @@
 ﻿#include "common/Help.h"
 #include "common/CJson.h"
-#include "CDebugBase.h"
-#include "CScriptBase.h"
+#include "core/CDebugBase.h"
+#include "core/CScriptBase.h"
 #include <string>
 
 #ifdef _WIN32

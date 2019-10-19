@@ -7,7 +7,7 @@
 // 2007-10-16
 //=====================================================================
 
-#include "CDebugBase.h"
+#include "core/CDebugBase.h"
 #include <string>
 
 struct lua_State;

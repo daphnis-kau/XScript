@@ -36,20 +36,20 @@
     <ClInclude Include="..\..\include\core\GammaScriptX.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\core\CCallBase.h">
-      <Filter>source</Filter>
+    <ClInclude Include="..\..\include\core\CCallBase.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\core\CClassRegistInfo.h">
-      <Filter>source</Filter>
+    <ClInclude Include="..\..\include\core\CClassRegistInfo.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\core\CDebugBase.h">
-      <Filter>source</Filter>
+    <ClInclude Include="..\..\include\core\CDebugBase.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\core\CScriptBase.h">
-      <Filter>source</Filter>
+    <ClInclude Include="..\..\include\core\CScriptBase.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\core\CTypeBase.h">
-      <Filter>source</Filter>
+    <ClInclude Include="..\..\include\core\CTypeBase.h">
+      <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

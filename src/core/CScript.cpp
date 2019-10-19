@@ -1,10 +1,7 @@
 ﻿#include <typeinfo>
 #include "core/CScript.h"
-#include "CScriptBase.h"
-#include "CCallBase.h"/*
-#include "CScriptAS3.h"
-#include "CScriptLua.h"
-#include "JS/CScriptJS.h"*/
+#include "core/CScriptBase.h"
+#include "core/CCallBase.h"
 
 namespace Gamma
 {

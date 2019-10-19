@@ -20,7 +20,7 @@ extern "C"
 #include "CDebugLua.h"
 #include "CScriptLua.h"
 #include "CCallLua.h"
-#include "CClassRegistInfo.h"
+#include "core/CClassRegistInfo.h"
 
 namespace Gamma
 {
@@ -1063,7 +1063,7 @@ namespace Gamma
 			return NULL;
 
 		pLoadInfo->bFinished = true;
-		uint32 nSize = pLoadInfo->fileBuff.size();
+		uint32 nSize = (uint32)(pLoadInfo->fileBuff.size());
 		const tbyte* pBuffer = (const tbyte*)pLoadInfo->fileBuff.c_str();
 		if( pBuffer[0] == 0xef && 
 			pBuffer[1] == 0xbb && 

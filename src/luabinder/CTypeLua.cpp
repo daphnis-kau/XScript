@@ -13,7 +13,7 @@ extern "C"
 #include "common/CodeCvs.h"
 #include "CTypeLua.h"
 #include "CScriptLua.h"
-#include "CClassRegistInfo.h"
+#include "core/CClassRegistInfo.h"
 
 using namespace std;
 
@@ -736,7 +736,7 @@ namespace Gamma
 			uint32 nWriteCount = nArg >= 4 ? GetNumFromLua( pL, 4 ) : INVALID_32BITID;
 
 			if( nWriteCount == INVALID_32BITID )
-				nWriteCount = nDataSize - nOffset;
+				nWriteCount = (uint32)nDataSize - nOffset;
 
 			if( nWriteCount > 200*1024*1024 )
 			{

@@ -9,7 +9,7 @@
 
 #include <stdlib.h>
 #include "common/Help.h"
-#include "CTypeBase.h"
+#include "core/CTypeBase.h"
 
 struct lua_State;
 namespace Gamma

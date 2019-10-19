@@ -2,9 +2,9 @@
 #include "common/Help.h"
 #include "common/CThread.h"
 #include "common/Memory.h"
-#include "CScriptBase.h"
-#include "CCallBase.h"
-#include "CDebugBase.h"
+#include "core/CScriptBase.h"
+#include "core/CCallBase.h"
+#include "core/CDebugBase.h"
 
 namespace Gamma
 {
