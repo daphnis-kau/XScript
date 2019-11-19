@@ -112,18 +112,6 @@ namespace Gamma
 		s_ScriptListLock.Unlock();
 	}
 
-	void CScriptBase::UnlinkCppObj( void* pObj )
-	{
-		s_ScriptListLock.Lock();
-		CScriptBase* pScript = s_listAllScript.GetFirst();
-		while( pScript )
-		{
-			pScript->m_UnlinkObjectBuffer.Push( pObj );
-			pScript = pScript->TList<CScriptBase>::CListNode::GetNext();
-		}
-		s_ScriptListLock.Unlock();
-	}
-
 	void CScriptBase::CheckUnlinkCppObj()
 	{
 		void* pObject[1024];
@@ -220,17 +208,6 @@ namespace Gamma
         return it->second;
 	}
 
-	int32 CScriptBase::CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray )
-	{
-		SVirtualObj* pVirtualObj = (SVirtualObj*)pObject;
-		assert( CScriptBase::IsAllocVirtualTable( pVirtualObj->m_pTable ) );
-		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVirtualObj->m_pTable ) - 1;
-		assert( pFunTableHead->m_pClassInfo && pFunTableHead->m_pOldFunTable );
-		const vector<CCallScriptBase*>& listFun = pFunTableHead->m_pClassInfo->GetNewFunctionList();
-		CCallScriptBase* pCallScript = listFun[nIndex];
-		return pCallScript->OnCall( pObject, pRetBuf, pArgArray );
-	}
-
     CClassRegistInfo* CScriptBase::GetRegistInfo( const char* szClassName )
     {
 		gammacstring strKey( szClassName, true );
@@ -267,5 +244,28 @@ namespace Gamma
 	{
 		std::cin.read( szBuffer, nCount );
 		return strlen( szBuffer );
+	}
+
+	void UnlinkCppObj( void* pObj )
+	{
+		s_ScriptListLock.Lock();
+		CScriptBase* pScript = s_listAllScript.GetFirst();
+		while( pScript )
+		{
+			pScript->m_UnlinkObjectBuffer.Push( pObj );
+			pScript = pScript->TList<CScriptBase>::CListNode::GetNext();
+		}
+		s_ScriptListLock.Unlock();
+	}
+
+	int32 CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray )
+	{
+		SVirtualObj* pVirtualObj = (SVirtualObj*)pObject;
+		assert( CScriptBase::IsAllocVirtualTable( pVirtualObj->m_pTable ) );
+		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVirtualObj->m_pTable ) - 1;
+		assert( pFunTableHead->m_pClassInfo && pFunTableHead->m_pOldFunTable );
+		const vector<CCallScriptBase*>& listFun = pFunTableHead->m_pClassInfo->GetNewFunctionList();
+		CCallScriptBase* pCallScript = listFun[nIndex];
+		return pCallScript->OnCall( pObject, pRetBuf, pArgArray );
 	}
 }

@@ -332,12 +332,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ProjectReference Include="common.vcxproj">
+      <Project>{52f209e8-3601-4f74-82cf-538dd46bb353}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\core\CCallBase.cpp" />
     <ClCompile Include="..\..\src\core\CClassRegistInfo.cpp" />
     <ClCompile Include="..\..\src\core\CDebugBase.cpp" />
-    <ClCompile Include="..\..\src\core\CScript.cpp" />
     <ClCompile Include="..\..\src\core\CScriptBase.cpp" />
     <ClCompile Include="..\..\src\core\CTypeBase.cpp" />
   </ItemGroup>
@@ -345,7 +347,6 @@
     <ClInclude Include="..\..\include\core\CCallBase.h" />
     <ClInclude Include="..\..\include\core\CClassRegistInfo.h" />
     <ClInclude Include="..\..\include\core\CDebugBase.h" />
-    <ClInclude Include="..\..\include\core\CScript.h" />
     <ClInclude Include="..\..\include\core\CScriptBase.h" />
     <ClInclude Include="..\..\include\core\CTypeBase.h" />
     <ClInclude Include="..\..\include\core\GammaScriptDef.h" />

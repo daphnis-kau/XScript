@@ -88,7 +88,7 @@ namespace Gamma
 
 		friend class CJSObject;
     public:
-		CScriptJS( CScript& Script, uint16 nDebugPort );
+		CScriptJS( uint16 nDebugPort );
 		~CScriptJS(void);
 
 		v8::Platform*			GetPlatform() { return m_platform; }
@@ -118,7 +118,7 @@ namespace Gamma
 		virtual ICallBackWrap& 	RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
 		virtual ICallBackWrap&	RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap );
         virtual void            RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName );
-        virtual void            RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, va_list listBase );
+        virtual void            RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... );
 		virtual void			RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
 
 

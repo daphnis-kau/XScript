@@ -33,7 +33,7 @@ namespace Gamma
 	void* CScriptLua::ms_pErrorHandlerKey		= (void*)"__error_handler";
 	void* CScriptLua::ms_pClassInfoKey			= (void*)"__class_info";
 
-    CScriptLua::CScriptLua( CScript& Script, uint16 nDebugPort )
+    CScriptLua::CScriptLua( uint16 nDebugPort )
         : m_pAllAllocBlock( NULL )
 	{
 		memset( m_aryBlock, 0, sizeof(m_aryBlock) );
@@ -1010,7 +1010,8 @@ namespace Gamma
 		pair< set<string>::iterator, bool > ib = s_setRuningString.insert( szStr );
 		std::stringstream name;
 		name << "@GammaScriptStringTrunk"<< (uintptr_t)(void*)( ib.first->c_str() );
-		const char* szName = name.str().c_str();
+		string strName = name.str();
+		const char* szName = strName.c_str();
 
 		// 通过_ReadString装载字符串的代码块
 		if( GetGlobObject( pL, szName ) ||
@@ -1413,8 +1414,10 @@ namespace Gamma
 		lua_pop( pL, 1 );
     }
 
-    void CScriptLua::RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, va_list listBase )
-    {
+    void CScriptLua::RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... )
+	{
+		va_list listBase;
+		va_start( listBase, szClass );
 		CClassRegistInfo* pClassInfo = new CClassRegistInfo( this, szClass, szTypeIDName, nSize, &CScriptLua::MakeType );
         m_mapRegistClassInfo.Insert( *pClassInfo );
         m_mapTypeID2ClassInfo.Insert( *pClassInfo );
@@ -1465,6 +1468,7 @@ namespace Gamma
         lua_rawset( L, nClassIdx );
 
         lua_pop( L, 1 );
+		va_end( listBase );
     }
 
     void CScriptLua::RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize )

@@ -7,10 +7,10 @@
 // 柯达昭
 // 2007-10-21
 //=====================================================================
-#include "core/CScript.h"
 #include "common/CVirtualFun.h"
 #include "common/GammaCppParser.h"
 #include "common/GammaCppFunArg.h"
+#include "core/CScriptBase.h"
 #include "core/GammaScriptWrap.h"
 
 namespace Gamma
@@ -19,14 +19,14 @@ namespace Gamma
 	class TRunFun
 	{
 	public:
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 0 )>( NULL );
 			Script.RunFunction( aryInfo, pRetBuf, szFun, NULL );
 		}
 
 		template< class Param0 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 1 )>( NULL );
 			void* aryParam[] = { &p0 }; 
@@ -34,7 +34,7 @@ namespace Gamma
 		}
 
 		template< class Param0, class Param1 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 2 )>( NULL );
 			void* aryParam[] = { &p0, &p1 }; 
@@ -42,7 +42,7 @@ namespace Gamma
 		}
 
 		template< class Param0, class Param1, class Param2 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 3 )>( NULL );
 			void* aryParam[] = { &p0, &p1, &p2 }; 
@@ -50,7 +50,7 @@ namespace Gamma
 		}
 
 		template< class Param0, class Param1, class Param2, class Param3 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 4 )>( NULL );
 			void* aryParam[] = { &p0, &p1, &p2, &p3 }; 
@@ -58,7 +58,7 @@ namespace Gamma
 		}
 
 		template< class Param0, class Param1, class Param2, class Param3, class Param4 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 5 )>( NULL );
 			void* aryParam[] = { &p0, &p1, &p2, &p3, &p4 }; 
@@ -66,7 +66,7 @@ namespace Gamma
 		}
 
 		template< class Param0, class Param1, class Param2, class Param3, class Param4, class Param5 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 6 )>( NULL );
 			void* aryParam[] = { &p0, &p1, &p2, &p3, &p4, &p5 }; 
@@ -74,7 +74,7 @@ namespace Gamma
 		}
 
 		template< class Param0, class Param1, class Param2, class Param3, class Param4, class Param5, class Param6 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 7 )>( NULL );
 			void* aryParam[] = { &p0, &p1, &p2, &p3, &p4, &p5, &p6 }; 
@@ -82,7 +82,7 @@ namespace Gamma
 		}
 
 		template< class Param0, class Param1, class Param2, class Param3, class Param4, class Param5, class Param6, class Param7 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 8 )>( NULL );
 			void* aryParam[] = { &p0, &p1, &p2, &p3, &p4, &p5, &p6, &p7 }; 
@@ -90,7 +90,7 @@ namespace Gamma
 		}
 
 		template< class Param0, class Param1, class Param2, class Param3, class Param4, class Param5, class Param6, class Param7, class Param8 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7, Param8 p8 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7, Param8 p8 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 9 )>( NULL );
 			void* aryParam[] = { &p0, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8 }; 
@@ -98,7 +98,7 @@ namespace Gamma
 		}
 
 		template< class Param0, class Param1, class Param2, class Param3, class Param4, class Param5, class Param6, class Param7, class Param8, class Param9 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7, Param8 p8, Param9 p9 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7, Param8 p8, Param9 p9 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 10 )>( NULL );
 			void* aryParam[] = { &p0, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9 }; 
@@ -106,7 +106,7 @@ namespace Gamma
 		}
 
 		template< class Param0, class Param1, class Param2, class Param3, class Param4, class Param5, class Param6, class Param7, class Param8, class Param9, class Param10 >
-		static void RunFunction( CScript& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7, Param8 p8, Param9 p9,Param10 p10 )
+		static void RunFunction( CScriptBase& Script, void* pRetBuf, const char* szFun, Param0 p0, Param1 p1, Param2 p2, Param3 p3, Param4 p4, Param5 p5, Param6 p6, Param7 p7, Param8 p8, Param9 p9,Param10 p10 )
 		{
 			static STypeInfoArray aryInfo = Gamma::MakeFunArg<RetType COMMA_PARAM( 11 )>( NULL );
 			void* aryParam[] = { &p0, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10 }; 

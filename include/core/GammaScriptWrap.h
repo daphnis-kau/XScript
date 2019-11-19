@@ -251,6 +251,7 @@ namespace Gamma
 	// 类非常量成员函数回调包装
 	//=======================================================================
 	GAMMA_SCRIPT_API int32 CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray );
+	GAMMA_SCRIPT_API void  UnlinkCppObj( void* pObj );
 
 	template< typename T >
 	struct TCallBack

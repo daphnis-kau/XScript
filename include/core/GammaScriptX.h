@@ -67,8 +67,8 @@ public:
 	void Register( ScriptType& Script ) { ParentType::Remove(); m_funRegister( Script ); }
 };
 
-#define CScriptRegisterNode TScriptRegisterNode<CScript>
-#define CScriptRegisterList Gamma::TList< TScriptRegisterNode<CScript> >
+#define CScriptRegisterNode TScriptRegisterNode<CScriptBase>
+#define CScriptRegisterList Gamma::TList< TScriptRegisterNode<CScriptBase> >
 
 //====================================================================
 // 普通类注册
@@ -196,7 +196,7 @@ public:
 #define REGIST_CLASSFUNCTION( _function ) \
 	_function##_Base_Class; struct _function##_Impl_Class \
 	{ \
-		static void Register( CScript& Script )\
+		static void Register( CScriptBase& Script )\
 		{ \
 			Script.RegistClassFunction( Gamma::MakeClassFunArg( &org_class::_function ), \
 			Gamma::CreateFunWrap( &org_class::_function ), typeid( org_class ).name(), #_function );\
@@ -210,7 +210,7 @@ public:
 #define REGIST_CLASSFUNCTION_WITHNAME( _function, _function_name ) \
 	_function_name##_Base_Class; struct _function_name##_Impl_Class \
 	{ \
-		static void Register( CScript& Script )\
+		static void Register( CScriptBase& Script )\
 		{ \
 			Script.RegistClassFunction( Gamma::MakeClassFunArg( &org_class::_function ), \
 			Gamma::CreateFunWrap( &org_class::_function ), typeid( org_class ).name(), #_function_name );\
@@ -224,7 +224,7 @@ public:
 #define REGIST_CLASSFUNCTION_OVERLOAD( _fun_type, _fun_name_cpp, _fun_name_lua ) \
 	_fun_name_lua##_Base_Class; struct _fun_name_lua##_Impl_Class \
 	{ \
-		static void Register( CScript& Script )\
+		static void Register( CScriptBase& Script )\
 		{ \
 			Script.RegistClassFunction( Gamma::MakeClassFunArg( static_cast<_fun_type>(&org_class::_fun_name_cpp) ), \
 			Gamma::CreateFunWrap( static_cast<_fun_type>(&org_class::_fun_name_cpp) ), typeid( org_class ).name(), #_fun_name_lua );\
@@ -238,7 +238,7 @@ public:
 #define REGIST_STATICFUNCTION( _function ) \
 	_function##_Base_Class; struct _function##_Impl_Class \
 	{ \
-		static void Register( CScript& Script )\
+		static void Register( CScriptBase& Script )\
 		{ \
 			Script.RegistClassStaticFunction( Gamma::MakeFunArg( &org_class::_function ), \
 			Gamma::CreateFunWrap( &org_class::_function ), typeid( org_class ).name(), #_function );\
@@ -252,7 +252,7 @@ public:
 #define REGIST_STATICFUNCTION_WITHNAME( _function, _function_name ) \
 	_function_name##_Base_Class; struct _function_name##_Impl_Class \
 	{ \
-		static void Register( CScript& Script )\
+		static void Register( CScriptBase& Script )\
 		{ \
 			Script.RegistClassStaticFunction( Gamma::MakeFunArg( &org_class::_function ), \
 			Gamma::CreateFunWrap( &org_class::_function ), typeid( org_class ).name(), #_function_name );\
@@ -266,7 +266,7 @@ public:
 #define REGIST_STATICFUNCTION_OVERLOAD( _fun_type, _fun_name_cpp, _fun_name_lua ) \
 	_fun_name_lua##_Base_Class; struct _fun_name_lua##_Impl_Class \
 	{ \
-		static void Register( CScript& Script )\
+		static void Register( CScriptBase& Script )\
 		{ \
 			Script.RegistClassStaticFunction( Gamma::MakeFunArg( static_cast<_fun_type>(&org_class::_fun_name_cpp) ), \
 			Gamma::CreateFunWrap( static_cast<_fun_type>(&org_class::_fun_name_cpp) ), typeid( org_class ).name(), #_fun_name_lua );\
@@ -280,7 +280,7 @@ public:
 #define REGIST_CLASSMEMBER_GETSET( _member, get, set ) \
 	_member##_Base_Class; struct _member##_Impl_Class \
 	{ \
-		static void Register( CScript& Script )\
+		static void Register( CScriptBase& Script )\
 		{ \
 			org_class* c = (org_class*)0x4000000; IFunctionWrap* funGetSet[2];\
 			funGetSet[0] = get ? Gamma::CreateMemberGetWrap( c, &c->_member ) : NULL;\
@@ -297,7 +297,7 @@ public:
 #define REGIST_CLASSMEMBER_GETSET_WITHNAME( _member, _new_name, get, set ) \
 	_new_name##_Base_Class; struct _new_name##_Impl_Class \
 	{ \
-		static void Register( CScript& Script )\
+		static void Register( CScriptBase& Script )\
 		{ \
 			org_class* c = (org_class*)0x4000000; IFunctionWrap* funGetSet[2];\
 			funGetSet[0] = get ? Gamma::CreateMemberGetWrap( c, &c->_member ) : NULL;\
@@ -338,7 +338,7 @@ public:
 #define REGIST_DESTRUCTOR() \
 	destructor_Base_Class; struct destructor_Impl_Class \
 	{ \
-		static void Register( CScript& Script )\
+		static void Register( CScriptBase& Script )\
 		{ \
 			Gamma::BindDestructorWrap<org_class>( Script.RegistDestructor( typeid( org_class ).name(), \
 			Gamma::CreateDestructorWrap<org_class>( Gamma::GetDestructorFunIndex<org_class>() ) ) );\
@@ -369,7 +369,7 @@ public:
 		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, false, &__class::_function ); }\
 		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( &__class::_function ); }\
 		static STypeInfoArray MakeFunArg()	{ return Gamma::MakeClassFunArg( &__class::_function ); } }; \
-		static void Register( CScript& Script ){ __class::Bind( Script.RegistClassCallback( \
+		static void Register( CScriptBase& Script ){ __class::Bind( Script.RegistClassCallback( \
 		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_function ) ); } \
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
@@ -388,7 +388,7 @@ public:
 		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, false, &__class::_function ); }\
 		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( &__class::_function ); }\
 		static STypeInfoArray MakeFunArg()	{ return Gamma::MakeClassFunArg( &__class::_function ); } }; \
-		static void Register( CScript& Script ){ __class::Bind( Script.RegistClassCallback( \
+		static void Register( CScriptBase& Script ){ __class::Bind( Script.RegistClassCallback( \
 		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_function_name ) ); } \
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
@@ -407,7 +407,7 @@ public:
 		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, false, static_cast<_fun_type>(&__class::_fun_name_cpp) ) ); }\
 		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( static_cast<_fun_type>(&__class::_fun_name_cpp) ); }\
 		static STypeInfoArray MakeFunArg() { return Gamma::MakeClassFunArg( static_cast<_fun_type>(&__class::_fun_name_cpp) ); } }; \
-		static void Register( CScript& Script ){ __class::Bind( Script.RegistClassCallback( \
+		static void Register( CScriptBase& Script ){ __class::Bind( Script.RegistClassCallback( \
 		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_fun_name_lua ) ); } \
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
@@ -426,7 +426,7 @@ public:
 		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, true, &__class::_function ); }\
 		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( &__class::_function ); }\
 		static STypeInfoArray MakeFunArg()	{ return Gamma::MakeClassFunArg( &__class::_function ); } }; \
-		static void Register( CScript& Script ){ __class::Bind( Script.RegistClassCallback( \
+		static void Register( CScriptBase& Script ){ __class::Bind( Script.RegistClassCallback( \
 		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_function ) ); } \
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
@@ -446,7 +446,7 @@ public:
 		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, true, &__class::_function ); }\
 		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( &__class::_function ); }\
 		static STypeInfoArray MakeFunArg()	{ return Gamma::MakeClassFunArg( &__class::_function ); } }; \
-		static void Register( CScript& Script ){ __class::Bind( Script.RegistClassCallback( \
+		static void Register( CScriptBase& Script ){ __class::Bind( Script.RegistClassCallback( \
 		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_function_name ) ); } \
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
@@ -466,7 +466,7 @@ public:
 		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, true, static_cast<_fun_type>(&__class::_fun_name_cpp) ) ); }\
 		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( static_cast<_fun_type>(&__class::_fun_name_cpp) ); }\
 		static STypeInfoArray MakeFunArg() { return Gamma::MakeClassFunArg( static_cast<_fun_type>(&__class::_fun_name_cpp) ); } }; \
-		static void Register( CScript& Script ){ __class::Bind( Script.RegistClassCallback( \
+		static void Register( CScriptBase& Script ){ __class::Bind( Script.RegistClassCallback( \
 		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_fun_name_lua ) ); } \
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \

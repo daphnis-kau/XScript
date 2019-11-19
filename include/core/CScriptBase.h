@@ -20,7 +20,6 @@ using namespace std;
 
 namespace Gamma
 {
-    class CScript;
 	class CTypeBase;
 	class CCallBase;
 	class CDebugBase;
@@ -39,14 +38,13 @@ namespace Gamma
 
     public:
         CScriptBase(void);
-        virtual ~CScriptBase(void);
+		virtual ~CScriptBase( void );
+		friend void UnlinkCppObj( void* );
 
 		CDebugBase*				GetDebugger() const { return m_pDebugger; }
 
         virtual CTypeBase*		MakeParamType( const STypeInfo& argTypeInfo ) = 0;
 		static bool				IsAllocVirtualTable( void* pVirtualTable );
-		static void				UnlinkCppObj( void* pObj );
-		static int32			CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray );
 								
 		void					CheckUnlinkCppObj();
         SFunctionTable*			GetOrgVirtualTable( void* pObj );
@@ -67,7 +65,7 @@ namespace Gamma
 		virtual ICallBackWrap&	RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName ) = 0;
 		virtual ICallBackWrap&	RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap ) = 0;
         virtual void			RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName ) = 0;
-		virtual void			RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, va_list listBase ) = 0;
+		virtual void			RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... ) = 0;
 		virtual void			RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName ) = 0;
 		virtual void			RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize ) = 0;
         virtual void			RegistConstant( const char* szTableName, const char* szFeild, int32 nValue ) = 0;

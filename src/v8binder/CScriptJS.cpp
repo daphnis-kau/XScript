@@ -45,7 +45,7 @@ namespace Gamma
 	//====================================================================================
     // CScriptJS
 	//====================================================================================
-    CScriptJS::CScriptJS( CScript& Script, uint16 nDebugPort )
+    CScriptJS::CScriptJS( uint16 nDebugPort )
 		: m_nStringID(0)
 		, m_pTempStrBuffer64K(new tbyte[MAX_STRING_BUFFER_SIZE])
 		, m_nCurUseSize(0)
@@ -1063,9 +1063,12 @@ namespace Gamma
 		new CByScriptMember( *this, aryTypeInfo, funGetSet, szTypeInfoName, szMemberName );
     }
 
-    void CScriptJS::RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, va_list listBase )
+    void CScriptJS::RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... )
 	{
+		va_list listBase;
+		va_start( listBase, szClass );
 		RegistClass( &CScriptJS::MakeType, nSize, szTypeIDName, szClass, listBase );
+		va_end( listBase );
 	}
 
 	void CScriptJS::RegistClass( MakeTypeFunction funMakeType, uint32 nSize, 

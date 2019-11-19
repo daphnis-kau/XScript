@@ -46,6 +46,14 @@
     <ClInclude Include="..\..\src\v8binder\CScriptJS.h" />
     <ClInclude Include="..\..\src\v8binder\CTypeJS.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="common.vcxproj">
+      <Project>{52f209e8-3601-4f74-82cf-538dd46bb353}</Project>
+    </ProjectReference>
+    <ProjectReference Include="core.vcxproj">
+      <Project>{1e7bfe73-f568-497b-ad01-d7e81a9fab5b}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{79313C4F-AEA7-4058-A86C-44F13063CBDC}</ProjectGuid>
     <RootNamespace>GammaScript</RootNamespace>

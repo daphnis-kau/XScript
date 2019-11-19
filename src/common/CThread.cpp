@@ -49,7 +49,7 @@ namespace Gamma
 #ifdef _WIN32
 		wchar_t szTemp[2048] = { 0 };
 		::GetModuleFileName( NULL, szTemp, 2048 );
-		UcsToUtf8( szBuffer, nCount, szTemp );
+		UcsToUtf8( szBuffer, (uint32)nCount, szTemp );
 #else
 		memset( szBuffer, 0, nCount );
 		readlink( "/proc/self/exe", szBuffer, nCount );

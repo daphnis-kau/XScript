@@ -40,6 +40,17 @@
   <ItemGroup>
     <ClInclude Include="..\..\sampler\sampler.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="common.vcxproj">
+      <Project>{52f209e8-3601-4f74-82cf-538dd46bb353}</Project>
+    </ProjectReference>
+    <ProjectReference Include="core.vcxproj">
+      <Project>{1e7bfe73-f568-497b-ad01-d7e81a9fab5b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="luabinder.vcxproj">
+      <Project>{7679734e-42ab-4435-8cf1-d85fc534cc62}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E52F65F3-9106-4016-B282-ACEC20C98AD1}</ProjectGuid>
     <RootNamespace>GammaScript</RootNamespace>

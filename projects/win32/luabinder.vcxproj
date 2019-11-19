@@ -426,6 +426,14 @@
   <ItemGroup>
     <None Include="..\..\third_party\lua-5.1.5\src\Makefile" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="common.vcxproj">
+      <Project>{52f209e8-3601-4f74-82cf-538dd46bb353}</Project>
+    </ProjectReference>
+    <ProjectReference Include="core.vcxproj">
+      <Project>{1e7bfe73-f568-497b-ad01-d7e81a9fab5b}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -10,9 +10,6 @@
     <ClCompile Include="..\..\src\core\CDebugBase.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\core\CScript.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\core\CScriptBase.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -21,9 +18,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\core\CScript.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\core\GammaScriptDef.h">
       <Filter>include</Filter>
     </ClInclude>

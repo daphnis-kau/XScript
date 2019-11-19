@@ -79,7 +79,7 @@ namespace Gamma
 		friend class CLuaBuffer;
 
     public:
-        CScriptLua( CScript& Script, uint16 nDebugPort );
+        CScriptLua( uint16 nDebugPort = 0 );
 		~CScriptLua(void);
 
         // 预定义字符串
@@ -114,7 +114,7 @@ namespace Gamma
 		virtual ICallBackWrap&	RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap );
 		virtual void            RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
         virtual void            RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName );
-		virtual void            RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, va_list listBase );
+		virtual void            RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... );
 		virtual void            RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize );
         virtual void            RegistConstant( const char* szTableName, const char* szFeild, int32 nValue );
 		virtual	void			RegistConstant( const char* szTableName, const char* szFeild, double dValue );
