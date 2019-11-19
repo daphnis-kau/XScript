@@ -8,7 +8,7 @@
 #ifndef __GAMMA_CONSTSTRING_H__
 #define __GAMMA_CONSTSTRING_H__
 
-#include "common/CommonType.h"
+#include "common/Help.h"
 #include <string>
 
 namespace Gamma

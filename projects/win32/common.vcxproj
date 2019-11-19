@@ -332,12 +332,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="..\..\include\common\TCircelBuffer.inl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\CJson.cpp" />
     <ClCompile Include="..\..\src\common\CThread.cpp" />
     <ClCompile Include="..\..\src\common\CVirtualFun.cpp" />
     <ClCompile Include="..\..\src\common\CodeCvs.cpp" />
+    <ClCompile Include="..\..\src\common\Http.cpp" />
     <ClCompile Include="..\..\src\common\Memory.cpp" />
     <ClCompile Include="..\..\src\common\Help.cpp" />
   </ItemGroup>
@@ -350,11 +352,14 @@
     <ClInclude Include="..\..\include\common\GammaCppFunArg.h" />
     <ClInclude Include="..\..\include\common\GammaCppParser.h" />
     <ClInclude Include="..\..\include\common\GammaCppTemplateHelp.h" />
+    <ClInclude Include="..\..\include\common\Http.h" />
     <ClInclude Include="..\..\include\common\Memory.h" />
     <ClInclude Include="..\..\include\common\Help.h" />
+    <ClInclude Include="..\..\include\common\TCircelBuffer.h" />
     <ClInclude Include="..\..\include\common\TConstString.h" />
     <ClInclude Include="..\..\include\common\TList.h" />
     <ClInclude Include="..\..\include\common\TRBTree.h" />
+    <ClInclude Include="..\..\include\common\TStrStream.h" />
     <ClInclude Include="..\..\include\common\TTinyList.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

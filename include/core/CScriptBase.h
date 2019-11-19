@@ -8,6 +8,7 @@
 //=====================================================================
 
 #include "common/TList.h"
+#include "common/TCircelBuffer.h"
 #include "CClassRegistInfo.h"
 #include <stdarg.h>
 #include <vector>
@@ -29,10 +30,7 @@ namespace Gamma
 	{
 	protected:
 		CDebugBase*				m_pDebugger;
-		void**					m_aryNeedUnlinkObject;
-		uint32					m_nArraySize;
-		uint32					m_nObjectCount;
-
+		CCircelBuffer			m_UnlinkObjectBuffer;
         CTypeIDNameMap			m_mapTypeID2ClassInfo;
         CClassNameMap			m_mapRegistClassInfo;
         CFunctionTableMap		m_mapVirtualTableOld2New;

@@ -19,6 +19,9 @@
     <ClCompile Include="..\..\src\common\Memory.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\common\Http.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\common\CommonType.h">
@@ -63,6 +66,15 @@
     <ClInclude Include="..\..\include\common\Memory.h">
       <Filter>inlude</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\common\Http.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\TStrStream.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\TCircelBuffer.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="inlude">
@@ -71,5 +83,10 @@
     <Filter Include="source">
       <UniqueIdentifier>{9172c6ca-712c-462e-a2eb-59614293104c}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\include\common\TCircelBuffer.inl">
+      <Filter>inlude</Filter>
+    </None>
   </ItemGroup>
 </Project>

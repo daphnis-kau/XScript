@@ -407,124 +407,6 @@ namespace Gamma
 	}
 
 	//========================================================================
-	// 将字符串进行"Gamma"化.
-	// Gamma字符串是只有正斜杠'/'的字符串
-	//========================================================================
-	template<class CharType>
-	inline CharType GammaChar( CharType c )
-	{
-		return c == '\\' ? '/' : c;
-	}
-
-	template<class CharType>
-	inline CharType* GammaString( CharType* p )
-	{
-		for( int i = 0; p[i]; i++ ) 
-			p[i] = GammaChar( p[i] );
-		return p;
-	}
-
-	template<class CharType>
-	inline int32 GammaStringCompare( const CharType* p1, const CharType* p2, uint32 nLen = INVALID_32BITID )
-	{
-		for( uint32 i = 0; i < nLen; i++ )
-		{
-			CharType c1 = GammaChar( p1[i] );
-			CharType c2 = GammaChar( p2[i] );
-			if( c1 == 0 && c2 == 0 )
-				return 0;
-			if( c1 == 0 )
-				return -1;
-			if( c2 == 0 )
-				return 1;
-			if( c1 != c2 )
-				return c1 - c2;
-		}
-		return 0;
-	}
-
-	template<class CharType>
-	inline const std::basic_string<CharType>& GammaString( std::basic_string<CharType>& str )
-	{
-		GammaString( &str[0] );
-		return str;
-	}
-
-	template<class CharType>
-	inline std::basic_string<CharType> GammaString( const CharType* p )
-	{
-		std::basic_string<CharType> Out;
-		for( int i = 0; p[i]; i++ ) 
-			Out.push_back( GammaChar( p[i] ) );
-		return Out;
-	}
-
-	template<class CharType>
-	inline int32 CompareGammaString( const CharType* p1, const CharType* p2 )
-	{
-		if( p1 == p2 )
-			return 0;
-		if( p1 && !p2 )
-			return 1;
-		if( !p1 && p2 )
-			return -1;
-
-		CharType c1 = GammaChar( *p1 );
-		CharType c2 = GammaChar( *p2 );
-		while( c1 == c2 && c1 != 0 ) 
-		{
-			c1 = GammaChar( *++p1 );
-			c2 = GammaChar( *++p2 );
-		}
-		return ( c1 == c2 ) ? 0 : ( c1 > c2 ? 1 : -1 );
-	}
-
-	//========================================================================
-	// 将GammaString 转化为数字ID
-	//========================================================================
-	template<class CharType>
-	inline uint32 GammaString2ID( const CharType* szStr )
-	{
-		CharType szBuf[1024];
-		size_t i = 0;
-		for( ; i < 1023 && szStr[i]; i++ )
-			szBuf[i] = szStr[i];
-		szBuf[i] = 0;
-		return (uint32)GammaHash( GammaString( szBuf ), i*sizeof(CharType) );
-	} 
-
-	//========================================================================
-	// 命令解释
-	//========================================================================
-	template<class CharType>
-	std::vector< std::basic_string<CharType> > CmdParser( const CharType* szCmdLine )
-	{
-		std::vector< std::basic_string<CharType> > vecCmd;
-		while( *szCmdLine )
-		{
-			while( *szCmdLine && IsBlank( *szCmdLine ) )
-				szCmdLine++;
-
-			bool bQuotation = *szCmdLine == '\"';
-			if( bQuotation )
-				szCmdLine++;
-
-			if( !*szCmdLine )
-				break;
-
-			const wchar_t* szStr = szCmdLine;
-			while( *szCmdLine && !( ( !bQuotation && IsBlank( *szCmdLine ) ) || *szCmdLine == '\"' ) )
-				szCmdLine++;
-
-			vecCmd.push_back( std::basic_string<CharType>( szStr, szCmdLine - szStr ) );
-			if( bQuotation && *szCmdLine == '\"' )
-				szCmdLine ++;
-		}
-
-		return vecCmd;
-	}
-
-	//========================================================================
 	// 从路径中提取文件名
 	//========================================================================
 	template<class CharType>
@@ -548,6 +430,59 @@ namespace Gamma
 			if( szPath[i] == '.' )
 				nPos = i + 1;
 		return nPos == INVALID_32BITID ? NULL : szPath + nPos;
+	}
+
+	//========================================================================
+	// 简化路径
+	//========================================================================
+	template<class CharType>
+	inline uint32 ShortPath( CharType* szPath )
+	{
+		uint32 nPos[256];
+		uint32 nCount = 0;
+		uint32 nCurPos = 0;
+		uint32 nPrePos = 0;
+
+		for( uint32 i = 0; szPath[i]; i++ )
+		{
+			if( szPath[i] == '.' && ( szPath[i+1] == '/' || szPath[i+1] == '\\' ) )
+			{
+				i += 1;
+				continue;
+			}
+			else if( szPath[i] == '.' && szPath[i+1] == '.' && ( szPath[i+2] == '/' || szPath[i+2] == '\\' ) )
+			{
+				i += 2;
+				if( nCount )
+				{
+					nCurPos = nPos[--nCount];
+					nPrePos = nCurPos;
+					continue;
+				}
+				else
+				{
+					szPath[nCurPos++] = '.';
+					szPath[nCurPos++] = '.';
+					szPath[nCurPos++] = '/';
+					nPrePos = nCurPos;
+					continue;
+				}
+			}
+
+			if( szPath[i] == '/' || szPath[i] == '\\' )
+			{
+				szPath[nCurPos++] = '/';
+				nPos[nCount++] = nPrePos;
+				nPrePos = nCurPos;
+			}
+			else
+			{
+				szPath[nCurPos++] = szPath[i];
+			}
+		}
+
+		szPath[nCurPos] = 0;
+		return (int32)nCurPos;
 	}
 
 	//========================================================================

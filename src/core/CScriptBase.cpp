@@ -74,10 +74,7 @@ namespace Gamma
 	static CLock s_ScriptListLock;
 
     CScriptBase::CScriptBase(void)
-        : m_aryNeedUnlinkObject(NULL)
-		, m_nArraySize(0)
-		, m_nObjectCount(0)
-		, m_pDebugger( NULL )
+        : m_pDebugger( NULL )
 	{
 		s_ScriptListLock.Lock();
 		s_listAllScript.PushBack( *this );
@@ -121,16 +118,7 @@ namespace Gamma
 		CScriptBase* pScript = s_listAllScript.GetFirst();
 		while( pScript )
 		{
-			if( pScript->m_nObjectCount == pScript->m_nArraySize )
-			{
-				pScript->m_nArraySize += 1024;
-				void** aryObject = new void*[pScript->m_nArraySize];
-				memcpy( aryObject, pScript->m_aryNeedUnlinkObject, 
-					pScript->m_nObjectCount*sizeof(void*) );
-				SAFE_DEL_GROUP( pScript->m_aryNeedUnlinkObject );
-				pScript->m_aryNeedUnlinkObject = aryObject;
-			}
-			pScript->m_aryNeedUnlinkObject[pScript->m_nObjectCount++] = pObj;
+			pScript->m_UnlinkObjectBuffer.Push( pObj );
 			pScript = pScript->TList<CScriptBase>::CListNode::GetNext();
 		}
 		s_ScriptListLock.Unlock();
@@ -138,17 +126,15 @@ namespace Gamma
 
 	void CScriptBase::CheckUnlinkCppObj()
 	{
-		while( m_nObjectCount )
-		{
-			void* aryObject[1024];
-			s_ScriptListLock.Lock();
-			uint32 nCount = Min<uint32>( 1024, m_nObjectCount );
-			m_nObjectCount = m_nObjectCount - nCount;
-			memcpy( aryObject, m_aryNeedUnlinkObject + m_nObjectCount, sizeof(void*)*nCount );
-			s_ScriptListLock.Unlock();
+		void* pObject[1024];
+		auto funRead = [&]( CCircelBuffer::CAtomRead& Reader )->bool
+		{ return Reader.Read( pObject, sizeof( pObject ) );	};
 
-			for( uint32 i = 0; i < nCount; i++ )
-				UnlinkCppObjFromScript( aryObject[i] );
+		uint32 nReadSize = 0;
+		while( ( nReadSize = m_UnlinkObjectBuffer.PopBuffer( funRead ) ) != 0 )
+		{
+			for( uint32 i = 0; i < nReadSize/sizeof( void* ); i++ )
+				UnlinkCppObjFromScript( pObject[i] );
 		}
 
 		if( !m_pDebugger || !m_pDebugger->RemoteCmdValid() )
