@@ -79,9 +79,9 @@ namespace Gamma
 		if( !bCopy && ( pObjInfo = Script.FindExistObjInfo( pObj ) ) != NULL )
 			return pObjInfo->m_Object.Get( Script.GetIsolate() );
 
-		CJSClassRegisterInfo* pInfo = (CJSClassRegisterInfo*)m_pClassInfo;
+		PersistentFunTemplate& persistentTemplate = Script.GetPersistentFunTemplate(m_pClassInfo);
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
-		v8::Local<v8::FunctionTemplate> funTemplate = pInfo->GetContext().Get(isolate);
+		v8::Local<v8::FunctionTemplate> funTemplate = persistentTemplate.Get(isolate);
 		v8::Local<v8::Function> JSClass = funTemplate->GetFunction(context).ToLocalChecked();
 		v8::Local<v8::ObjectTemplate> objTemplate = funTemplate->InstanceTemplate();
 		v8::Local<v8::Object> NewObj = objTemplate->NewInstance(context).ToLocalChecked();

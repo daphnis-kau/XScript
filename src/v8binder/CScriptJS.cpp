@@ -233,7 +233,12 @@ namespace Gamma
 		m_pIsolate = NULL;
 	}
 
-	void CScriptJS::ClearCppString(void* pStack)
+	PersistentFunTemplate& CScriptJS::GetPersistentFunTemplate( CClassRegistInfo* pInfo )
+	{
+		return m_mapPersistentFunTemplate[pInfo];
+	}
+
+	void CScriptJS::ClearCppString( void* pStack )
 	{
 		uint32 nIndex = (uint32)m_vecStringInfo.size();
 		while (nIndex && m_vecStringInfo[nIndex - 1].m_pStack < pStack)
@@ -715,17 +720,6 @@ namespace Gamma
 
     CTypeBase* CScriptJS::MakeObject( const STypeInfo& argInfo, bool bValue )
 	{
-		//if( !strcmp( argInfo.m_szTypeName, typeid( CVector2f ).name() ) )
-		//	return CreateBuildinType<float>( bValue, 2, "CVector2" );
-		//if( !strcmp( argInfo.m_szTypeName, typeid( CVector3f ).name() ) )
-		//	return CreateBuildinType<float>( bValue, 3, "CVector3" );
-		//if( !strcmp( argInfo.m_szTypeName, typeid( CVector4f ).name() ) )
-		//	return CreateBuildinType<float>( bValue, 4, "CVector4" );
-		//if( !strcmp( argInfo.m_szTypeName, typeid( CFRect ).name() ) )
-		//	return CreateBuildinType<float>( bValue, 4, "CRect" );
-		//if( !strcmp( argInfo.m_szTypeName, typeid( CMatrix ).name() ) )
-		//	return CreateBuildinType<float>( bValue, 16, "CMatrix" );
-
 		//如果不是枚举   
 		map<string,int32>::iterator itEnum = m_mapSizeOfEnum.find( argInfo.m_szTypeName );
 		if( itEnum == m_mapSizeOfEnum.end() )
@@ -978,15 +972,16 @@ namespace Gamma
 			m_pIsolate, &CScriptJS::NewObject, External::New(m_pIsolate, pInfo));
 		NewTemplate->SetClassName(strClassName);
 		NewTemplate->InstanceTemplate()->SetInternalFieldCount(1);
-		Local<Function> NewClass = NewTemplate->GetFunction(context).ToLocalChecked();
-		((CJSClassRegisterInfo*)pInfo)->GetContext().Reset(m_pIsolate, NewTemplate);
+		Local<Function> NewClass = NewTemplate->GetFunction( context ).ToLocalChecked();
+		PersistentFunTemplate& persistentTemplate = GetPersistentFunTemplate( pInfo );
+		persistentTemplate.Reset(m_pIsolate, NewTemplate);
 
 		LocalValue Base = Undefined(m_pIsolate);
 		if (pInfo->BaseRegist().size())
 		{
 			CClassRegistInfo* pBaseInfo = pInfo->BaseRegist()[0].m_pBaseInfo;
-			CJSClassRegisterInfo* pBaseJSInfo = (CJSClassRegisterInfo*)pBaseInfo;
-			Local<FunctionTemplate> BaseTemplate = pBaseJSInfo->GetContext().Get(m_pIsolate);
+			PersistentFunTemplate& persistentTemplate = GetPersistentFunTemplate( pBaseInfo );
+			Local<FunctionTemplate> BaseTemplate = persistentTemplate.Get(m_pIsolate);
 			Base = BaseTemplate->GetFunction(context).ToLocalChecked();
 		}
 
@@ -1074,7 +1069,7 @@ namespace Gamma
 	void CScriptJS::RegistClass( MakeTypeFunction funMakeType, uint32 nSize, 
 		const char* szTypeIDName, const char* szClass, va_list listBase )
 	{
-		CJSClassRegisterInfo* pClassInfo = new CJSClassRegisterInfo( this, szClass, szTypeIDName, nSize, funMakeType );
+		CClassRegistInfo* pClassInfo = new CClassRegistInfo( this, szClass, szTypeIDName, nSize, funMakeType );
 		m_mapRegistClassInfo.Insert( *pClassInfo );
 		m_mapTypeID2ClassInfo.Insert( *pClassInfo );
 

@@ -120,18 +120,6 @@ namespace Gamma
 		void							IncInstanceCount() { m_nInstanceCount++; }
 		void							DecInstanceCount() { m_nInstanceCount--; }
     }; 
-
-	template<typename ContextType>	
-	class TClassRegisterInfo : public CClassRegistInfo 
-	{
-		ContextType m_Context;
-	public:
-		TClassRegisterInfo(CScriptBase* pScriptBase,
-			const char* szClassName, const char* szTypeIDName,
-			uint32 nSize, MakeTypeFunction funMakeType)
-			: CClassRegistInfo(pScriptBase, szClassName, szTypeIDName, nSize, funMakeType) {}
-		ContextType& GetContext() { return m_Context; }
-	};
 }                                            
                                             
 #endif                                        

@@ -12,15 +12,15 @@
 
 namespace Gamma
 {
-	typedef v8::Persistent<v8::Context>					PersistentContext;
-	typedef v8::Persistent<v8::ObjectTemplate>			PersistentObjTemplate;
-	typedef v8::Persistent<v8::FunctionTemplate>		PersistentFunTemplate;
-	typedef v8::Persistent<v8::Object>					PersistentObject;
-	typedef v8::Persistent<v8::String>					PersistentString;
-	typedef v8::Persistent<v8::Function>				PersistentFunction;
-	typedef v8::Local<v8::Value>						LocalValue;
-	typedef v8::ReturnValue<v8::Value>					ReturnValue;
-	typedef TClassRegisterInfo<PersistentFunTemplate>	CJSClassRegisterInfo;
+	typedef v8::Persistent<v8::Context>						PersistentContext;
+	typedef v8::Persistent<v8::ObjectTemplate>				PersistentObjTemplate;
+	typedef v8::Persistent<v8::FunctionTemplate>			PersistentFunTemplate;
+	typedef v8::Persistent<v8::Object>						PersistentObject;
+	typedef v8::Persistent<v8::String>						PersistentString;
+	typedef v8::Persistent<v8::Function>					PersistentFunction;
+	typedef v8::Local<v8::Value>							LocalValue;
+	typedef v8::ReturnValue<v8::Value>						ReturnValue;
+	typedef map<CClassRegistInfo*, PersistentFunTemplate>	PersistentFunTemplates;
 
     class CScriptJS : public CScriptBase
 	{
@@ -64,7 +64,8 @@ namespace Gamma
 		wstring					m_szTempUcs2;
 
 		SObjInfo*				m_pFreeObjectInfo;
-		TRBTree<SObjInfo>	m_mapObjInfo;
+		TRBTree<SObjInfo>		m_mapObjInfo;
+		PersistentFunTemplates	m_mapPersistentFunTemplate;
 
 		static void				Log(const v8::FunctionCallbackInfo<v8::Value>& args);
 		static void				Break(const v8::FunctionCallbackInfo<v8::Value>& args);
@@ -97,6 +98,7 @@ namespace Gamma
 		PersistentString&		GetProto() { return m___proto__; }
 		PersistentString&		GetPrototype() { return m_Prototype; }
 		PersistentObject&		GetGammaNameSpace() { return m_GammaNameSpace; }
+		PersistentFunTemplate&	GetPersistentFunTemplate( CClassRegistInfo* pInfo );
 
 		void					ClearCppString(void* pStack);
 		void					CallJSStatck(bool bAdd);
