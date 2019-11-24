@@ -6,8 +6,8 @@
 
 #include "common/Help.h"
 #include "common/TList.h"
-#include "core/GammaScriptRunFun.h"
 #include "core/GammaScriptDef.h"
+#include "core/GammaScriptWrap.h"
 
 //=====================================================================
 // GammaScriptX.h 

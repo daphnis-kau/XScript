@@ -76,7 +76,31 @@ namespace Gamma
 		virtual void			UnlinkCppObjFromScript( void* pObj ) = 0;
 		virtual void        	GC() = 0;
 		virtual void        	GCAll() = 0;
+
+		template<typename RetType, typename... Param>
+		bool					RunFunction( RetType* pRetBuf, const char* szFun, Param ... p );
+		template<typename... Param>
+		bool					RunFunction( nullptr_t, const char* szFun, Param ... p );
 	};
+
+	template<typename RetType, typename... Param>
+	bool CScriptBase::RunFunction( RetType* pRetBuf, const char* szFun, Param ... p )
+	{
+		void* aryParam[sizeof...( p ) + 1] = { &p ... };
+		static STypeInfo aryInfo[] = { GetTypeInfo<Param>()..., GetTypeInfo<RetType>() };
+		static STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
+		return RunFunction( TypeInfo, pRetBuf, szFun, aryParam );
+	}
+
+	template<typename... Param>
+	bool CScriptBase::RunFunction( nullptr_t, const char* szFun, Param ... p )
+	{
+		void* aryParam[sizeof...( p ) + 1] = { &p ... };
+		static STypeInfo aryInfo[] = { GetTypeInfo<Param>()..., GetTypeInfo<void>() };
+		static STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
+		return RunFunction( TypeInfo, nullptr, szFun, aryParam );
+	}
+
 }
 
 #endif

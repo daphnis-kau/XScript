@@ -334,7 +334,7 @@ namespace Gamma
 			std::stringstream ss;
 			pJson->Save( ss, INVALID_32BITID );
 			const std::string& strResult = ss.str();
-			uint32 nLength = strResult.size();
+			uint32 nLength = (uint32)strResult.size();
 			char szBuffer[256];
 			sprintf_s( szBuffer, ELEM_COUNT(szBuffer) - 1,"Content-Length:%d\r\n\r\n", nLength);
 			m_szStringSend.append( szBuffer );
@@ -409,7 +409,7 @@ namespace Gamma
 		if( m_szStringSend.empty() )
 			return bContinue;
 		const char* szData = m_szStringSend.c_str();
-		uint32 nLen = m_szStringSend.size();
+		uint32 nLen = (uint32)m_szStringSend.size();
 		int32 nSend = send( m_nRemoteConnecter, szData, nLen, 0 );
 		if( nSend <= 0 )
 			return bContinue;

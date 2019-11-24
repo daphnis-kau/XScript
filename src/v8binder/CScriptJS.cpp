@@ -1049,13 +1049,13 @@ namespace Gamma
 
 	ICallBackWrap& CScriptJS::RegistDestructor(const char* szTypeInfoName, IFunctionWrap* funWrap)
 	{
-		STypeInfoArray aryInfo;
-		aryInfo.nSize = 2;
-		aryInfo.aryInfo[0].m_nType = ( eDT_class << 24 )|eDTE_Pointer;
-		aryInfo.aryInfo[0].m_szTypeName = szTypeInfoName;
-		aryInfo.aryInfo[1].m_nType = eDT_void;
-		aryInfo.aryInfo[1].m_szTypeName = typeid(void).name();
-		return *( new CCallBackJS( *this, aryInfo, funWrap, szTypeInfoName, "" ) );
+		STypeInfo aryInfo[2];
+		aryInfo[0].m_nType = ( eDT_class << 24 )|eDTE_Pointer;
+		aryInfo[0].m_szTypeName = szTypeInfoName;
+		aryInfo[1].m_nType = eDT_void;
+		aryInfo[1].m_szTypeName = typeid( void ).name();
+		STypeInfoArray aryTypeInfo ={ aryInfo, 2 };
+		return *( new CCallBackJS( *this, aryTypeInfo, funWrap, szTypeInfoName, "" ) );
 	}
 
     void CScriptJS::RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName )

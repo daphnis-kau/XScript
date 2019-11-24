@@ -91,7 +91,7 @@ class CCC
 
 void run_cpp_lua( int a, int b, int c, int d )
 {
-	TRunFun<void>::RunFunction( *g_ScriptLua, NULL, "aaa", a, "qqqqqq" );
+	g_ScriptLua->RunFunction( NULL, "aaa", a, "qqqqqq" );
 }
 
 void TestLua()
@@ -109,11 +109,11 @@ void TestLua()
 	REGIST_DESTRUCTOR()
 	REGIST_CLASSMEMBER( kkk )
 	REGIST_CLASSMEMBER( x )
-	REGIST_CLASSFUNCTION( GetNumber )
-	REGIST_CALLBACKFUNCTION( GetThis )
-	REGIST_CALLBACKFUNCTION( NewThis )
-	REGIST_STATICFUNCTION( GetCppName )
-	REGIST_CLASSFUNCTION( TestRet64 )
+		REGIST_CLASSFUNCTION( GetNumber )
+		REGIST_CALLBACKFUNCTION( GetThis )
+		REGIST_CALLBACKFUNCTION( NewThis )
+		REGIST_STATICFUNCTION( GetCppName )
+		REGIST_CLASSFUNCTION( TestRet64 )
 	REGIST_CLASS_FUNCTION_END( *g_ScriptLua );
 
 	REGIST_GLOBALFUNCTION( *g_ScriptLua, run_cpp_lua );
@@ -121,7 +121,7 @@ void TestLua()
 	int32 a[2];
 	g_ScriptLua->RunString( szLua );
 	//uint32 n = GetTickCount();
-	TRunFun<void>::RunFunction( *g_ScriptLua, NULL, "aaa", a, "sadfasdf" );
+	g_ScriptLua->RunFunction( NULL, "aaa", a, "sadfasdf" );
 	g_ScriptLua->RunString(
 		"a = Test_Base:new(); \n"
 

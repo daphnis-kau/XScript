@@ -1389,8 +1389,13 @@ namespace Gamma
 
 	ICallBackWrap& CScriptLua::RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap )
 	{
-		STypeInfoArray aryInfo = { 0 };
-		return *( new CCallBackLua( *this, aryInfo, funWrap, szTypeInfoName, "" ) );
+		STypeInfo aryInfo[2];
+		aryInfo[0].m_nType = ( eDT_class << 24 )|eDTE_Pointer;
+		aryInfo[0].m_szTypeName = szTypeInfoName;
+		aryInfo[1].m_nType = eDT_void;
+		aryInfo[1].m_szTypeName = typeid( void ).name();
+		STypeInfoArray aryTypeInfo = { aryInfo, 2 };
+		return *( new CCallBackLua( *this, aryTypeInfo, funWrap, szTypeInfoName, "" ) );
 	}
 
     void CScriptLua::RegistClassMember( const STypeInfoArray& aryTypeInfo, 

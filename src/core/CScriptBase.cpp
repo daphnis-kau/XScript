@@ -62,7 +62,7 @@ namespace Gamma
 		}
 
 		void** aryFun = s_aryFuctionTable + s_nFuctionTableUseCount;
-		s_nFuctionTableUseCount += nArraySize;
+		s_nFuctionTableUseCount += (uint32)nArraySize;
 		s_Lock.Unlock();
 		return (SFunctionTableHead*)aryFun;
 	}
@@ -243,7 +243,7 @@ namespace Gamma
 	int CScriptBase::Input( char* szBuffer, int nCount )
 	{
 		std::cin.read( szBuffer, nCount );
-		return strlen( szBuffer );
+		return (int32)strlen( szBuffer );
 	}
 
 	void UnlinkCppObj( void* pObj )

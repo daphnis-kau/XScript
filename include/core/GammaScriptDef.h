@@ -25,17 +25,13 @@ namespace Gamma
 #define MAX_BASE_CLASS_NUM 5
 #define MAX_FUNCTION_PARAM_NUM 10
 
-    enum EScriptVM
-    {
-		eSVM_Lua,
-		eSVM_Python,
-		eSVM_AS3,
-		eSVM_JS,
-    };
+	class CScriptBase;
 
-    class CScriptBase;
-
-    typedef    CScriptBase*		HSCRIPT;
+	struct STypeInfoArray
+	{
+		STypeInfo*	aryInfo;
+		uint32		nSize;
+	};
 
 	class IObjectConstruct
 	{
