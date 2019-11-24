@@ -152,6 +152,7 @@ namespace Gamma
 		void* pObject = NULL;
 		CLuaObject::GetFromVM( pL, (char*)&pObject, nStkId, bExtend32Bit );
 		m_pClassInfo->Assign( pDataBuf, pObject );
+		pScriptLua->CheckUnlinkCppObj();
 	}
 
 	void CLuaValueObject::PushToVM( lua_State* pL, char* pDataBuf )
@@ -166,6 +167,7 @@ namespace Gamma
 		CScriptLua::NewLuaObj( pL, m_pClassInfo, pDataBuf );
 		ConstructLua( pL );
 		m_pClassInfo->Release( pDataBuf );
+		m_pScriptBase->CheckUnlinkCppObj();
 	}
 
 	//=====================================================================

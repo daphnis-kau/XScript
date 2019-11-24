@@ -23,6 +23,8 @@ namespace Gamma
 	class CTypeBase;
 	class CCallBase;
 	class CDebugBase;
+	typedef pair<SFunctionTable*, uint32> CVMObjVTableInfo;
+	typedef map<CClassRegistInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
 	typedef map<SFunctionTable*, SFunctionTable*> CFunctionTableMap;
 
     class CScriptBase : public TList<CScriptBase>::CListNode
@@ -30,9 +32,8 @@ namespace Gamma
 	protected:
 		CDebugBase*				m_pDebugger;
 		CCircelBuffer			m_UnlinkObjectBuffer;
-        CTypeIDNameMap			m_mapTypeID2ClassInfo;
-        CClassNameMap			m_mapRegistClassInfo;
-        CFunctionTableMap		m_mapVirtualTableOld2New;
+		CFunctionTableMap		m_mapVirtualTableOld2New;
+		CNewFunctionTableMap	m_mapNewVirtualTable;
         map<string,int32>		m_mapSizeOfEnum;
         list<string>			m_listSearchPath;
 
@@ -47,12 +48,10 @@ namespace Gamma
 		static bool				IsAllocVirtualTable( void* pVirtualTable );
 								
 		void					CheckUnlinkCppObj();
+		bool					IsVirtualTableValid( SVirtualObj* pVObj );
         SFunctionTable*			GetOrgVirtualTable( void* pObj );
 		SFunctionTable*     	CheckNewVirtualTable( SFunctionTable* pOldFunTable, CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth );
-        CClassRegistInfo*		GetRegistInfo( const char* szClassName );
-		CClassRegistInfo*   	GetRegistInfoByTypeInfoName( const char* szTypeInfoName );
-		CCallBase*				GetGlobalCallBase( const STypeInfoArray& aryTypeInfo );
-		void                	AddSearchPath( const char* szPath );
+        void                	AddSearchPath( const char* szPath );
 		int						Input( char* szBuffer, int nCount );
 
 		virtual bool        	RunFile( const char* szFileName, bool bReload ) = 0;

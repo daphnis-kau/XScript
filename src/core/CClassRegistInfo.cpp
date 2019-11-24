@@ -4,17 +4,66 @@
 
 namespace Gamma
 {
+	//=====================================================================
+	// 类型管理器
+	//=====================================================================
+	class CGlobalClassRegist
+	{
+		CGlobalClassRegist();
+		~CGlobalClassRegist();
+	public:
+		static CGlobalClassRegist& GetInst();
+		CTypeIDNameMap	m_mapTypeID2ClassInfo;
+	};
 
-    //=====================================================================
+	CGlobalClassRegist::CGlobalClassRegist()
+	{
+		CClassRegistInfo* pClassInfo = new CClassRegistInfo( "", "", 1, NULL );
+		m_mapTypeID2ClassInfo.Insert( *pClassInfo );
+	}
+
+	CGlobalClassRegist::~CGlobalClassRegist()
+	{
+		while( m_mapTypeID2ClassInfo.GetFirst() )
+		{
+			auto* pClassInfo = m_mapTypeID2ClassInfo.GetFirst();
+			delete static_cast<CClassRegistInfo*>( pClassInfo );
+		}
+	}
+
+	CGlobalClassRegist& CGlobalClassRegist::GetInst()
+	{
+		static CGlobalClassRegist s_Instance;
+		return s_Instance;
+	}
+
+	CClassRegistInfo* CClassRegistInfo::GetRegistInfo( const char* szTypeInfoName )
+	{
+		gammacstring strKey( szTypeInfoName, true );
+		static auto& Inst = CGlobalClassRegist::GetInst();
+		return Inst.m_mapTypeID2ClassInfo.Find( strKey );
+	}
+
+	CCallBase* CClassRegistInfo::GetGlobalCallBase( const STypeInfoArray& aryTypeInfo )
+	{
+		static auto& Inst = CGlobalClassRegist::GetInst();
+		const char* szBuffer = (const char*)aryTypeInfo.aryInfo;
+		gammacstring key( szBuffer, (uint32)( sizeof( STypeInfo )*aryTypeInfo.nSize ), true );
+		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( gammacstring() );
+		CCallBase* pCallBase = pInfo->GetCallBase( key );
+		if( pCallBase == NULL )
+			return new CCallBase( aryTypeInfo, eCT_TempFunction, "", key );
+		return pCallBase;
+	}
+
+	//=====================================================================
     // 类型的继承关系
     //=====================================================================
-	CClassRegistInfo::CClassRegistInfo( CScriptBase* pScriptBase, 
+	CClassRegistInfo::CClassRegistInfo( 
 		const char* szClassName, const char* szTypeIDName,
 		uint32 nSize, MakeTypeFunction funMakeType )
-		: CClassName( szClassName )
-		, CTypeIDName( szTypeIDName )
-		, m_VMObjVTableInfo( NULL, INVALID_32BITID )
-		, m_pScriptBase( pScriptBase )
+		: m_szClassName( szClassName )
+		, m_szTypeIDName( szTypeIDName )
         , m_nSizeOfClass( nSize )
         , m_pObjectConstruct( NULL )
         , m_bIsCallBack(false)
@@ -32,9 +81,8 @@ namespace Gamma
 
     CClassRegistInfo::~CClassRegistInfo()
 	{
-		for( map<string,CCallBase*>::iterator it = m_mapRegistFunction.begin(); 
-			it != m_mapRegistFunction.end(); ++it )
-			delete it->second;
+		while( m_mapRegistFunction.GetFirst() )
+			delete m_mapRegistFunction.GetFirst();
     }
 
 	void CClassRegistInfo::SetObjectConstruct( IObjectConstruct* pObjectConstruct )
@@ -66,8 +114,7 @@ namespace Gamma
 		assert( m_pObjectConstruct );
 		if( !m_pObjectConstruct )
 			return;
-		m_pObjectConstruct->Construct( pObject );;
-		m_pScriptBase->CheckUnlinkCppObj();
+		m_pObjectConstruct->Construct( pObject );
 	}
 
 	void CClassRegistInfo::Assign( void* pDest, void* pSrc )
@@ -85,7 +132,6 @@ namespace Gamma
 		if( !m_pObjectConstruct )
 			return;
 		m_pObjectConstruct->Destruct( pObject );
-		m_pScriptBase->CheckUnlinkCppObj();
 	}
 
 	CTypeBase* CClassRegistInfo::MakeType( bool bValue )
@@ -94,16 +140,16 @@ namespace Gamma
 		return m_funMakeType( this, bValue );
 	}
 
-	void CClassRegistInfo::RegistFunction( const string& szFunName, CCallBase* pCallBase )
+	void CClassRegistInfo::RegistFunction( CCallBase* pCallBase )
 	{
-		assert( m_mapRegistFunction.find( szFunName ) == m_mapRegistFunction.end() );
-		m_mapRegistFunction[szFunName] = pCallBase;
+		auto& strName = pCallBase->GetFunctionName();
+		assert( m_mapRegistFunction.find( strName ) == m_mapRegistFunction.end() );
+		m_mapRegistFunction.Insert(*pCallBase);
 	}
 
-	CCallBase* CClassRegistInfo::GetCallBase( const string& strFunName )
+	CCallBase* CClassRegistInfo::GetCallBase( const gammacstring& strFunName )
 	{
-		map<string,CCallBase*>::iterator it = m_mapRegistFunction.find( strFunName );
-		return it == m_mapRegistFunction.end() ? NULL : it->second;
+		return m_mapRegistFunction.Find( strFunName );
 	}
 
     void CClassRegistInfo::RegistClassCallBack( uint32 nIndex, CCallScriptBase* pCallScriptBase )
@@ -170,7 +216,8 @@ namespace Gamma
         return -1;
 	}
 
-    void CClassRegistInfo::ReplaceVirtualTable( void* pObj, bool bNewByVM, uint32 nInheritDepth )
+    void CClassRegistInfo::ReplaceVirtualTable( CScriptBase* pScript,
+		void* pObj, bool bNewByVM, uint32 nInheritDepth )
     {
         SVirtualObj* pVObj        = (SVirtualObj*)pObj;
         SFunctionTable* pOldTable = pVObj->m_pTable;
@@ -179,8 +226,8 @@ namespace Gamma
 		if( !m_vecNewFunction.empty() )
 		{
 			// 确保pOldTable是原始虚表，因为pVObj有可能已经被修改过了
-			pOldTable = m_pScriptBase->GetOrgVirtualTable( pVObj );
-			pNewTable = m_pScriptBase->CheckNewVirtualTable( pOldTable, this, bNewByVM, nInheritDepth );
+			pOldTable = pScript->GetOrgVirtualTable( pVObj );
+			pNewTable = pScript->CheckNewVirtualTable( pOldTable, this, bNewByVM, nInheritDepth );
 		}
 
         for( size_t i = 0; i < m_vecBaseRegist.size(); i++ )
@@ -188,27 +235,28 @@ namespace Gamma
             if( m_vecBaseRegist[i].m_pBaseInfo->IsCallBack() )
 			{
 				void* pBaseObj = ( (char*)pObj ) + m_vecBaseRegist[i].m_nBaseOff;
-                m_vecBaseRegist[i].m_pBaseInfo->ReplaceVirtualTable( pBaseObj, bNewByVM, nInheritDepth + 1 );
+                m_vecBaseRegist[i].m_pBaseInfo->ReplaceVirtualTable( 
+					pScript, pBaseObj, bNewByVM, nInheritDepth + 1 );
 			}
         }
 
         if( pNewTable )
 		{
 			// 不允许不同的虚拟机共同使用同一份虚表
-			assert( !CScriptBase::IsAllocVirtualTable( pVObj->m_pTable ) ||
-				( (CClassRegistInfo*)( pVObj->m_pTable->m_pFun[-1] ) )->m_pScriptBase == m_pScriptBase );
+			assert( pScript->IsVirtualTableValid(pVObj) );
             pVObj->m_pTable = pNewTable;
 		}
     }
 
-    void CClassRegistInfo::RecoverVirtualTable( void* pObj )
+    void CClassRegistInfo::RecoverVirtualTable( CScriptBase* pScript, void* pObj )
     {
         SFunctionTable* pOrgTable = NULL;
         if( !m_vecNewFunction.empty() )
-            pOrgTable = m_pScriptBase->GetOrgVirtualTable( pObj );
+            pOrgTable = pScript->GetOrgVirtualTable( pObj );
 
         for( size_t i = 0; i < m_vecBaseRegist.size(); i++ )
-            m_vecBaseRegist[i].m_pBaseInfo->RecoverVirtualTable( ( (char*)pObj ) + m_vecBaseRegist[i].m_nBaseOff );
+            m_vecBaseRegist[i].m_pBaseInfo->RecoverVirtualTable( 
+				pScript, ( (char*)pObj ) + m_vecBaseRegist[i].m_nBaseOff );
 
         if( pOrgTable )
             ( (SVirtualObj*)pObj )->m_pTable = pOrgTable;

@@ -10,19 +10,18 @@
 namespace Gamma
 {
 
-	CCallBase::CCallBase( CScriptBase& Script, const STypeInfoArray& aryTypeInfo, 
-		int32 nFunIndex, const char* szTypeInfoName, const string& strFunName )
-		: m_pScript( &Script )
-		, m_nParamSize( 0 )
-		, m_pThis( NULL )
-        , m_pResult( NULL )
+	CCallBase::CCallBase( const STypeInfoArray& aryTypeInfo, int32 nFunIndex,
+		const char* szTypeInfoName, gammacstring strFunName )
+		: m_nParamSize( 0 )
+		, m_nThis( eDT_void )
+        , m_nResult( eDT_void )
 		, m_nFunIndex( nFunIndex )
-		, m_sFunName( strFunName )
+		, m_sFunName( strFunName.c_str(), strFunName.size() )
 	{
-		CClassRegistInfo* pInfo = Script.GetRegistInfoByTypeInfoName( szTypeInfoName );
+		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo( szTypeInfoName );
 		if( pInfo == NULL )
 			throw( "register function on a unregister class." );
-		pInfo->RegistFunction( strFunName, this );
+		pInfo->RegistFunction( this );
 
 		for( uint32 i = 0; i < aryTypeInfo.nSize; i++ )
 		{
@@ -46,10 +45,6 @@ namespace Gamma
 
     CCallBase::~CCallBase(void)
     {
-        for( list<CTypeBase*>::iterator it = m_listParam.begin(); it != m_listParam.end(); ++it )
-            delete *it;
-        delete m_pResult;
-		delete m_pThis;
     }
 
 	//=====================================================================

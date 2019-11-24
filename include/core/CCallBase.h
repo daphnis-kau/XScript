@@ -6,9 +6,11 @@
 // 柯达昭
 // 2007-10-16
 //=====================================================================
+#include "common/TRBTree.h"
+#include "common/CVirtualFun.h"
+#include "common/TConstString.h"
 #include "CTypeBase.h"
 #include <list>
-#include "common/CVirtualFun.h"
 
 using namespace std;
 
@@ -24,33 +26,35 @@ namespace Gamma
 		eCT_ClassCallBack		= 0,
 	};
 
-    class CScriptBase;
-    class CTypeBase;
-    class CCallBase
+	class CCallBase;
+	typedef ptrdiff_t DataType;
+	typedef TRBTree<CCallBase> CCallBaseMap;
+
+    class CCallBase : public CCallBaseMap::CRBTreeNode
     {
 	protected:
-		CScriptBase*			m_pScript;
-		CTypeBase*				m_pThis;
-		list<CTypeBase*>		m_listParam;
-        CTypeBase*				m_pResult;
+		gammacstring			m_sFunName;
+		DataType				m_nThis;
+		vector<DataType>		m_listParam;
+		DataType				m_nResult;
 		uint32					m_nParamSize;
 		uint32					m_nParamCount;
 		int32					m_nFunIndex;
-		string					m_sFunName;
 
     public:
-        CCallBase( CScriptBase& Script, const STypeInfoArray& aryTypeInfo, 
-			int32 nFunIndex, const char* szTypeInfoName, const string& strFunName );
+        CCallBase( const STypeInfoArray& aryTypeInfo, int32 nFunIndex, 
+			const char* szTypeInfoName, gammacstring strFunName );
+		operator const gammacstring&( ) const { return m_sFunName; }
+		bool operator < ( const gammacstring& strKey ) { return (const gammacstring&)*this < strKey; }
 
 		virtual ~CCallBase(void);
-		CScriptBase*			GetScript()					{ return m_pScript; }
-		const list<CTypeBase*>& GetParamList()				{ return m_listParam; }
-		CTypeBase*				GetResultType()				{ return m_pResult; }
-		CTypeBase*				GetThisType()				{ return m_pThis; }
+		const vector<DataType>&	GetParamList()				{ return m_listParam; }
+		DataType				GetResultType()				{ return m_nResult; }
+		DataType				GetThisType()				{ return m_nThis; }
 		uint32					GetParamSize()				{ return m_nParamSize; }
 		uint32					GetParamCount()				{ return m_nParamCount; }
 		int32					GetFunctionIndex()			{ return m_nFunIndex; }
-		const string&			GetFunctionName()			{ return m_sFunName; }
+		const gammacstring&		GetFunctionName()			{ return m_sFunName; }
 		bool					IsCallback()				{ return m_nFunIndex >= eCT_ClassCallBack; }
     };
 

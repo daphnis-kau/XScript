@@ -420,10 +420,11 @@ namespace Gamma
 
 		CScriptLua* pScriptLua = (CScriptLua*)pInfo->GetScript();
 		pScriptLua->PushLuaState( pL );
-        pInfo->Create( pObj );                //userdata为对象指针的指针
+		pInfo->Create( pObj );                //userdata为对象指针的指针
 		if( pSrc )
 			pInfo->Assign( pObj, pSrc );
-		pScriptLua->PopLuaState();					
+		pScriptLua->CheckUnlinkCppObj();
+		pScriptLua->PopLuaState();
 		
 		//stack top = 2, 对象指针在栈顶,保存对象的表在下面
 		RegisterObject( pL, pInfo, pObj, true ); 
@@ -503,7 +504,8 @@ namespace Gamma
 		// 因为已经被回收，所以不存在还有任何地方会引用到此对象
 		// 调用UnRegisterObject反而会导致gc问题（table[obj] = nil 会crash）
 		pInfo->RecoverVirtualTable( pObject );
-        pInfo->Release( pObject );
+		pInfo->Release( pObject );
+		CheckUnlinkCppObj();
         lua_pop( pL, 3 );
         return 0;
     }

@@ -10,11 +10,11 @@ namespace Gamma
 {
 	struct SFunctionTableHead
 	{
+		CScriptBase*		m_pScript;
 		SFunctionTable*		m_pOldFunTable;
 		CClassRegistInfo*	m_pClassInfo;
-		SFunctionTableHead( SFunctionTable* pTable, CClassRegistInfo* pClassInfo )
-			: m_pOldFunTable( pTable ), m_pClassInfo( pClassInfo ){};
 	};
+
 	enum{ eFunctionTableHeadSize = sizeof(SFunctionTableHead)  };
 	enum{ ePointerCount = eFunctionTableHeadSize/sizeof(void*) };
 	enum{ eFunctionTableHeadAligSize = ePointerCount*sizeof(void*) };
@@ -79,21 +79,11 @@ namespace Gamma
 		s_ScriptListLock.Lock();
 		s_listAllScript.PushBack( *this );
 		s_ScriptListLock.Unlock();
-
-		CClassRegistInfo* pClassInfo = new CClassRegistInfo( this, "", "", 1, NULL );
-		m_mapRegistClassInfo.Insert( *pClassInfo );
-		m_mapTypeID2ClassInfo.Insert( *pClassInfo );
     }
 
     CScriptBase::~CScriptBase(void)
 	{
 		SAFE_DELETE( m_pDebugger );
-
-        while( m_mapRegistClassInfo.GetFirst() )
-		{
-			CClassName* pClassName = m_mapRegistClassInfo.GetFirst();
-            delete static_cast<CClassRegistInfo*>( pClassName );
-		}
 
 		// 虚表不释放，这里的内存泄漏是故意的
 		for( CFunctionTableMap::iterator it = m_mapVirtualTableOld2New.begin(); 
@@ -130,6 +120,14 @@ namespace Gamma
 		m_pDebugger->CheckRemoteCmd();
 	}
 
+	bool CScriptBase::IsVirtualTableValid( SVirtualObj* pVObj )
+	{
+		if( !IsAllocVirtualTable( pVObj ) )
+			return true;
+		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVObj->m_pTable ) - 1;
+		return pFunTableHead->m_pScript == this;
+	}
+
 	bool CScriptBase::IsAllocVirtualTable( void* pVirtualTable )
 	{
 		return pVirtualTable >= s_aryFuctionTable && pVirtualTable < s_aryFuctionTableEnd;
@@ -160,7 +158,7 @@ namespace Gamma
 		// 使得不同的纯虚类使用了相同的虚表，导致虚表相互覆盖
 		if( bNewByVM )
 		{
-			CVMObjVTableInfo& VMObjectVTableInfo = pClassInfo->GetVMObjectVTbl();
+			CVMObjVTableInfo& VMObjectVTableInfo = m_mapNewVirtualTable[pClassInfo];
 			if( VMObjectVTableInfo.first && VMObjectVTableInfo.second <= nInheritDepth )
 				return VMObjectVTableInfo.first;
 
@@ -176,6 +174,7 @@ namespace Gamma
 			SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pNewFunTable ) - 1;
 			memcpy( pNewFunTable->m_pFun, pOldFunTable->m_pFun, nFunCount*sizeof(void*) );
 			pNewFunTable->m_pFun[nFunCount] = NULL;
+			pFunTableHead->m_pScript = this;
 			pFunTableHead->m_pOldFunTable = pOldFunTable;
 			pFunTableHead->m_pClassInfo = pClassInfo;
 			pClassInfo->InitVirtualTable( pNewFunTable );
@@ -195,6 +194,7 @@ namespace Gamma
 			m_mapVirtualTableOld2New.insert( make_pair( pOldFunTable, pNewFunTable ) );
 			memcpy( pNewFunTable->m_pFun, pOldFunTable->m_pFun, nFunCount*sizeof(void*) );
 			pNewFunTable->m_pFun[nFunCount] = NULL;
+			pFunTableHead->m_pScript = this;
 			pFunTableHead->m_pOldFunTable = pOldFunTable;
 			pFunTableHead->m_pClassInfo = pClassInfo;
 			pClassInfo->InitVirtualTable( pNewFunTable );
@@ -206,33 +206,6 @@ namespace Gamma
 		}
 
         return it->second;
-	}
-
-    CClassRegistInfo* CScriptBase::GetRegistInfo( const char* szClassName )
-    {
-		gammacstring strKey( szClassName, true );
-		CClassName* pClassName = m_mapRegistClassInfo.Find( strKey );
-		return pClassName ? static_cast<CClassRegistInfo*>( pClassName ) : NULL;
-    }
-
-    CClassRegistInfo* CScriptBase::GetRegistInfoByTypeInfoName( const char* szTypeInfoName )
-	{
-		gammacstring strKey( szTypeInfoName, true );
-		CTypeIDName* pTypeIDName = m_mapTypeID2ClassInfo.Find( strKey );
-		return pTypeIDName ? static_cast<CClassRegistInfo*>( pTypeIDName ) : NULL;
-	}
-
-	CCallBase* CScriptBase::GetGlobalCallBase( const STypeInfoArray& aryTypeInfo  )
-	{
-		CClassName* pClassName = m_mapRegistClassInfo.Find( gammacstring() );
-		CClassRegistInfo* pInfo = static_cast<CClassRegistInfo*>( pClassName );
-		string szFunName;
-		for( uint32 i = 0; i < aryTypeInfo.nSize; i++ )
-			szFunName.append( (const char*)&aryTypeInfo.aryInfo[i], sizeof(STypeInfo) );
-		CCallBase* pCallBase = pInfo->GetCallBase( szFunName );
-		if( pCallBase == NULL )
-			return new CCallBase( *this, aryTypeInfo, eCT_TempFunction, "", szFunName );
-		return pCallBase;
 	}
 
     void CScriptBase::AddSearchPath( const char* szPath )

@@ -561,9 +561,13 @@ namespace Gamma
 		if (!pObject)
 		{
 			pObject = new tbyte[pInfo->GetClassSize()];
-			pInfo->Create(pObject);
+			pInfo->Create( pObject );
+			CheckUnlinkCppObj();
 			if( pSrc )
-				pInfo->Assign(pObject, pSrc);
+			{
+				pInfo->Assign( pObject, pSrc );
+				CheckUnlinkCppObj();
+			}
 			ObjectInfo.m_bRecycle = true;
 		}
 
@@ -617,7 +621,8 @@ namespace Gamma
 		pInfo->RecoverVirtualTable(pObject);
 		if (!bRecycle)
 			return;
-		pInfo->Release(pObject);
+		pInfo->Release( pObject );
+		CheckUnlinkCppObj();
 		delete[](tbyte*)pObject;
 	}
 	
