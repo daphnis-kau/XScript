@@ -419,8 +419,12 @@ public:
 
 
 #define REGIST_PUREVIRTUALFUNCTION( _function ) \
-	_function##_Base_Class; struct _function##_Impl_Class : public _function##_Base_Class \
+	_function##_Base_Class; \
+	auto _function##_Type = &org_class::_function;\
+	typedef decltype( GetFunTypeExplain( _function##_Type ) ) _function##_TypeExplain;\
+	struct _function##_Impl_Class : public _function##_Base_Class \
 	{	\
+		typedef _function##_TypeExplain E;\
 		DEFINE_PUREVIRTUAL_IMPLEMENT( _function, _function##_Base_Class );\
 		struct __class : public org_class { \
 		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, true, &__class::_function ); }\
@@ -438,8 +442,12 @@ public:
 
 
 #define REGIST_PUREVIRTUALFUNCTION_WITHNAME( _function, _function_name ) \
-	_function##_Base_Class; struct _function_name##_Impl_Class : public _function##_Base_Class \
+	_function##_Base_Class; \
+	auto _function_name##_Type = &org_class::_function;\
+	typedef decltype( GetFunTypeExplain( _function##_Type ) ) _function_name##_TypeExplain;\
+	struct _function_name##_Impl_Class : public _function##_Base_Class \
 	{	\
+		typedef _function_name##_TypeExplain E;\
 		DEFINE_PUREVIRTUAL_IMPLEMENT( _function, _function##_Base_Class );\
 		struct __class : public org_class { typedef _function##_Impl_Class T; \
 		static void* GetVirtualTable( SGetVTable* p ){ return ((SVirtualObj*)(T*)( p ))->m_pTable; }\
@@ -458,7 +466,10 @@ public:
 
 
 #define REGIST_PUREVIRTUALFUNCTION_OVERLOAD( _function, _fun_type, _fun_name_cpp, _fun_name_lua ) \
-	_function##_Base_Class; struct _fun_name_lua##_Impl_Class : public _function##_Base_Class \
+	_function##_Base_Class; \
+	auto _function_name##_Type = &org_class::_function;\
+	typedef decltype( GetFunTypeExplain( _function##_Type ) ) _function_name##_TypeExplain;\
+	struct _fun_name_lua##_Impl_Class : public _function##_Base_Class \
 	{	\
 		DEFINE_PUREVIRTUAL_IMPLEMENT( _function, _function##_Base_Class );\
 		struct __class : public org_class { typedef _function##_Impl_Class T; \

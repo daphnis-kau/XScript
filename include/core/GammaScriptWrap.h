@@ -90,7 +90,7 @@ namespace Gamma
 #	define CHECK_STD_CALL( n )
 //#endif
 
-	template< ECallType eType, class ClassType, class RetType, typename... Param >
+	template< ECallType eType, typename ClassType, typename RetType, typename... Param >
 	class TFunctionWrap : public IFunctionWrap
 	{
 		#ifdef _WIN32
@@ -320,7 +320,7 @@ namespace Gamma
 	//=======================================================================
 	// 析构函数调用包装
 	//=======================================================================
-	template< class ClassType >
+	template< typename ClassType >
 	class TDestructorWrap : public IFunctionWrap
 	{
 		uint32 m_nIndex;
@@ -335,7 +335,7 @@ namespace Gamma
 		}
 	};
 
-	template< class ClassType >
+	template< typename ClassType >
 	inline IFunctionWrap* CreateDestructorWrap( uint32 nIndex )
 	{
 		return new TDestructorWrap<ClassType>( nIndex );
@@ -344,7 +344,7 @@ namespace Gamma
 	//=======================================================================
 	// 析构函数调用包装绑定
 	//=======================================================================
-	template<class ClassType>
+	template<typename ClassType>
 	static inline void BindDestructorWrap( ICallBackWrap& CallBackWrap )
 	{
 		static int32 s_nIndex = -1;
@@ -364,7 +364,7 @@ namespace Gamma
 	//=======================================================================
 	// 成员读取包装
 	//=======================================================================
-	template< class ClassType, class MemberType >
+	template< typename ClassType, typename MemberType >
 	class TMemberGetWrap : public IFunctionWrap
 	{
 		ptrdiff_t m_nOffset;
@@ -378,7 +378,7 @@ namespace Gamma
 		}
 	};
 
-	template< class ClassType, class MemberType >
+	template< typename ClassType, typename MemberType >
 	class TMemberGetWrapObject : public IFunctionWrap
 	{
 		ptrdiff_t m_nOffset;
@@ -392,7 +392,7 @@ namespace Gamma
 		}
 	};
 
-	template< class ClassType, class MemberType >
+	template< typename ClassType, typename MemberType >
 	inline IFunctionWrap* CreateMemberGetWrap( ClassType* pClass, MemberType* pMember )
 	{
 		STypeInfo TypeInfo;
@@ -411,7 +411,7 @@ namespace Gamma
 	//=======================================================================
 	// 成员写入包装
 	//=======================================================================
-	template< class ClassType, class MemberType >
+	template< typename ClassType, typename MemberType >
 	class TMemberSetWrap : public IFunctionWrap
 	{
 		uint32 m_nOffset;
@@ -452,11 +452,11 @@ namespace Gamma
 	//=======================================================================
 	// 纯虚类支持包装
 	//=======================================================================
-	template<class _RetType, 
-	class _P0 = int, class _P1 = int, class _P2 = int, class _P3 = int, class _P4 = int, 
-	class _P5 = int, class _P6 = int, class _P7 = int, class _P8 = int, class _P9 = int, 
-	class _P10 = int, class _P11 = int, class _P12 = int, class _P13 = int, class _P14 = int, 
-	class _P15 = int, class _P16 = int, class _P17 = int, class _P18 = int, class _P19 = int >
+	template<class _RetType,
+		class _P0 = int, class _P1 = int, class _P2 = int, class _P3 = int, class _P4 = int,
+		class _P5 = int, class _P6 = int, class _P7 = int, class _P8 = int, class _P9 = int,
+		class _P10 = int, class _P11 = int, class _P12 = int, class _P13 = int, class _P14 = int,
+		class _P15 = int, class _P16 = int, class _P17 = int, class _P18 = int, class _P19 = int >
 	class TFunTypeExplain
 	{
 	public:
@@ -483,61 +483,53 @@ namespace Gamma
 		typedef _P19		P19;
 	};
 
-	template<class RetType>	inline RetType	GetDefaultValue( RetType* p ) { return *p; }
-	template<>				inline void		GetDefaultValue( void* ) {}
-
 	template<typename ClassType, typename RetType, typename... Param>
 	TFunTypeExplain<RetType, Param...> GetFunTypeExplain( RetType ( ClassType::*pFun )( Param... ) );
 	
 	#define MAKE_EXPLAIN_PARAM_0
-	#define MAKE_EXPLAIN_PARAM_1 							D::E::P0
-	#define MAKE_EXPLAIN_PARAM_2  	MAKE_EXPLAIN_PARAM_1, 	D::E::P1
-	#define MAKE_EXPLAIN_PARAM_3  	MAKE_EXPLAIN_PARAM_2, 	D::E::P2
-	#define MAKE_EXPLAIN_PARAM_4  	MAKE_EXPLAIN_PARAM_3, 	D::E::P3
-	#define MAKE_EXPLAIN_PARAM_5  	MAKE_EXPLAIN_PARAM_4, 	D::E::P4
-	#define MAKE_EXPLAIN_PARAM_6  	MAKE_EXPLAIN_PARAM_5, 	D::E::P5
-	#define MAKE_EXPLAIN_PARAM_7  	MAKE_EXPLAIN_PARAM_6, 	D::E::P6
-	#define MAKE_EXPLAIN_PARAM_8  	MAKE_EXPLAIN_PARAM_7, 	D::E::P7
-	#define MAKE_EXPLAIN_PARAM_9  	MAKE_EXPLAIN_PARAM_8, 	D::E::P8
-	#define MAKE_EXPLAIN_PARAM_10 	MAKE_EXPLAIN_PARAM_9, 	D::E::P9
-	#define MAKE_EXPLAIN_PARAM_11 	MAKE_EXPLAIN_PARAM_10,	D::E::P10
-	#define MAKE_EXPLAIN_PARAM_12 	MAKE_EXPLAIN_PARAM_11,	D::E::P11
-	#define MAKE_EXPLAIN_PARAM_13 	MAKE_EXPLAIN_PARAM_12,	D::E::P12
-	#define MAKE_EXPLAIN_PARAM_14 	MAKE_EXPLAIN_PARAM_13,	D::E::P13
-	#define MAKE_EXPLAIN_PARAM_15 	MAKE_EXPLAIN_PARAM_14,	D::E::P14
-	#define MAKE_EXPLAIN_PARAM_16 	MAKE_EXPLAIN_PARAM_15,	D::E::P15
-	#define MAKE_EXPLAIN_PARAM_17 	MAKE_EXPLAIN_PARAM_16,	D::E::P16
-	#define MAKE_EXPLAIN_PARAM_18 	MAKE_EXPLAIN_PARAM_17,	D::E::P17
-	#define MAKE_EXPLAIN_PARAM_19 	MAKE_EXPLAIN_PARAM_18,	D::E::P18
-	#define MAKE_EXPLAIN_PARAM_20 	MAKE_EXPLAIN_PARAM_19,	D::E::P19
+	#define MAKE_EXPLAIN_PARAM_1 							E::P0
+	#define MAKE_EXPLAIN_PARAM_2  	MAKE_EXPLAIN_PARAM_1, 	E::P1
+	#define MAKE_EXPLAIN_PARAM_3  	MAKE_EXPLAIN_PARAM_2, 	E::P2
+	#define MAKE_EXPLAIN_PARAM_4  	MAKE_EXPLAIN_PARAM_3, 	E::P3
+	#define MAKE_EXPLAIN_PARAM_5  	MAKE_EXPLAIN_PARAM_4, 	E::P4
+	#define MAKE_EXPLAIN_PARAM_6  	MAKE_EXPLAIN_PARAM_5, 	E::P5
+	#define MAKE_EXPLAIN_PARAM_7  	MAKE_EXPLAIN_PARAM_6, 	E::P6
+	#define MAKE_EXPLAIN_PARAM_8  	MAKE_EXPLAIN_PARAM_7, 	E::P7
+	#define MAKE_EXPLAIN_PARAM_9  	MAKE_EXPLAIN_PARAM_8, 	E::P8
+	#define MAKE_EXPLAIN_PARAM_10 	MAKE_EXPLAIN_PARAM_9, 	E::P9
+	#define MAKE_EXPLAIN_PARAM_11 	MAKE_EXPLAIN_PARAM_10,	E::P10
+	#define MAKE_EXPLAIN_PARAM_12 	MAKE_EXPLAIN_PARAM_11,	E::P11
+	#define MAKE_EXPLAIN_PARAM_13 	MAKE_EXPLAIN_PARAM_12,	E::P12
+	#define MAKE_EXPLAIN_PARAM_14 	MAKE_EXPLAIN_PARAM_13,	E::P13
+	#define MAKE_EXPLAIN_PARAM_15 	MAKE_EXPLAIN_PARAM_14,	E::P14
+	#define MAKE_EXPLAIN_PARAM_16 	MAKE_EXPLAIN_PARAM_15,	E::P15
+	#define MAKE_EXPLAIN_PARAM_17 	MAKE_EXPLAIN_PARAM_16,	E::P16
+	#define MAKE_EXPLAIN_PARAM_18 	MAKE_EXPLAIN_PARAM_17,	E::P17
+	#define MAKE_EXPLAIN_PARAM_19 	MAKE_EXPLAIN_PARAM_18,	E::P18
+	#define MAKE_EXPLAIN_PARAM_20 	MAKE_EXPLAIN_PARAM_19,	E::P19
 	#define EXPLAIN_PARAM( n )		MAKE_EXPLAIN_PARAM_##n
 	
-#ifdef _WIN32
-	#define EXPLAIN_PARAM_ORGCLASS org_class
-#else
-	#define EXPLAIN_PARAM_ORGCLASS D
-#endif
+
 	#define DEFINE_PUREVIRTUAL_IMPLEMENT( _fun, _base_class )\
-	struct D : public org_class { typedef decltype( GetFunTypeExplain( &EXPLAIN_PARAM_ORGCLASS::_fun ) ) E; };\
-	D::E::RetType _fun( EXPLAIN_PARAM( 0  ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 1  ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 2  ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 3  ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 4  ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 5  ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 6  ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 7  ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 8  ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 9  ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 10 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 11 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 12 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 13 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 14 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 15 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 16 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 17 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 18 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 19 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }\
-	D::E::RetType _fun( EXPLAIN_PARAM( 20 ) ) { return GetDefaultValue( (D::E::RetType*)0 ); }
+	E::RetType _fun( EXPLAIN_PARAM( 0  ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 1  ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 2  ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 3  ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 4  ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 5  ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 6  ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 7  ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 8  ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 9  ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 10 ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 11 ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 12 ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 13 ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 14 ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 15 ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 16 ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 17 ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 18 ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 19 ) ) { throw; }\
+	E::RetType _fun( EXPLAIN_PARAM( 20 ) ) { throw; }
 }
