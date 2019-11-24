@@ -147,52 +147,52 @@ namespace Gamma
     };
 
     template<> inline TLuaValue<int64>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_int64, nSize ) { m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_int64, nSize ) {}
 
 	template<> inline TLuaValue<long>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_long, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_long, nSize )	{}
 
 	template<> inline TLuaValue<int32>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_int32, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_int32, nSize )	{}
 
 	template<> inline TLuaValue<int16>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_int16, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_int16, nSize )	{}
 
 	template<> inline TLuaValue<int8>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_int8, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_int8, nSize )	{}
 
     template<> inline TLuaValue<uint64>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_uint64, nSize ) { m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_uint64, nSize ) {}
 
 	template<> inline TLuaValue<ulong>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_ulong, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_ulong, nSize )	{}
 
 	template<> inline TLuaValue<uint32>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_uint32, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_uint32, nSize )	{}
 
 	template<> inline TLuaValue<uint16>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_uint16, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_uint16, nSize )	{}
 
 	template<> inline TLuaValue<uint8>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_uint8, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_uint8, nSize )	{}
 
     template<> inline TLuaValue<float>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_float, nSize ) { m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_float, nSize ) {}
 
 	template<> inline TLuaValue<double>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_double, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_double, nSize )	{}
 
 	template<> inline TLuaValue<bool>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_bool, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_bool, nSize )	{}
 
 	template<> inline TLuaValue<void*>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_void, nSize )	{ m_nFlag = 0; }
+	: CLuaTypeBase( eDT_void, nSize )	{}
 
 	template<> inline TLuaValue<const char*>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_const_char_str, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_const_char_str, nSize )	{}
 
 	template<> inline TLuaValue<const wchar_t*>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_const_wchar_t_str, nSize )	{ m_nFlag = eFPT_Value; }
+	: CLuaTypeBase( eDT_const_wchar_t_str, nSize )	{}
 
     //特化部分函数
     template<> inline void TLuaValue<uint32>::PushToVM( lua_State* pL, char* pDataBuf )

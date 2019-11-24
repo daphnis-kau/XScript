@@ -30,9 +30,9 @@ namespace Gamma
 		eDT_bool				= 13,
 		eDT_float				= 14,
 		eDT_double				= 15,
-		eDT_class				= 16,
-		eDT_const_char_str		= 17,
-		eDT_const_wchar_t_str	= 18
+		eDT_const_char_str		= 16,
+		eDT_const_wchar_t_str	= 17,
+		eDT_class				= 18,
 	};    
 
 	enum EDataTypeEx

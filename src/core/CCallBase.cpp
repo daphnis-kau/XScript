@@ -30,8 +30,6 @@ namespace Gamma
 			if( i == aryTypeInfo.nSize - 1 )
 			{
 				m_pResult = pType;
-				if( m_pResult )
-					m_pResult->SetFlag( m_pResult->GetFlag()|eFPT_Return );
 			}
 			else if( m_nFunIndex >= eCT_ClassFunction && i == 0 )
 			{

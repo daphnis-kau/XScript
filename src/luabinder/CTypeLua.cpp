@@ -41,7 +41,6 @@ namespace Gamma
 		, m_pClassInfo( pClassInfo )
     { 
 		m_nType = eDT_class;
-		m_nFlag = 0;
     }
 
     void CLuaObject::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
@@ -124,10 +123,11 @@ namespace Gamma
 		lua_getglobal( pL, m_pClassInfo->GetClassName().c_str() );
 		if( lua_isnil( pL, -1 ) )
 		{
-			luaL_error( pL, "PushToVM Class Not Registed:%s", m_pClassInfo->GetClassName().c_str() );//szClass必须被注册
+			//szClass必须被注册
+			luaL_error( pL, "PushToVM Class Not Registed:%s", m_pClassInfo->GetClassName().c_str() );
 			return;
-			
 		}
+
 		lua_setmetatable( pL, -2 );
 
 		// 绑定ObjectIndex
@@ -145,7 +145,6 @@ namespace Gamma
     CLuaValueObject::CLuaValueObject( CClassRegistInfo* pClassInfo )
         : CLuaObject( pClassInfo, pClassInfo->GetClassSize() )
 	{
-		m_nFlag = eFPT_Value; 
 	}
 
 	void CLuaValueObject::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
@@ -157,12 +156,6 @@ namespace Gamma
 
 	void CLuaValueObject::PushToVM( lua_State* pL, char* pDataBuf )
 	{
-		if( !IsReturn() )
-		{
-			void* pObject = pDataBuf;
-			return CLuaObject::PushToVM( pL, (char*)&pObject );
-		}
-
 		// Table 在Lua栈顶
 		lua_newtable( pL );// Obj
 		int32 nStkId = AbsStackIdx( pL, -1 );

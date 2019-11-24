@@ -55,52 +55,52 @@ namespace Gamma
 	};
 
     template<> inline TJSValue<int64>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_int64, nSize ) { m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_int64, nSize ) {}
 
 	template<> inline TJSValue<long>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_long, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_long, nSize )	{}
 
 	template<> inline TJSValue<int32>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_int32, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_int32, nSize )	{}
 
 	template<> inline TJSValue<int16>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_int16, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_int16, nSize )	{}
 
 	template<> inline TJSValue<int8>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_int8, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_int8, nSize )	{}
 
     template<> inline TJSValue<uint64>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_uint64, nSize ) { m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_uint64, nSize ) {}
 
 	template<> inline TJSValue<ulong>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_ulong, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_ulong, nSize )	{}
 
 	template<> inline TJSValue<uint32>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_uint32, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_uint32, nSize )	{}
 
 	template<> inline TJSValue<uint16>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_uint16, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_uint16, nSize )	{}
 
 	template<> inline TJSValue<uint8>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_uint8, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_uint8, nSize )	{}
 
     template<> inline TJSValue<float>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_float, nSize ) { m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_float, nSize ) {}
 
 	template<> inline TJSValue<double>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_double, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_double, nSize )	{}
 
 	template<> inline TJSValue<bool>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_bool, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_bool, nSize )	{}
 
 	template<> inline TJSValue<void*>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_void, nSize )	{ m_nFlag = 0; }
+	: CJSTypeBase( eDT_void, nSize )	{}
 
 	template<> inline TJSValue<const char*>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_const_char_str, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_const_char_str, nSize )	{}
 
 	template<> inline TJSValue<const wchar_t*>::TJSValue( uint32 nSize ) 
-	: CJSTypeBase( eDT_const_wchar_t_str, nSize )	{ m_nFlag = eFPT_Value; }
+	: CJSTypeBase( eDT_const_wchar_t_str, nSize )	{}
 
 	//特化部分函数
 	template<> inline void TJSValue<double>::FromVMValue(CScriptJS& Script, char* pDataBuf, LocalValue obj)

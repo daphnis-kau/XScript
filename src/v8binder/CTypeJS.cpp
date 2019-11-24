@@ -16,7 +16,6 @@ namespace Gamma
 		, m_pClassInfo(pClassInfo)
 	{
 		m_nType = eDT_class;
-		m_nFlag = 0;
 	}
 
 	inline CClassRegistInfo* CJSObject::_FromVMValue(
@@ -118,7 +117,6 @@ namespace Gamma
 	CJSValueObject::CJSValueObject(CClassRegistInfo* pClassInfo, uint32 nSize /*= 0*/)
 		: CJSObject(pClassInfo, nSize ? nSize : (uint32)pClassInfo->GetClassSize())
 	{
-		m_nFlag = eFPT_Value;
 	}
 
 	void CJSValueObject::FromVMValue(CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj)
