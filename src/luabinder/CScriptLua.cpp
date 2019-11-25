@@ -395,7 +395,18 @@ namespace Gamma
         CScriptLua* pScriptLua = (CScriptLua*)lua_touserdata( pL, -1 );
         lua_pop( pL, 1 );
         return pScriptLua;
-    }
+	}
+
+	bool CScriptLua::CallVM( CCallScriptBase* pCallBase, 
+		SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
+	{
+		return CCallBackLua::CallVM( this, pCallBase, pObject, pRetBuf, pArgArray );
+	}
+
+	void CScriptLua::DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject )
+	{
+		return CCallBackLua::DestrucVM( this, pCallBase, pObject );
+	}
 
     //-------------------------------------------------------------------------------
     // 通用函数
@@ -471,7 +482,7 @@ namespace Gamma
 		}
 	}
 
-    void CScriptLua::RegisterObject( lua_State* L, CClassRegistInfo* pInfo, void* pObj, bool bGC )
+	void CScriptLua::RegisterObject( lua_State* L, CClassRegistInfo* pInfo, void* pObj, bool bGC )
     {                                        
 		//In C++, stack top = 1, 返回Obj, 留在堆栈里
 		if( pInfo->IsCallBack() )

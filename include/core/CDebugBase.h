@@ -80,8 +80,8 @@ namespace Gamma
 		HTHREAD				m_hThread;
 		HSEMAPHORE			m_hSemaphore;
 		HLOCK				m_hCmdLock;
-		int32				m_nRemoteListener;
-		int32				m_nRemoteConnecter;
+		intptr_t			m_nRemoteListener;
+		intptr_t			m_nRemoteConnecter;
 		CDebugCmdList		m_listDebugCmd;
 
 		char*				m_pBuf;

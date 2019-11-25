@@ -29,6 +29,7 @@ namespace Gamma
 
     class CScriptBase : public TList<CScriptBase>::CListNode
 	{
+		friend class CCallScriptBase;
 	protected:
 		CDebugBase*				m_pDebugger;
 		CCircelBuffer			m_UnlinkObjectBuffer;
@@ -36,15 +37,18 @@ namespace Gamma
 		CNewFunctionTableMap	m_mapNewVirtualTable;
         list<string>			m_listSearchPath;
 
+		virtual bool			CallVM( CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray ) = 0;
+		virtual void			DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject ) = 0;
     public:
         CScriptBase(void);
 		virtual ~CScriptBase( void );
-		friend void UnlinkCppObj( void* );
 
 		CDebugBase*				GetDebugger() const { return m_pDebugger; }
 
         virtual CTypeBase*		MakeParamType( const STypeInfo& argTypeInfo ) = 0;
 		static bool				IsAllocVirtualTable( void* pVirtualTable );
+		static void				UnlinkCppObj( void* pObj );
+		static int32			CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray );
 								
 		void					CheckUnlinkCppObj();
 		bool					IsVirtualTableValid( SVirtualObj* pVObj );

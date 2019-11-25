@@ -9,27 +9,15 @@
 //=====================================================================
 
 #include "core/GammaScriptDef.h"
-#include <map>
+#include <vector>
 
 namespace Gamma
 {
-	class CClassRegistInfo;
+	typedef ptrdiff_t DataType;
 
-	///  CTypeBase定义数据类型的设置和获取方式，该类不能单独实现，为实现类的根类
-    class CTypeBase
-    {    
-    public:
-		EDataType	GetType()	{ return m_nType; }
-		uint32		GetLen()	{ return m_nSize; };
-
-        CTypeBase( EDataType eType, uint32 nSize ) 
-			: m_nType( eType ), m_nSize( nSize ){}
-        virtual ~CTypeBase(){}
-
-	protected:
-		EDataType		m_nType;
-		uint32			m_nSize;
-	};
+	DataType ToDataType( const STypeInfo& argTypeInfo );
+	size_t	 GetSizeOfType( DataType nType );
+	size_t	 CalBufferSize( const std::vector<DataType>& aryParam, size_t arySize[] );
 }
 
 #endif

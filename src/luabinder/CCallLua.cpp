@@ -28,7 +28,7 @@ namespace Gamma
     // Lua脚本调用C++的接口
     //=====================================================================
     void CByScriptLua::GetParam( lua_State* pL, int32 nStartIndex, 
-		const list<CTypeBase*>& listParam, char* pDataBuf, void** pArgArray )
+		const vector<DataType>& listParam, char* pDataBuf, void** pArgArray )
     {
         int32 nStkId = nStartIndex;
 		int32 nArgIndex = 0;
@@ -118,7 +118,16 @@ namespace Gamma
     //=====================================================================
     // C++调用Lua脚本的接口
 	//=====================================================================
-    bool CCallBackLua::CallVM( SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
+	void CCallBackLua::PushParam2VM( CScriptLua* pScript,
+		const vector<DataType>& listParam, lua_State* pL, void** pArgArray )
+	{
+		uint32 i = 0;
+		for( list<CTypeBase*>::iterator it = m_listParam.begin(); it != m_listParam.end(); ++it )
+			static_cast<CLuaTypeBase*>( *it )->PushToVM( (lua_State*)pVM, (char*)pArgArray[i++] );
+	}
+
+	bool CCallBackLua::CallVM( CScriptLua* pScript,	CCallScriptBase* pCallBase,
+		SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
 	{	
 		CScriptLua* pScriptLua = static_cast<CScriptLua*>( m_pScript );
 		lua_State* pL = pScriptLua->GetLuaState();
@@ -168,10 +177,9 @@ namespace Gamma
 		return true;
     }
 
-    void CCallBackLua::PushParam2VM( void* pVM, void** pArgArray )
-    {
-		uint32 i = 0;
-        for( list<CTypeBase*>::iterator it = m_listParam.begin(); it != m_listParam.end(); ++it )
-            static_cast<CLuaTypeBase*>(*it)->PushToVM( (lua_State*)pVM, (char*)pArgArray[i++] );
-	}   
+	void CCallBackLua::DestrucVM( CScriptLua* pScript,
+		CCallScriptBase* pCallBase, SVirtualObj* pObject )
+	{
+
+	}
 };

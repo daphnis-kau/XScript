@@ -219,7 +219,7 @@ namespace Gamma
 		return (int32)strlen( szBuffer );
 	}
 
-	void UnlinkCppObj( void* pObj )
+	void CScriptBase::UnlinkCppObj( void* pObj )
 	{
 		s_ScriptListLock.Lock();
 		CScriptBase* pScript = s_listAllScript.GetFirst();
@@ -231,7 +231,7 @@ namespace Gamma
 		s_ScriptListLock.Unlock();
 	}
 
-	int32 CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray )
+	int32 CScriptBase::CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray )
 	{
 		SVirtualObj* pVirtualObj = (SVirtualObj*)pObject;
 		assert( CScriptBase::IsAllocVirtualTable( pVirtualObj->m_pTable ) );
@@ -239,10 +239,29 @@ namespace Gamma
 		assert( pFunTableHead->m_pClassInfo && pFunTableHead->m_pOldFunTable );
 		const vector<CCallScriptBase*>& listFun = pFunTableHead->m_pClassInfo->GetNewFunctionList();
 		CCallScriptBase* pCallScript = listFun[nIndex];
-		pFunTableHead->m_pScript->CheckUnlinkCppObj();
+		CScriptBase* pScriptBase = pFunTableHead->m_pScript;
+		pScriptBase->CheckUnlinkCppObj();
 		auto& strFunctionName = pCallScript->GetFunctionName();
-		if (strFunctionName.empty())
-			return pCallScript->Destruc(pVirtualObj, pArgArray[0]);
-		return pCallScript->CallBack(pVirtualObj, pRetBuf, pArgArray, *pFunTableHead->m_pScript);
+		try
+		{
+			if( strFunctionName.empty() )
+			{
+				pScriptBase->DestrucVM( pCallScript, pVirtualObj );
+				return pCallScript->Destruc( pVirtualObj, pArgArray[0], *pFunTableHead->m_pScript );
+			}
+			else
+			{
+				if( pScriptBase->CallVM( pCallScript, pVirtualObj, pRetBuf, pArgArray ) )
+					return 1;
+				return pCallScript->CallOrg( pVirtualObj, pRetBuf, pArgArray, *pFunTableHead->m_pScript );
+			}
+		}
+		catch( ... )
+		{
+			const char* szClass = pFunTableHead->m_pClassInfo->GetClassName().c_str();
+			std::cout << "Unknown Error while call VM with " 
+				<< strFunctionName.c_str() << "in " << szClass << endl;
+		}
+		return 0;
 	}
 }

@@ -25,25 +25,24 @@ namespace Gamma
 	class CScriptBase;
 	class CCallScriptBase;
 	class CClassRegistInfo;
-
-    struct SBaseInfo
-    {
-        CClassRegistInfo*		m_pBaseInfo;        // 包含的基类
-        int32					m_nBaseOff;         // 包含的基类相对于子类的偏移
-	};
-
 	typedef TRBTree<CCallBase> CCallBaseMap;
 	typedef TRBTree<CClassRegistInfo> CTypeIDNameMap;
 
     class CClassRegistInfo : public CTypeIDNameMap::CRBTreeNode
-    {
-		gammacstring					m_szClassName;			// 类的名字
-		gammacstring					m_szTypeIDName;			// 编译器生成的类型信息
-		gammacstring					m_strObjectIndex;		// 对象指针域
+	{
+		struct SBaseInfo
+		{
+			CClassRegistInfo*			m_pBaseInfo;        // 包含的基类
+			int32						m_nBaseOff;         // 包含的基类相对于子类的偏移
+		};
 
-        vector<CCallScriptBase*>		m_vecNewFunction;		// 需要注册的函数对应的索引以及对应的引导函数
-		vector<SBaseInfo>				m_vecBaseRegist;        // 包含的基类信息
-		vector<SBaseInfo>				m_vecChildRegist;       // 包含的子类信息
+		gammacstring					m_szClassName;		// 类的名字
+		gammacstring					m_szTypeIDName;		// 编译器生成的类型信息
+		gammacstring					m_strObjectIndex;	// 对象指针域
+
+		vector<CCallScriptBase*>		m_vecNewFunction;	// 需要注册的函数对应的索引以及对应的引导函数
+		vector<SBaseInfo>				m_vecBaseRegist;    // 包含的基类信息
+		vector<SBaseInfo>				m_vecChildRegist;   // 包含的子类信息
         IObjectConstruct*				m_pObjectConstruct;
         uint32							m_nSizeOfClass;
 		bool							m_bIsEnum;

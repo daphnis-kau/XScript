@@ -106,12 +106,12 @@ namespace Gamma
     //=====================================================================
     /// lua对C++数据的操作方法，调用Lua库实现对数据在lua中的操作
     //=====================================================================
-    class CLuaTypeBase : public CTypeBase
+    class CLuaTypeBase
 	{
 	public:
-		CLuaTypeBase( EDataType eType, uint32 nSize ) : CTypeBase( eType, nSize ){}
-        virtual void    GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit ) = 0;        //不 pop 出堆栈
-        virtual void    PushToVM( lua_State* pL, char* pDataBuf )= 0;
+		CLuaTypeBase(){}
+        virtual void    GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit ) = 0;        //不 pop 出堆栈
+        virtual void    PushToVM( DataType eType, lua_State* pL, char* pDataBuf )= 0;
     };
 
     //=====================================================================
@@ -121,13 +121,7 @@ namespace Gamma
     class TLuaValue : public CLuaTypeBase
     {
     public:
-		TLuaValue( uint32 nSize = sizeof(T) )    
-			: CLuaTypeBase( eDT_class, nSize )
-		{
-			m_nFlag = eFPT_Value;
-		}
-
-        void GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+        void GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
 		{ 
 			if( bExtend32Bit && sizeof(T) < sizeof(uint32) )
 			{
@@ -140,98 +134,50 @@ namespace Gamma
 			}
 		};
 
-        void PushToVM( lua_State* pL, char* pDataBuf )              
+        void PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
 		{ 
 			PushNumToLua( pL, (double)*(T*)( pDataBuf ) ); 
 		}
     };
 
-    template<> inline TLuaValue<int64>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_int64, nSize ) {}
-
-	template<> inline TLuaValue<long>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_long, nSize )	{}
-
-	template<> inline TLuaValue<int32>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_int32, nSize )	{}
-
-	template<> inline TLuaValue<int16>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_int16, nSize )	{}
-
-	template<> inline TLuaValue<int8>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_int8, nSize )	{}
-
-    template<> inline TLuaValue<uint64>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_uint64, nSize ) {}
-
-	template<> inline TLuaValue<ulong>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_ulong, nSize )	{}
-
-	template<> inline TLuaValue<uint32>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_uint32, nSize )	{}
-
-	template<> inline TLuaValue<uint16>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_uint16, nSize )	{}
-
-	template<> inline TLuaValue<uint8>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_uint8, nSize )	{}
-
-    template<> inline TLuaValue<float>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_float, nSize ) {}
-
-	template<> inline TLuaValue<double>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_double, nSize )	{}
-
-	template<> inline TLuaValue<bool>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_bool, nSize )	{}
-
-	template<> inline TLuaValue<void*>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_void, nSize )	{}
-
-	template<> inline TLuaValue<const char*>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_const_char_str, nSize )	{}
-
-	template<> inline TLuaValue<const wchar_t*>::TLuaValue( uint32 nSize ) 
-	: CLuaTypeBase( eDT_const_wchar_t_str, nSize )	{}
-
     //特化部分函数
-    template<> inline void TLuaValue<uint32>::PushToVM( lua_State* pL, char* pDataBuf )
+    template<> inline void TLuaValue<uint32>::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
     { PushNumToLua( pL, (double)( *(uint32*)pDataBuf ) ); }
 
-    template<> inline void TLuaValue<float>::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+    template<> inline void TLuaValue<float>::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
 	{ *(float*)( pDataBuf ) = GetNumFromLua( pL, nStkId ); }
 
-    template<> inline void TLuaValue<float>::PushToVM( lua_State* pL, char* pDataBuf )
+    template<> inline void TLuaValue<float>::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
 	{ PushNumToLua( pL, *(float*)( pDataBuf ) ); }
 
-    template<> inline void TLuaValue<double>::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+    template<> inline void TLuaValue<double>::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
 	{ *(double*)( pDataBuf ) = GetNumFromLua( pL, nStkId ); }
 
-    template<> inline void TLuaValue<double>::PushToVM( lua_State* pL, char* pDataBuf )
+    template<> inline void TLuaValue<double>::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
 	{ PushNumToLua( pL, *(double*)( pDataBuf ) ); }
 
-    template<> inline void TLuaValue<bool>::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+    template<> inline void TLuaValue<bool>::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
 	{ int32 b = GetBoolFromLua( pL, nStkId ); memcpy( pDataBuf, &b, bExtend32Bit ? sizeof(uint32) : sizeof(bool) ); }
 
-    template<> inline void TLuaValue<bool>::PushToVM( lua_State* pL, char* pDataBuf )
+    template<> inline void TLuaValue<bool>::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
 	{ PushBoolToLua( pL, *(bool*)( pDataBuf ) ); }
 
-	template<> inline void TLuaValue<void*>::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+	template<> inline void TLuaValue<void*>::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
 	{ *(void**)( pDataBuf ) = GetLightDataFromLua( pL, nStkId ); }
 
-	template<> inline void TLuaValue<void*>::PushToVM( lua_State* pL, char* pDataBuf )
+	template<> inline void TLuaValue<void*>::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
 	{ PushLightDataToLua( pL, *(void**)( pDataBuf ) ); }
 
-    template<> inline void TLuaValue<const char*>::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+    template<> inline void TLuaValue<const char*>::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
     { *(const char**)( pDataBuf ) = GetStrFromLua( pL, nStkId ); }
 
-    template<> inline void TLuaValue<const char*>::PushToVM( lua_State* pL, char* pDataBuf )
+    template<> inline void TLuaValue<const char*>::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
     { PushStrToLua( pL, *(const char**)( pDataBuf ) ); }
 
-    template<> inline void TLuaValue<const wchar_t*>::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+    template<> inline void TLuaValue<const wchar_t*>::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
     { *(const wchar_t**)( pDataBuf ) = GetWStrFromLua( pL, nStkId ); }
 
-    template<> inline void TLuaValue<const wchar_t*>::PushToVM( lua_State* pL, char* pDataBuf )
+    template<> inline void TLuaValue<const wchar_t*>::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
     { PushWStrToLua( pL, *(const wchar_t**)( pDataBuf ) ); }
 
 
@@ -257,14 +203,10 @@ namespace Gamma
     //=====================================================================
     class CLuaObject : public CLuaPointer
     {
-    protected:
-		CClassRegistInfo*    m_pClassInfo;
     public:
-        CLuaObject( CClassRegistInfo* pClassInfo, uint32 nSize = sizeof(void*) );
-
-        void				GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit );
-        void				PushToVM( lua_State* pL, char* pDataBuf );
-		CClassRegistInfo*	GetClassRegistInfo(){ return m_pClassInfo; }
+        CLuaObject();
+        void				GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit );
+        void				PushToVM( DataType eType, lua_State* pL, char* pDataBuf );
     };
 
     //=====================================================================
@@ -273,9 +215,9 @@ namespace Gamma
     class CLuaValueObject : public CLuaObject
     {
     public:
-		CLuaValueObject( CClassRegistInfo* pClassInfo );
-		void				GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit );
-		void				PushToVM( lua_State* pL, char* pDataBuf );
+		CLuaValueObject();
+		void				GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit );
+		void				PushToVM( DataType eType, lua_State* pL, char* pDataBuf );
     };
 
 	//=====================================================================
@@ -353,8 +295,8 @@ namespace Gamma
 		CLuaBuffer();
 		~CLuaBuffer(){}
 
-		void                PushToVM( lua_State* pL, char* pDataBuf );
-		void                GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit );
+		void                PushToVM( DataType eType, lua_State* pL, char* pDataBuf );
+		void                GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit );
 
 		static void         RegistClass( CScriptLua* pScript );
 	};

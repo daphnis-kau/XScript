@@ -9,7 +9,6 @@
 
 namespace Gamma
 {
-
 	CCallBase::CCallBase(const STypeInfoArray& aryTypeInfo, int32 nFunIndex,
 		const char* szTypeInfoName, gammacstring strFunName )
 		: m_nParamSize( 0 )
@@ -41,44 +40,6 @@ namespace Gamma
 
     CCallBase::~CCallBase(void)
     {
-	}
-
-	DataType CCallBase::ToDataType(const STypeInfo& argTypeInfo)
-	{
-		uint32 n = 5;
-		STypeInfo argInfo = argTypeInfo;
-		while (n && !((argInfo.m_nType >> (n * 4)) & 0xf))
-			n--;
-
-		uint32 nPointCount = 0;
-		for (uint32 i = 0; i <= n; i++)
-			nPointCount += ((argInfo.m_nType >> (i * 4)) & 0xf) >= eDTE_Pointer;
-		uint32 nType = argInfo.m_nType >> 24;
-
-		if (nPointCount == 0)
-		{
-			if (nType != eDT_class)
-				return nType;
-			const char* szTypeName = argTypeInfo.m_szTypeName;
-			auto pClassInfo = CClassRegistInfo::GetRegistInfo(szTypeName);
-			if (!pClassInfo->IsEnum())
-				return (DataType)pClassInfo;
-			if (pClassInfo->GetClassSize() == 4)
-				return eDT_int32;
-			if (pClassInfo->GetClassSize() == 2)
-				return eDT_int16;
-			return eDT_int8;
-		}
-		else
-		{
-			if (nPointCount > 1 || nType != eDT_class)
-				return eDT_class;
-			const char* szTypeName = argTypeInfo.m_szTypeName;
-			auto pClassInfo = CClassRegistInfo::GetRegistInfo(szTypeName);
-			if (!pClassInfo->IsEnum())
-				return ((DataType)pClassInfo) | 1;
-			return eDT_class;
-		}
 	}
 
 	//=====================================================================
@@ -143,42 +104,24 @@ namespace Gamma
 		return m_nFunIndex;
 	}
 
-	int32 CCallScriptBase::CallBack( SVirtualObj* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script)
+	int32 CCallScriptBase::CallOrg( SVirtualObj* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script)
 	{
-		try
-		{
-			if( CallVM( pObject, pRetBuf, pArgArray ) )
-				return 1;
-			if( m_bPureVirtual )
-				return -1;
-			SFunctionTable* pTable = Script.GetOrgVirtualTable( pObject );
-			if( !pTable || !pTable->m_pFun[m_nFunIndex] || pTable->m_pFun[m_nFunIndex] == m_pBootFun )
-				return -1;
-			SFunction funOrg = { (uintptr_t)pTable->m_pFun[m_nFunIndex], NULL };
-			m_funWrap->Call( pObject, pRetBuf, pArgArray, funOrg );
-		}
-		catch ( ... )
-		{
-			std::cout << "Unknown Error while call VM" << endl;
-		}
+		if( m_bPureVirtual )
+			return -1;
+		SFunctionTable* pTable = Script.GetOrgVirtualTable( pObject );
+		if( !pTable || !pTable->m_pFun[m_nFunIndex] || pTable->m_pFun[m_nFunIndex] == m_pBootFun )
+			return -1;
+		SFunction funOrg = { (uintptr_t)pTable->m_pFun[m_nFunIndex], NULL };
+		m_funWrap->Call( pObject, pRetBuf, pArgArray, funOrg );
 		return 0;
 	}
 
-	int32 CCallScriptBase::Destruc( SVirtualObj* pObject, void* pParam )
+	int32 CCallScriptBase::Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script )
 	{
-		try
-		{
-			DestrucVM( pObject );
-			if( !pObject->m_pTable || !pObject->m_pTable->m_pFun[m_nFunIndex] )
-				return 0;
-			SFunction funOrg = { NULL, NULL };
-			m_funWrap->Call( pObject, NULL, NULL, funOrg );
+		if( !pObject->m_pTable || !pObject->m_pTable->m_pFun[m_nFunIndex] )
 			return 0;
-		}
-		catch ( ... )
-		{
-			std::cout << "Unknown Error while call Destruc" << endl;
-		}
+		SFunction funOrg = { NULL, NULL };
+		m_funWrap->Call( pObject, NULL, NULL, funOrg );
 		return 0;
 	}
 

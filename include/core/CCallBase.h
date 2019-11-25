@@ -28,22 +28,23 @@ namespace Gamma
 
 	class CCallBase;
 	class CScriptBase;
-	typedef ptrdiff_t DataType;
 	typedef TRBTree<CCallBase> CCallBaseMap;
 
+	//=====================================================================
+	// 函数调用的基本接口
+	//=====================================================================
     class CCallBase : public CCallBaseMap::CRBTreeNode
 	{
 		const CCallBase& operator= (const CCallBase&);
 	protected:
 		gammacstring			m_sFunName;
 		DataType				m_nThis;
-		vector<DataType>		m_listParam;
 		DataType				m_nResult;
+		vector<DataType>		m_listParam;
 		uint32					m_nParamSize;
 		uint32					m_nParamCount;
 		int32					m_nFunIndex;
 
-		DataType				ToDataType(const STypeInfo& argTypeInfo);
     public:
         CCallBase( const STypeInfoArray& aryTypeInfo, int32 nFunIndex, 
 			const char* szTypeInfoName, gammacstring strFunName );
@@ -109,16 +110,14 @@ namespace Gamma
 		uint32			GetFunIndex()				{ return m_nFunIndex; }
 
 		virtual int32	BindFunction( void* pFun, bool bPureVirtual );
-		int32			Destruc( SVirtualObj* pObject, void* pParam );
-		int32			CallBack( SVirtualObj* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script);
-		virtual void	Call( void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script);
+		virtual void	Call( void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script );
+
+		int32			Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script );
+		int32			CallOrg( SVirtualObj* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script );
 
 	protected:
 		void*			m_pBootFun;
 		bool			m_bPureVirtual;
-
-		virtual bool    CallVM( SVirtualObj* pObject, void* pRetBuf, void** pArgArray ) = 0;
-		virtual void	DestrucVM( SVirtualObj* pObject ) = 0;
 	};
 }
 

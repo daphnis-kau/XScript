@@ -75,6 +75,9 @@ namespace Gamma
         static void             RegistToLua( lua_State* pL, CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
         static void             RemoveFromLua( lua_State* pL, CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
 
+		virtual bool			CallVM( CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray );
+		virtual void			DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject );
+
 		friend class CDebugLua;
 		friend class CLuaBuffer;
 

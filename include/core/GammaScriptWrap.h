@@ -206,17 +206,14 @@ namespace Gamma
 
 	//=======================================================================
 	// 类非常量成员函数回调包装
-	//=======================================================================
-	GAMMA_SCRIPT_API int32 CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray );
-	GAMMA_SCRIPT_API void  UnlinkCppObj( void* pObj );
-
+	//=======================================================================	
 	template< typename T >
 	struct TCallBack
 	{
 		static T OnCall( uint32 nCallBackIndex, void* pObject, void** pArgArray )
 		{
 			T ReturnValue;
-			CallBack( nCallBackIndex, pObject, &ReturnValue, pArgArray );
+			CScriptBase::CallBack( nCallBackIndex, pObject, &ReturnValue, pArgArray );
 			return ReturnValue;
 		}
 	};
@@ -227,7 +224,7 @@ namespace Gamma
 		static T& OnCall( uint32 nCallBackIndex, void* pObject, void** pArgArray )
 		{
 			T* pReturnValue;
-			int32 ret = CallBack( nCallBackIndex, pObject, &pReturnValue, pArgArray );
+			int32 ret = CScriptBase::CallBack( nCallBackIndex, pObject, &pReturnValue, pArgArray );
 			// 纯虚函数回调，但回调没有实现
 			if( ret < 0 )
 				throw "i can do nothing here!!!";
@@ -240,7 +237,7 @@ namespace Gamma
 	{
 		static void OnCall( uint32 nCallBackIndex, void* pObject, void** pArgArray )
 		{
-			CallBack( nCallBackIndex, pObject, NULL, pArgArray );
+			CScriptBase::CallBack( nCallBackIndex, pObject, NULL, pArgArray );
 		}
 	};
 
@@ -250,7 +247,7 @@ namespace Gamma
 		static bool OnCall( uint32 nCallBackIndex, void* pObject, void** pArgArray )
 		{
 			uint32 ReturnValue = 0;
-			CallBack( nCallBackIndex, pObject, &ReturnValue, pArgArray );
+			CScriptBase::CallBack( nCallBackIndex, pObject, &ReturnValue, pArgArray );
 			return ReturnValue != 0;
 		}
 	};

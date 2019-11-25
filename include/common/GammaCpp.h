@@ -33,6 +33,7 @@ namespace Gamma
 		eDT_const_char_str		= 16,
 		eDT_const_wchar_t_str	= 17,
 		eDT_class				= 18,
+		eDT_count				= 19,
 	};    
 
 	enum EDataTypeEx

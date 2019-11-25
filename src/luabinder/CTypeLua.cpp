@@ -36,14 +36,11 @@ namespace Gamma
 		}
 	}
 
-    CLuaObject::CLuaObject( CClassRegistInfo* pClassInfo, uint32 nSize )
-        : CLuaPointer( nSize )
-		, m_pClassInfo( pClassInfo )
+    CLuaObject::CLuaObject()
     { 
-		m_nType = eDT_class;
     }
 
-    void CLuaObject::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+    void CLuaObject::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
     {
         nStkId = AbsStackIdx( pL, nStkId );
 		int32 nType = lua_type( pL, nStkId );
@@ -57,7 +54,8 @@ namespace Gamma
 				return;
 			}
 			
-			lua_getfield( pL, nStkId, m_pClassInfo->GetObjectIndex().c_str() );
+			CClassRegistInfo* pClassInfo = (CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+			lua_getfield( pL, nStkId, pClassInfo->GetObjectIndex().c_str() );
 			if( lua_isnil( pL, -1 ) )
 			{
 				lua_pushstring( pL, s_szLuaBufferInfo );
@@ -81,7 +79,7 @@ namespace Gamma
         }
     }
 
-    void CLuaObject::PushToVM( lua_State* pL, char* pDataBuf )
+    void CLuaObject::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
     {
         void* pObj = *(void**)( pDataBuf );
         if( pObj == NULL )
@@ -101,9 +99,10 @@ namespace Gamma
         lua_pushlightuserdata( pL, pObj );
         lua_gettable( pL, -2 );
 
+		CClassRegistInfo* pClassInfo = (CClassRegistInfo*)( ( eType >> 1 ) << 1 );
         if( !lua_isnil( pL, -1 ) )
-        {
-            const gammacstring& sObjectIndex = m_pClassInfo->GetObjectIndex();
+		{
+            const gammacstring& sObjectIndex = pClassInfo->GetObjectIndex();
             lua_getfield( pL, -1, sObjectIndex.c_str() );
             bool bNil = lua_isnil( pL, -1 );
             lua_pop( pL, 1 );
@@ -120,53 +119,54 @@ namespace Gamma
 
 		// Table 在Lua栈顶
 		lua_newtable( pL );
-		lua_getglobal( pL, m_pClassInfo->GetClassName().c_str() );
+		lua_getglobal( pL, pClassInfo->GetClassName().c_str() );
 		if( lua_isnil( pL, -1 ) )
 		{
 			//szClass必须被注册
-			luaL_error( pL, "PushToVM Class Not Registed:%s", m_pClassInfo->GetClassName().c_str() );
+			luaL_error( pL, "PushToVM Class Not Registed:%s", pClassInfo->GetClassName().c_str() );
 			return;
 		}
 
 		lua_setmetatable( pL, -2 );
 
 		// 绑定ObjectIndex
-		lua_pushstring( pL, m_pClassInfo->GetObjectIndex().c_str() );
+		lua_pushstring( pL, pClassInfo->GetObjectIndex().c_str() );
 		lua_pushlightuserdata( pL, *(void**)( pDataBuf ) );
 		lua_rawset( pL, -3 );
 
-		CScriptLua::RegisterObject( pL, m_pClassInfo, *(void**)( pDataBuf ), false );
+		CScriptLua::RegisterObject( pL, pClassInfo, *(void**)( pDataBuf ), false );
 		ConstructLua( pL );
     }
 
     //=====================================================================
     // lua数据类型之C++对象类型
     //=====================================================================
-    CLuaValueObject::CLuaValueObject( CClassRegistInfo* pClassInfo )
-        : CLuaObject( pClassInfo, pClassInfo->GetClassSize() )
+    CLuaValueObject::CLuaValueObject()
 	{
 	}
 
-	void CLuaValueObject::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+	void CLuaValueObject::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
 	{
 		void* pObject = NULL;
-		CLuaObject::GetFromVM( pL, (char*)&pObject, nStkId, bExtend32Bit );
-		m_pClassInfo->Assign( pDataBuf, pObject );
+		CClassRegistInfo* pClassInfo = (CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+		CLuaObject::GetFromVM( eType, pL, (char*)&pObject, nStkId, bExtend32Bit );
+		pClassInfo->Assign( pDataBuf, pObject );
 		pScriptLua->CheckUnlinkCppObj();
 	}
 
-	void CLuaValueObject::PushToVM( lua_State* pL, char* pDataBuf )
+	void CLuaValueObject::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
 	{
 		// Table 在Lua栈顶
 		lua_newtable( pL );// Obj
 		int32 nStkId = AbsStackIdx( pL, -1 );
-		
-		lua_getglobal( pL, m_pClassInfo->GetClassName().c_str() );
+
+		CClassRegistInfo* pClassInfo = (CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+		lua_getglobal( pL, pClassInfo->GetClassName().c_str() );
 		lua_setmetatable( pL, nStkId );
 
-		CScriptLua::NewLuaObj( pL, m_pClassInfo, pDataBuf );
+		CScriptLua::NewLuaObj( pL, pClassInfo, pDataBuf );
 		ConstructLua( pL );
-		m_pClassInfo->Release( pDataBuf );
+		pClassInfo->Release( pDataBuf );
 		m_pScriptBase->CheckUnlinkCppObj();
 	}
 
@@ -177,7 +177,7 @@ namespace Gamma
     {
     }
 
-    void CLuaBuffer::PushToVM( lua_State* pL, char* pDataBuf )
+    void CLuaBuffer::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
 	{
 		void* pBuffer = *(void**)( pDataBuf );
 		if( pBuffer == NULL )
@@ -244,7 +244,7 @@ namespace Gamma
 		lua_pop( pL, 1 );
     }
 
-    void CLuaBuffer::GetFromVM( lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+    void CLuaBuffer::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
     {
 		nStkId = AbsStackIdx( pL, nStkId );
 		int32 nType = lua_type( pL, nStkId );
