@@ -239,6 +239,10 @@ namespace Gamma
 		assert( pFunTableHead->m_pClassInfo && pFunTableHead->m_pOldFunTable );
 		const vector<CCallScriptBase*>& listFun = pFunTableHead->m_pClassInfo->GetNewFunctionList();
 		CCallScriptBase* pCallScript = listFun[nIndex];
-		return pCallScript->OnCall( pObject, pRetBuf, pArgArray );
+		pFunTableHead->m_pScript->CheckUnlinkCppObj();
+		auto& strFunctionName = pCallScript->GetFunctionName();
+		if (strFunctionName.empty())
+			return pCallScript->Destruc(pVirtualObj, pArgArray[0]);
+		return pCallScript->CallBack(pVirtualObj, pRetBuf, pArgArray, *pFunTableHead->m_pScript);
 	}
 }

@@ -52,7 +52,6 @@ namespace Gamma
 	{
 	public:
 		virtual int32		BindFunction( void* pFun, bool bPureVirtual ) = 0;
-		virtual int32		OnCall( void* pObject, void* pRetBuf, void** pArgArray ) = 0;
 	};
 }
 

@@ -14,11 +14,12 @@ namespace Gamma
 	public:
 		static CGlobalClassRegist& GetInst();
 		CTypeIDNameMap	m_mapTypeID2ClassInfo;
+		map<string, int32>		m_mapSizeOfEnum;
 	};
 
 	CGlobalClassRegist::CGlobalClassRegist()
 	{
-		CClassRegistInfo* pClassInfo = new CClassRegistInfo( "", "", 1, NULL );
+		CClassRegistInfo* pClassInfo = new CClassRegistInfo( "", "", 1 );
 		m_mapTypeID2ClassInfo.Insert( *pClassInfo );
 	}
 
@@ -59,17 +60,14 @@ namespace Gamma
 	//=====================================================================
     // 类型的继承关系
     //=====================================================================
-	CClassRegistInfo::CClassRegistInfo( 
-		const char* szClassName, const char* szTypeIDName,
-		uint32 nSize, MakeTypeFunction funMakeType )
+	CClassRegistInfo::CClassRegistInfo( const char* szClassName, 
+		const char* szTypeIDName, uint32 nSize )
 		: m_szClassName( szClassName )
 		, m_szTypeIDName( szTypeIDName )
         , m_nSizeOfClass( nSize )
         , m_pObjectConstruct( NULL )
-        , m_bIsCallBack(false)
+        , m_bIsEnum(false)
 		, m_nInheritDepth(0)
-		, m_funMakeType( funMakeType )
-		, m_nInstanceCount( 0 )
     {
 		// 类的名字太长会导致CLuaObject::GetFromVM函数里面堆栈越界
 		assert( m_szClassName.size() < 240 );
@@ -132,12 +130,6 @@ namespace Gamma
 		if( !m_pObjectConstruct )
 			return;
 		m_pObjectConstruct->Destruct( pObject );
-	}
-
-	CTypeBase* CClassRegistInfo::MakeType( bool bValue )
-	{
-		assert( m_funMakeType );
-		return m_funMakeType( this, bValue );
 	}
 
 	void CClassRegistInfo::RegistFunction( CCallBase* pCallBase )

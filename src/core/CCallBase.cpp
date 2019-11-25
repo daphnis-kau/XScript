@@ -10,7 +10,7 @@
 namespace Gamma
 {
 
-	CCallBase::CCallBase( const STypeInfoArray& aryTypeInfo, int32 nFunIndex,
+	CCallBase::CCallBase(const STypeInfoArray& aryTypeInfo, int32 nFunIndex,
 		const char* szTypeInfoName, gammacstring strFunName )
 		: m_nParamSize( 0 )
 		, m_nThis( eDT_void )
@@ -25,58 +25,91 @@ namespace Gamma
 
 		for( uint32 i = 0; i < aryTypeInfo.nSize; i++ )
 		{
-			CTypeBase* pType = Script.MakeParamType( aryTypeInfo.aryInfo[i] );
+			DataType nType = ToDataType( aryTypeInfo.aryInfo[i] );
 			if( i == aryTypeInfo.nSize - 1 )
-			{
-				m_pResult = pType;
-			}
+				m_nResult = nType;
 			else if( m_nFunIndex >= eCT_ClassFunction && i == 0 )
-			{
-				m_pThis = pType;
-			}
+				m_nThis = nType;
 			else
-			{
-				m_nParamSize += AligenUp( pType->GetLen(), sizeof(void*) );
-				m_listParam.push_back( pType );
-			}
+				m_listParam.push_back( nType );
 		}
+
+		//for(int32 i = 0; i < m_listParam.size(); i++)
+		//	m_nParamSize += AligenUp(m_listParam[i]->GetLen(), sizeof(void*));
 		m_nParamCount = (uint32)m_listParam.size();
     }
 
     CCallBase::~CCallBase(void)
     {
-    }
+	}
+
+	DataType CCallBase::ToDataType(const STypeInfo& argTypeInfo)
+	{
+		uint32 n = 5;
+		STypeInfo argInfo = argTypeInfo;
+		while (n && !((argInfo.m_nType >> (n * 4)) & 0xf))
+			n--;
+
+		uint32 nPointCount = 0;
+		for (uint32 i = 0; i <= n; i++)
+			nPointCount += ((argInfo.m_nType >> (i * 4)) & 0xf) >= eDTE_Pointer;
+		uint32 nType = argInfo.m_nType >> 24;
+
+		if (nPointCount == 0)
+		{
+			if (nType != eDT_class)
+				return nType;
+			const char* szTypeName = argTypeInfo.m_szTypeName;
+			auto pClassInfo = CClassRegistInfo::GetRegistInfo(szTypeName);
+			if (!pClassInfo->IsEnum())
+				return (DataType)pClassInfo;
+			if (pClassInfo->GetClassSize() == 4)
+				return eDT_int32;
+			if (pClassInfo->GetClassSize() == 2)
+				return eDT_int16;
+			return eDT_int8;
+		}
+		else
+		{
+			if (nPointCount > 1 || nType != eDT_class)
+				return eDT_class;
+			const char* szTypeName = argTypeInfo.m_szTypeName;
+			auto pClassInfo = CClassRegistInfo::GetRegistInfo(szTypeName);
+			if (!pClassInfo->IsEnum())
+				return ((DataType)pClassInfo) | 1;
+			return eDT_class;
+		}
+	}
 
 	//=====================================================================
 	// 脚本调用C++的基本接口
 	//=====================================================================
-	CByScriptBase::CByScriptBase( CScriptBase& Script, const STypeInfoArray& aryTypeInfo, 
-		IFunctionWrap* funWrap, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName )
-		: CCallBase( Script, aryTypeInfo, nFunIndex, szTypeInfoName, szFunName )
-		, m_funWrap( funWrap )
+	CByScriptBase::CByScriptBase(const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, 
+		const char* szTypeInfoName, int32 nFunIndex, const char* szFunName)
+		: CCallBase(aryTypeInfo, nFunIndex, szTypeInfoName, szFunName)
+		, m_funWrap(funWrap)
 	{}
-
-    void CByScriptBase::Call( void* pObject, void* pRetBuf, void** pArgArray )
+	
+	void CByScriptBase::Call(void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script)
 	{
 		m_funWrap->Call(pObject, pRetBuf, pArgArray, SFunction());
-		m_pScript->CheckUnlinkCppObj();
 	}
 
 	//=====================================================================
 	// 脚本访问C++的成员接口
 	//=====================================================================
-	CByScriptMember::CByScriptMember( CScriptBase& Script, const STypeInfoArray& aryTypeInfo, 
+	CByScriptMember::CByScriptMember( const STypeInfoArray& aryTypeInfo, 
 		IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szFunName ) 
-		: CByScriptBase( Script, aryTypeInfo, funGetSet[0], szTypeInfoName, eCT_MemberFunction, szFunName )
+		: CByScriptBase( aryTypeInfo, funGetSet[0], szTypeInfoName, eCT_MemberFunction, szFunName )
 		, m_funSet( funGetSet[1] )
 	{
-		CTypeBase* pType = Script.MakeParamType( aryTypeInfo.aryInfo[1] );
-		m_nParamSize = AligenUp( pType->GetLen(), sizeof(void*) );
-		m_listParam.push_back( pType );
+		DataType nType = ToDataType( aryTypeInfo.aryInfo[1] );
+		//m_nParamSize = AligenUp( pType->GetLen(), sizeof(void*) );
+		m_listParam.push_back( nType );
 		m_nParamCount = 1;
 	}
 
-	void CByScriptMember::Call( void* pObject, void* pRetBuf, void** pArgArray )
+	void CByScriptMember::Call( void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script)
 	{
 		if( !pRetBuf && m_funSet )
 			m_funSet->Call( pObject, &pRetBuf, pArgArray, SFunction() );
@@ -87,13 +120,13 @@ namespace Gamma
 	//=====================================================================
 	// C++调用脚本的基本接口
 	//=====================================================================
-    CCallScriptBase::CCallScriptBase( CScriptBase& Script, const STypeInfoArray& aryTypeInfo,
+    CCallScriptBase::CCallScriptBase( const STypeInfoArray& aryTypeInfo,
 		IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunName )
-		: CByScriptBase( Script, aryTypeInfo, funWrap, szTypeInfoName, 0, szFunName )
+		: CByScriptBase( aryTypeInfo, funWrap, szTypeInfoName, 0, szFunName )
 		, m_pBootFun( NULL )
 		, m_bPureVirtual( false )
 	{
-		CClassRegistInfo* pInfo = Script.GetRegistInfoByTypeInfoName( szTypeInfoName );
+		auto pInfo = CClassRegistInfo::GetRegistInfo(szTypeInfoName);
 		m_nFunIndex = szFunName && szFunName[0] ?
 			GetVirtualFunIndex( funWrap->GetOrgFun() ) : (uint32)funWrap->GetOrgFun().funPoint;
 		pInfo->RegistClassCallBack( m_nFunIndex, this );
@@ -110,16 +143,7 @@ namespace Gamma
 		return m_nFunIndex;
 	}
 
-	int32 CCallScriptBase::OnCall( void* pObj, void* pRetBuf, void** pArgArray )
-	{
-		m_pScript->CheckUnlinkCppObj();
-		SVirtualObj* pObject = (SVirtualObj*)pObj;
-		int32 nResult = m_sFunName.empty() ? 
-			Destruc( pObject, pArgArray[0] ) : CallBack( pObject, pRetBuf, pArgArray );
-		return nResult;
-	}
-
-	int32 CCallScriptBase::CallBack( SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
+	int32 CCallScriptBase::CallBack( SVirtualObj* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script)
 	{
 		try
 		{
@@ -127,7 +151,7 @@ namespace Gamma
 				return 1;
 			if( m_bPureVirtual )
 				return -1;
-			SFunctionTable* pTable = m_pScript->GetOrgVirtualTable( pObject );
+			SFunctionTable* pTable = Script.GetOrgVirtualTable( pObject );
 			if( !pTable || !pTable->m_pFun[m_nFunIndex] || pTable->m_pFun[m_nFunIndex] == m_pBootFun )
 				return -1;
 			SFunction funOrg = { (uintptr_t)pTable->m_pFun[m_nFunIndex], NULL };
@@ -158,10 +182,10 @@ namespace Gamma
 		return 0;
 	}
 
-	void CCallScriptBase::Call( void* pObject, void* pRetBuf, void** pArgArray )
+	void CCallScriptBase::Call( void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script)
 	{
 		// fun( char int string )lua调用c++ i3cpu 1000000次 2秒
-		SFunctionTable* pTable = m_pScript->GetOrgVirtualTable( pObject );
+		SFunctionTable* pTable = Script.GetOrgVirtualTable( pObject );
 		SFunction CppFun = { (uintptr_t)pTable->m_pFun[m_nFunIndex], 0 };
 		m_funWrap->Call( pObject, pRetBuf, pArgArray, CppFun );
 	}

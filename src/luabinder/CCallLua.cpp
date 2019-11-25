@@ -80,7 +80,8 @@ namespace Gamma
 				if( nTop > 1 )
 					GetParam( pL, nStkId, listParam, pDataBuf, pArgArray );
 				lua_settop( pL, 0 );
-				pScript->Call( pObject, nTop > 1 ? NULL : pResultBuf, pArgArray );
+				pScript->Call(pObject, nTop > 1 ? NULL : pResultBuf, pArgArray);
+				pScriptLua->CheckUnlinkCppObj();
 				if( pResultType && nTop <= 1 )
 					pResultType->PushToVM( pL, pResultBuf );
 			}
@@ -88,7 +89,8 @@ namespace Gamma
 			{
 				GetParam( pL, nStkId, listParam, pDataBuf, pArgArray );
 				lua_settop( pL, 0 );
-				pScript->Call( pObject, pResultBuf, pArgArray );
+				pScript->Call(pObject, pResultBuf, pArgArray);
+				pScriptLua->CheckUnlinkCppObj();
 				if( pResultType )
 					pResultType->PushToVM( pL, pResultBuf );
 			}

@@ -27,11 +27,13 @@ namespace Gamma
 	};
 
 	class CCallBase;
+	class CScriptBase;
 	typedef ptrdiff_t DataType;
 	typedef TRBTree<CCallBase> CCallBaseMap;
 
     class CCallBase : public CCallBaseMap::CRBTreeNode
-    {
+	{
+		const CCallBase& operator= (const CCallBase&);
 	protected:
 		gammacstring			m_sFunName;
 		DataType				m_nThis;
@@ -41,6 +43,7 @@ namespace Gamma
 		uint32					m_nParamCount;
 		int32					m_nFunIndex;
 
+		DataType				ToDataType(const STypeInfo& argTypeInfo);
     public:
         CCallBase( const STypeInfoArray& aryTypeInfo, int32 nFunIndex, 
 			const char* szTypeInfoName, gammacstring strFunName );
@@ -48,6 +51,7 @@ namespace Gamma
 		bool operator < ( const gammacstring& strKey ) { return (const gammacstring&)*this < strKey; }
 
 		virtual ~CCallBase(void);
+
 		const vector<DataType>&	GetParamList()				{ return m_listParam; }
 		DataType				GetResultType()				{ return m_nResult; }
 		DataType				GetThisType()				{ return m_nThis; }
@@ -66,10 +70,10 @@ namespace Gamma
     {
 		const CByScriptBase& operator= ( const CByScriptBase& );
     public:
-        CByScriptBase( CScriptBase& Script, const STypeInfoArray& aryTypeInfo, 
-			IFunctionWrap* funWrap, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName );
+		CByScriptBase(const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap,
+			const char* szTypeInfoName, int32 nFunIndex, const char* szFunName);
 
-		virtual void	Call( void* pObject, void* pRetBuf, void** pArgArray );
+		virtual void	Call(void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script);
 		IFunctionWrap*	GetFunWrap() const { return m_funWrap; }
 	protected:
 		IFunctionWrap*	m_funWrap;
@@ -82,9 +86,9 @@ namespace Gamma
 	{
 		IFunctionWrap*	m_funSet;
 	public:
-		CByScriptMember( CScriptBase& Script, const STypeInfoArray& aryTypeInfo, 
-			IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szFunName );
-		virtual void	Call( void* pObject, void* pRetBuf, void** pArgArray );
+		CByScriptMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], 
+			const char* szTypeInfoName, const char* szFunName );
+		virtual void	Call( void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script);
 		IFunctionWrap*	GetFunSet() const { return m_funSet; }
 	};
 
@@ -97,23 +101,21 @@ namespace Gamma
 	{
 		const CCallScriptBase& operator= ( const CCallScriptBase& );
     public:
-        CCallScriptBase( CScriptBase& Script, const STypeInfoArray& aryTypeInfo, 
-			IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunName );
+        CCallScriptBase( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, 
+			const char* szTypeInfoName, const char* szFunName );
         ~CCallScriptBase();
 
 		void*			GetBootFun()				{ return m_pBootFun; }
 		uint32			GetFunIndex()				{ return m_nFunIndex; }
 
 		virtual int32	BindFunction( void* pFun, bool bPureVirtual );
-		virtual int32	OnCall( void* pObject, void* pRetBuf, void** pArgArray );
+		int32			Destruc( SVirtualObj* pObject, void* pParam );
+		int32			CallBack( SVirtualObj* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script);
+		virtual void	Call( void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script);
 
 	protected:
 		void*			m_pBootFun;
 		bool			m_bPureVirtual;
-
-		int32			CallBack( SVirtualObj* pObject, void* pRetBuf, void** pArgArray );
-		int32			Destruc( SVirtualObj* pObject, void* pParam );
-		virtual void	Call( void* pObject, void* pRetBuf, void** pArgArray );
 
 		virtual bool    CallVM( SVirtualObj* pObject, void* pRetBuf, void** pArgArray ) = 0;
 		virtual void	DestrucVM( SVirtualObj* pObject ) = 0;

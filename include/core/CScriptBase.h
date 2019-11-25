@@ -34,7 +34,6 @@ namespace Gamma
 		CCircelBuffer			m_UnlinkObjectBuffer;
 		CFunctionTableMap		m_mapVirtualTableOld2New;
 		CNewFunctionTableMap	m_mapNewVirtualTable;
-        map<string,int32>		m_mapSizeOfEnum;
         list<string>			m_listSearchPath;
 
     public:
