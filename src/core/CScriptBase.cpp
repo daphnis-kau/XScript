@@ -102,6 +102,73 @@ namespace Gamma
 		s_ScriptListLock.Unlock();
 	}
 
+	void CScriptBase::RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
+	{
+		new CByScriptBase( aryTypeInfo, funWrap, "", eCT_GlobalFunction, szFunctionName );
+	}
+
+	void CScriptBase::RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
+	{
+		new CByScriptBase( aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassStaticFunction, szFunctionName );
+	}
+
+	void CScriptBase::RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
+	{
+		new CByScriptBase( aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassFunction, szFunctionName );
+	}
+
+	ICallBackWrap& CScriptBase::RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
+	{
+		return *new CCallScriptBase( aryTypeInfo, funWrap, szTypeInfoName, szFunctionName );
+	}
+
+	void CScriptBase::RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName )
+	{
+		assert( funGetSet && ( funGetSet[0] || funGetSet[1] ) );
+		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo( szTypeInfoName );
+		CCallBaseMap& mapRegisterFun = pInfo->GetRegistFunction();
+		gammacstring keyName( szMemberName, true );
+		assert( mapRegisterFun.Find( keyName ) == nullptr );
+		new CByScriptMember( aryTypeInfo, funGetSet, szTypeInfoName, szMemberName );
+	}
+
+	void CScriptBase::RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... )
+	{
+		CClassRegistInfo* pClassInfo = CClassRegistInfo::Register( szClass, szTypeIDName, nSize );
+		va_list listBase;
+		va_start( listBase, szClass );
+		const char* szBaseClass = NULL;
+		while( ( szBaseClass = va_arg( listBase, const char* ) ) !=NULL )
+		{
+			CClassRegistInfo* pBaseInfo = CClassRegistInfo::GetRegistInfo( szBaseClass );
+			assert( pBaseInfo != NULL );
+			pClassInfo->AddBaseRegist( pBaseInfo, va_arg( listBase, int32 ) );
+		}
+		va_end( listBase );
+	}
+
+	void CScriptBase::RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName )
+	{
+		assert( CClassRegistInfo::GetRegistInfo( szTypeIDName ) );
+		CClassRegistInfo::GetRegistInfo( szTypeIDName )->SetObjectConstruct( pObjectConstruct );
+	}
+
+	ICallBackWrap& CScriptBase::RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap )
+	{
+		STypeInfo aryInfo[2];
+		aryInfo[0].m_nType = ( eDT_custom_type << 24 )|eDTE_Pointer;
+		aryInfo[0].m_szTypeName = szTypeInfoName;
+		aryInfo[1].m_nType = eDT_void;
+		aryInfo[1].m_szTypeName = typeid( void ).name();
+		STypeInfoArray aryTypeInfo = { aryInfo, 2 };
+		return *( new CCallScriptBase( aryTypeInfo, funWrap, szTypeInfoName, "" ) );
+	}
+
+	void CScriptBase::RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize )
+	{
+		CClassRegistInfo::Register( szTableName, szTypeIDName, nTypeSize );
+	}
+
 	void CScriptBase::CheckUnlinkCppObj()
 	{
 		void* pObject[1024];

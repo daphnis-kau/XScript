@@ -43,11 +43,21 @@ namespace Gamma
         CScriptBase(void);
 		virtual ~CScriptBase( void );
 
-		CDebugBase*				GetDebugger() const { return m_pDebugger; }
+		static void        		RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
+		static void        		RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
+		static void				RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
+		static ICallBackWrap&	RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
+		static void				RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName );
+		static void				RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... );
+		static void				RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
+		static ICallBackWrap&	RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap );
+		static void				RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize );
+
         static bool				IsAllocVirtualTable( void* pVirtualTable );
 		static void				UnlinkCppObj( void* pObj );
 		static int32			CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray );
-								
+
+		CDebugBase*				GetDebugger() const { return m_pDebugger; }
 		void					CheckUnlinkCppObj();
 		bool					IsVirtualTableValid( SVirtualObj* pVObj );
         SFunctionTable*			GetOrgVirtualTable( void* pObj );
@@ -59,18 +69,6 @@ namespace Gamma
 		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize ) = 0;
 		virtual bool        	RunString( const char* szString ) = 0;
 		virtual bool        	RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg ) = 0;
-		virtual void        	RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName ) = 0;
-		virtual void        	RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName ) = 0;
-        virtual void			RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName ) = 0;
-		virtual ICallBackWrap&	RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName ) = 0;
-		virtual ICallBackWrap&	RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap ) = 0;
-        virtual void			RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName ) = 0;
-		virtual void			RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... ) = 0;
-		virtual void			RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName ) = 0;
-		virtual void			RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize ) = 0;
-        virtual void			RegistConstant( const char* szTableName, const char* szFeild, int32 nValue ) = 0;
-		virtual void			RegistConstant( const char* szTableName, const char* szFeild, double dValue ) = 0;
-		virtual void			RegistConstant( const char* szTableName, const char* szFeild, const char* szValue ) = 0;
         virtual void			RefScriptObj( void* pObj ) = 0;
         virtual void			UnrefScriptObj( void* pObj ) = 0;
 		virtual void			UnlinkCppObjFromScript( void* pObj ) = 0;

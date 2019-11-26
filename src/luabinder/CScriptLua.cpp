@@ -1399,63 +1399,6 @@ namespace Gamma
         lua_setglobal( L, szTableName );
     }
 
-    void CScriptLua::RegistConstant( const char* szTableName, const char* szFeild, int32 nValue )
-    {
-        lua_State* L = GetLuaState();
-        if( szTableName && szTableName[0] )
-        {
-            assert( szFeild && szFeild[0] );
-            lua_getglobal( L, szTableName );
-            assert( !lua_isnil( L, -1 ) );
-            lua_pushinteger( L, nValue );
-            lua_setfield( L, -2, szFeild );
-            lua_pop( L, 1 );
-        }
-        else
-        {
-            lua_pushinteger( L, nValue );
-            lua_setglobal( L, szFeild );
-        }
-    }
-
-	void CScriptLua::RegistConstant( const char* szTableName, const char* szFeild, double dValue )
-	{
-		lua_State* L = GetLuaState();
-		if( szTableName && szTableName[0] )
-		{
-			assert( szFeild && szFeild[0] );
-			lua_getglobal( L, szTableName );
-			assert( !lua_isnil( L, -1 ) );
-			lua_pushnumber( L, dValue );
-			lua_setfield( L, -2, szFeild );
-			lua_pop( L, 1 );
-		}
-		else
-		{
-			lua_pushnumber( L, dValue );
-			lua_setglobal( L, szFeild );
-		}
-	}
-
-	void CScriptLua::RegistConstant( const char* szTableName, const char* szFeild, const char* szValue )
-	{
-		lua_State* pL = GetLuaState();
-		if( szTableName && szTableName[0] )
-		{
-			assert( szFeild && szFeild[0] );
-			lua_getglobal( pL, szTableName );
-			assert( !lua_isnil( pL, -1 ) );
-			lua_pushstring( pL, szValue );
-			lua_setfield( pL, -2, szFeild );
-			lua_pop( pL, 1 );
-		}
-		else
-		{
-			lua_pushstring( pL, szValue );
-			lua_setglobal( pL, szFeild );
-		}
-	}
-
     void CScriptLua::RefScriptObj( void* pObj )
 	{
 		lua_State* pL = GetLuaState();

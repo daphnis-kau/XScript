@@ -94,13 +94,13 @@ void run_cpp_lua( int a, const int& b, int c, int d )
 void TestLua()
 {
 	g_ScriptLua = new CScriptLua;
-	REGIST_B_CLASS_WITHNAME( *g_ScriptLua, TestBase, Test_Base );
-	REGIST_B_CLASS( *g_ScriptLua, CVector2f );
+	REGIST_B_CLASS_WITHNAME( TestBase, Test_Base );
+	REGIST_B_CLASS( CVector2f );
 
 	REGIST_CLASS_FUNCTION_BEGIN(CVector2f)
 	REGIST_CLASSMEMBER( x )
 	REGIST_CLASSMEMBER( y )
-	REGIST_CLASS_FUNCTION_END( *g_ScriptLua );
+	REGIST_CLASS_FUNCTION_END();
 
 	REGIST_CLASS_FUNCTION_BEGIN( TestBase )
 	REGIST_DESTRUCTOR()
@@ -111,9 +111,9 @@ void TestLua()
 	REGIST_PUREVIRTUALFUNCTION( NewThis )
 	REGIST_STATICFUNCTION( GetCppName )
 	REGIST_CLASSFUNCTION( TestRet64 )
-	REGIST_CLASS_FUNCTION_END( *g_ScriptLua );
+	REGIST_CLASS_FUNCTION_END();
 
-	REGIST_GLOBALFUNCTION( *g_ScriptLua, run_cpp_lua );
+	REGIST_GLOBALFUNCTION( run_cpp_lua );
 
 	int32 a[2];
 	g_ScriptLua->RunString( szLua );
