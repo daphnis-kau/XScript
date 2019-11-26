@@ -35,7 +35,7 @@ namespace Gamma
 	{
 	public:
 		TJSValue(uint32 nSize = sizeof(T))
-			: CJSTypeBase(eDT_class, nSize)
+			: CJSTypeBase(eDT_custom_type, nSize)
 		{
 			m_nFlag = eFPT_Value;
 		}
@@ -313,7 +313,7 @@ namespace Gamma
 		TBuildinObject( uint32 nSize, const char* szName ) 
 			: CJSPointer( sizeof( Type )*nSize ), m_szBuildinName( szName ) 
 		{
-			m_nType = eDT_class;
+			m_nType = eDT_custom_type;
 			m_nFlag = 0;
 		}
 		virtual LocalValue ToVMValue( CScriptJS& Script, char* pDataBuf );

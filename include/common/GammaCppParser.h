@@ -12,7 +12,7 @@
 namespace Gamma
 {
 	template<typename T>
-	struct STypeID { enum{ eTypeID = eDT_class }; };
+	struct STypeID { enum{ eTypeID = eDT_custom_type }; };
 
 	///< 特化c++内置基本类型
 	template<> struct STypeID<void>			{ enum{ eTypeID = eDT_void		}; };

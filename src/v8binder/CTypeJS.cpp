@@ -15,7 +15,7 @@ namespace Gamma
 		: CJSPointer(nSize)
 		, m_pClassInfo(pClassInfo)
 	{
-		m_nType = eDT_class;
+		m_nType = eDT_custom_type;
 	}
 
 	inline CClassRegistInfo* CJSObject::_FromVMValue(

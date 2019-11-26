@@ -699,7 +699,7 @@ namespace Gamma
 				return new CJSBool;
 			case eDT_void:
 				return NULL;
-			case eDT_class:
+			case eDT_custom_type:
 				return MakeObject( argInfo, true );
 			default:
 				throw( "Invalid format!");
@@ -707,11 +707,11 @@ namespace Gamma
 		}
 		else
 		{
-			if( nPointCount > 1 || nType != eDT_class )
+			if( nPointCount > 1 || nType != eDT_custom_type )
 				return new CJSPointer;
 
 			CTypeBase* pType = MakeObject( argInfo, false );
-			if( pType->GetType() == eDT_class )
+			if( pType->GetType() == eDT_custom_type )
 				return pType;
 			delete pType;
 			return new CJSPointer;
@@ -1050,7 +1050,7 @@ namespace Gamma
 	ICallBackWrap& CScriptJS::RegistDestructor(const char* szTypeInfoName, IFunctionWrap* funWrap)
 	{
 		STypeInfo aryInfo[2];
-		aryInfo[0].m_nType = ( eDT_class << 24 )|eDTE_Pointer;
+		aryInfo[0].m_nType = ( eDT_custom_type << 24 )|eDTE_Pointer;
 		aryInfo[0].m_szTypeName = szTypeInfoName;
 		aryInfo[1].m_nType = eDT_void;
 		aryInfo[1].m_szTypeName = typeid( void ).name();

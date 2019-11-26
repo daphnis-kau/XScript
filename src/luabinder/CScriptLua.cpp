@@ -1220,7 +1220,7 @@ namespace Gamma
 
 		uint32 nParamCount = (uint32)pCallBase->GetParamCount();
 		const vector<DataType>& listParam = pCallBase->GetParamList();
-		for (int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++)
+		for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 		{
 			DataType nType = listParam[nArgIndex];
 			CLuaTypeBase* pParamType = GetTypeBase(nType);
@@ -1309,7 +1309,7 @@ namespace Gamma
 	ICallBackWrap& CScriptLua::RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap )
 	{
 		STypeInfo aryInfo[2];
-		aryInfo[0].m_nType = ( eDT_class << 24 )|eDTE_Pointer;
+		aryInfo[0].m_nType = ( eDT_custom_type << 24 )|eDTE_Pointer;
 		aryInfo[0].m_szTypeName = szTypeInfoName;
 		aryInfo[1].m_nType = eDT_void;
 		aryInfo[1].m_szTypeName = typeid( void ).name();

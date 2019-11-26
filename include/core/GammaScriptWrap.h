@@ -383,7 +383,7 @@ namespace Gamma
 	{
 		STypeInfo TypeInfo;
 		GetTypeInfo<MemberType>( TypeInfo );
-		if( ( TypeInfo.m_nType >> 24 ) != eDT_class ||
+		if( ( TypeInfo.m_nType >> 24 ) != eDT_custom_type ||
 			( ( TypeInfo.m_nType >> 20 )&0xf ) >= eDTE_Pointer ||
 			( ( TypeInfo.m_nType >> 16 )&0xf ) >= eDTE_Pointer ||
 			( ( TypeInfo.m_nType >> 12 )&0xf ) >= eDTE_Pointer ||
@@ -423,7 +423,7 @@ namespace Gamma
 		static STypeInfo aryInfo[2];
 		GetTypeInfo<ClassType*>( aryInfo[0] );
 		GetTypeInfo<MemberType>( aryInfo[1] );
-		if( ( aryInfo[1].m_nType >> 24 ) == eDT_class &&
+		if( ( aryInfo[1].m_nType >> 24 ) == eDT_custom_type &&
 			( ( aryInfo[1].m_nType >> 20 )&0xf ) < eDTE_Pointer &&
 			( ( aryInfo[1].m_nType >> 16 )&0xf ) < eDTE_Pointer &&
 			( ( aryInfo[1].m_nType >> 12 )&0xf ) < eDTE_Pointer &&

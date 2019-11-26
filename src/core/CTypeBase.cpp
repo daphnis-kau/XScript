@@ -63,7 +63,7 @@ namespace Gamma
 
 		if( nPointCount == 0 )
 		{
-			if( nType != eDT_class )
+			if( nType != eDT_custom_type )
 				return nType;
 			const char* szTypeName = argTypeInfo.m_szTypeName;
 			auto pClassInfo = CClassRegistInfo::GetRegistInfo( szTypeName );
@@ -77,13 +77,13 @@ namespace Gamma
 		}
 		else
 		{
-			if( nPointCount > 1 || nType != eDT_class )
-				return eDT_class;
+			if( nPointCount > 1 || nType != eDT_custom_type )
+				return eDT_custom_type;
 			const char* szTypeName = argTypeInfo.m_szTypeName;
 			auto pClassInfo = CClassRegistInfo::GetRegistInfo( szTypeName );
 			if( !pClassInfo->IsEnum() )
 				return ( (DataType)pClassInfo ) | 1;
-			return eDT_class;
+			return eDT_custom_type;
 		}
 	}
 
