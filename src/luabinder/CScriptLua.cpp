@@ -429,7 +429,7 @@ namespace Gamma
 		// Obj.ClassName_hObject = userdata;
 		lua_rawset( pL, -3 );
 
-		CScriptLua* pScriptLua = (CScriptLua*)pInfo->GetScript();
+		CScriptLua* pScriptLua = GetScript(pL);
 		pScriptLua->PushLuaState( pL );
 		pInfo->Create( pObj );                //userdata为对象指针的指针
 		if( pSrc )
@@ -486,7 +486,7 @@ namespace Gamma
     {                                        
 		//In C++, stack top = 1, 返回Obj, 留在堆栈里
 		if( pInfo->IsCallBack() )
-			pInfo->ReplaceVirtualTable( pObj, bGC, 0 );
+			pInfo->ReplaceVirtualTable( GetScript(L), pObj, bGC, 0 );
 
         int32 nObj = lua_gettop( L );
 		//设置全局对象表 CScriptLua::ms_szGlobObjectTable    
@@ -514,9 +514,10 @@ namespace Gamma
 		// 不需要调用UnRegisterObject，仅仅恢复虚表即可，
 		// 因为已经被回收，所以不存在还有任何地方会引用到此对象
 		// 调用UnRegisterObject反而会导致gc问题（table[obj] = nil 会crash）
-		pInfo->RecoverVirtualTable( pObject );
+		CScriptLua* pScriptLua = GetScript(pL);
+		pInfo->RecoverVirtualTable( pScriptLua, pObject );
 		pInfo->Release( pObject );
-		CheckUnlinkCppObj();
+		pScriptLua->CheckUnlinkCppObj();
         lua_pop( pL, 3 );
         return 0;
     }
@@ -617,7 +618,8 @@ namespace Gamma
 		// 不需要调用UnRegisterObject，仅仅恢复虚表即可，
 		// 弱表索引会被RegisterObject自动覆盖
 		// UnRegisterObject( L, pOrgInfo, *ppObj );
-		pOrgInfo->RecoverVirtualTable( pObj );
+		CScriptLua* pScriptLua = GetScript(pL);
+		pOrgInfo->RecoverVirtualTable( pScriptLua, pObj );
 
 		if( nOffset )
 		{
@@ -877,105 +879,6 @@ namespace Gamma
     //==================================================================================================================================//
     //                                                        对内部提供的功能性函数                                                        //
     //==================================================================================================================================//
-    CTypeBase* CScriptLua::MakeParamType( const STypeInfo& argTypeInfo )
-	{
-		uint32 n = 5;
-		STypeInfo argInfo = argTypeInfo;
-		while( n && !( ( argInfo.m_nType >> ( n*4 ) )&0xf ) )
-			n--;
-
-		uint32 nPointCount = 0;
-		for( uint32 i = 0; i <= n; i++ )
-			nPointCount += ( ( argInfo.m_nType >> ( i*4 ) )&0xf ) >= eDTE_Pointer;
-		uint32 nType = argInfo.m_nType >> 24;
-
-		if( nPointCount == 0 )
-		{
-			switch( nType )
-			{
-			case eDT_char:
-				return new CLuaInt8;
-			case eDT_wchar:
-				return sizeof(wchar_t) == sizeof(uint16) ? (CTypeBase*)new CLuaUint16 : (CTypeBase*)new CLuaUint32;
-			case eDT_float:
-				return new CLuaFloat;
-			case eDT_double:
-				return new CLuaDouble;
-			case eDT_int64:
-				return new CLuaInt64;
-			case eDT_uint64:
-				return new CLuaUint64;
-			case eDT_long:
-				return new CLuaLong;
-			case eDT_ulong:
-				return new CLuaUlong;
-			case eDT_int32:
-				return new CLuaInt32;
-			case eDT_uint32:
-				return new CLuaUint32;
-			case eDT_int16:
-				return new CLuaInt16;
-			case eDT_uint16:
-				return new CLuaUint16;
-			case eDT_int8:
-				return new CLuaInt8;
-			case eDT_uint8:
-				return new CLuaUint8;
-			case eDT_const_char_str:
-				return new CLuaString;
-			case eDT_const_wchar_t_str:
-				throw( "Invalid format!");
-			case eDT_bool:
-				return new CLuaBool;
-			case eDT_void:
-				return NULL;
-			case eDT_class:
-				return MakeObject( argInfo, true );
-			default:
-				throw( "Invalid format!");
-			}
-		}
-		else
-		{
-			if( nPointCount > 1 || nType != eDT_class )
-			{
-				argInfo.m_nType &= ~( 0xf << ( n*4 ) );
-				return new CLuaBuffer;
-			}
-
-			CTypeBase* pType = MakeObject( argInfo, false );
-			if( pType->GetType() == eDT_class )
-				return pType;
-			return new CLuaBuffer;
-		}
-	}
-	
-	CTypeBase* CScriptLua::MakeType( CClassRegistInfo* pInfo, bool bValue )
-	{
-		return bValue ? new CLuaValueObject( pInfo ) : new CLuaObject( pInfo );
-	}
-
-    CTypeBase* CScriptLua::MakeObject( const STypeInfo& argInfo, bool bValue )
-    {
-        //如果不是枚举
-        map<string,int32>::iterator itEnum = m_mapSizeOfEnum.find( argInfo.m_szTypeName );
-        if( itEnum == m_mapSizeOfEnum.end() )
-		{
-			gammacstring strKey( argInfo.m_szTypeName, true );
-            CTypeIDName* pTypeIDName = m_mapTypeID2ClassInfo.Find( strKey );
-            assert( pTypeIDName != NULL );
-            return static_cast<CClassRegistInfo*>( pTypeIDName )->MakeType( bValue );
-        }
-        else
-        {
-            if( itEnum->second == 4 )
-                return new CLuaUint32();
-            if( itEnum->second == 2 )
-                return new CLuaUint16();
-            return new CLuaUint8();
-        }
-    }
-
     void CScriptLua::AddLoader()
     {
 		lua_State* pL = GetLuaState();
@@ -1304,7 +1207,7 @@ namespace Gamma
 	{
 		CheckUnlinkCppObj();
 		lua_State* pL = GetLuaState();
-		CCallBase* pCallBase = GetGlobalCallBase( aryTypeInfo );
+		CCallBase* pCallBase = CClassRegistInfo::GetGlobalCallBase( aryTypeInfo );
 		lua_pushlightuserdata( pL, ms_pErrorHandlerKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		int32 nErrFunIndex = lua_gettop( pL );
@@ -1316,17 +1219,20 @@ namespace Gamma
 			lua_pcall( pL, 0, LUA_MULTRET, 0 );
 
 		uint32 nParamIndex = 0;
-		const list<CTypeBase*>& listParam = pCallBase->GetParamList();
-		for( list<CTypeBase*>::const_iterator it = listParam.begin(); 
-			it != listParam.end(); ++it, ++nParamIndex )
-			static_cast<CLuaTypeBase*>(*it)->PushToVM( (lua_State*)pL, (char*)aryArg[nParamIndex] );
-
-		CTypeBase* pResultType = pCallBase->GetResultType();
-		lua_pcall( pL, nParamIndex, pResultType && pResultBuf, nErrFunIndex );
-
-		if( pResultType && pResultBuf )
+		const vector<DataType>& listParam = pCallBase->GetParamList();
+		for (int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++)
 		{
-			static_cast<CLuaTypeBase*>( pResultType )->GetFromVM( pL, (char*)pResultBuf, -1, false );
+			DataType nType = listParam[nArgIndex];
+			CLuaTypeBase* pParamType = GetTypeBase(nType);
+			pParamType->PushToVM(nType, pL, (char*)aryArg[nArgIndex]);
+		}
+
+		DataType nResultType = pCallBase->GetResultType();
+		lua_pcall( pL, nParamIndex, nResultType && pResultBuf, nErrFunIndex );
+
+		if( nResultType && pResultBuf )
+		{
+			GetTypeBase(nResultType)->GetFromVM( nResultType, pL, (char*)pResultBuf, -1 );
 			lua_pop( pL, 1 );
 		}
 
@@ -1336,7 +1242,7 @@ namespace Gamma
 
     void CScriptLua::RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
     {
-		CByScriptBase* pByScript = new CByScriptBase( *this, aryTypeInfo, funWrap, "", eCT_GlobalFunction, szFunctionName );
+		CByScriptBase* pByScript = new CByScriptBase( aryTypeInfo, funWrap, "", eCT_GlobalFunction, szFunctionName );
 		lua_State* pL = GetLuaState();
         lua_pushlightuserdata( pL, pByScript );
         lua_pushcclosure( pL, CByScriptLua::CallByLua, 1 );
@@ -1345,8 +1251,8 @@ namespace Gamma
 
 	void CScriptLua::RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		CByScriptBase* pByScript = new CByScriptBase( *this, aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassStaticFunction, szFunctionName );
-		CClassRegistInfo* pInfo = GetRegistInfoByTypeInfoName( szTypeInfoName );
+		CByScriptBase* pByScript = new CByScriptBase( aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassStaticFunction, szFunctionName );
+		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo( szTypeInfoName );
 		assert( pInfo );
 
 		lua_State* pL = GetLuaState();
@@ -1361,8 +1267,8 @@ namespace Gamma
 
     void CScriptLua::RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
     {
-		CByScriptBase* pByScript = new CByScriptBase( *this, aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassFunction, szFunctionName );
-		CClassRegistInfo* pInfo = GetRegistInfoByTypeInfoName( szTypeInfoName );
+		CByScriptBase* pByScript = new CByScriptBase( aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassFunction, szFunctionName );
+		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo(szTypeInfoName);
 		assert( pInfo );
 
 		lua_State* pL = GetLuaState();
@@ -1377,8 +1283,8 @@ namespace Gamma
 
     ICallBackWrap& CScriptLua::RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		CCallBackLua* pToScript = new CCallBackLua( *this, aryTypeInfo, funWrap, szTypeInfoName, szFunctionName );
-		CClassRegistInfo* pInfo = GetRegistInfoByTypeInfoName( szTypeInfoName );
+		CCallScriptBase* pToScript = new CCallScriptBase( aryTypeInfo, funWrap, szTypeInfoName, szFunctionName );
+		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo(szTypeInfoName);
 		assert( pInfo );
 
 		lua_State* pL = GetLuaState();
@@ -1395,7 +1301,7 @@ namespace Gamma
 
 	void CScriptLua::RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName )
 	{
-		CClassRegistInfo* pInfo = GetRegistInfoByTypeInfoName( szTypeIDName );
+		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo(szTypeIDName);
 		assert( pInfo );
 		pInfo->SetObjectConstruct( pObjectConstruct );
 	}
@@ -1408,7 +1314,7 @@ namespace Gamma
 		aryInfo[1].m_nType = eDT_void;
 		aryInfo[1].m_szTypeName = typeid( void ).name();
 		STypeInfoArray aryTypeInfo = { aryInfo, 2 };
-		return *( new CCallBackLua( *this, aryTypeInfo, funWrap, szTypeInfoName, "" ) );
+		return *( new CCallScriptBase( aryTypeInfo, funWrap, szTypeInfoName, "" ) );
 	}
 
     void CScriptLua::RegistClassMember( const STypeInfoArray& aryTypeInfo, 
@@ -1416,13 +1322,12 @@ namespace Gamma
 	{
 		if( !funGetSet || !funGetSet[0] && !funGetSet[1] )
 			return;
-		CClassRegistInfo* pInfo = GetRegistInfoByTypeInfoName( szTypeInfoName );
-		map<string,CCallBase*>& mapRegisterFun = pInfo->GetRegistFunction();
-		assert( mapRegisterFun.find( szMemberName ) == mapRegisterFun.end() );
+		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo(szTypeInfoName);
+		CCallBaseMap& mapRegisterFun = pInfo->GetRegistFunction();
+		gammacstring keyName(szMemberName, true);
+		assert( mapRegisterFun.Find( keyName ) == nullptr );
 
-		CCallBase* pByScript = new CByScriptMember( *this, 
-			aryTypeInfo, funGetSet, szTypeInfoName, szMemberName );
-
+		CCallBase* pByScript = new CByScriptMember(	aryTypeInfo, funGetSet, szTypeInfoName, szMemberName );
 		lua_State* pL = GetLuaState();
 		lua_getglobal( pL, pInfo->GetClassName().c_str() );
 		assert( !lua_isnil( pL, -1 ) ); 
@@ -1436,9 +1341,7 @@ namespace Gamma
 	{
 		va_list listBase;
 		va_start( listBase, szClass );
-		CClassRegistInfo* pClassInfo = new CClassRegistInfo( this, szClass, szTypeIDName, nSize, &CScriptLua::MakeType );
-        m_mapRegistClassInfo.Insert( *pClassInfo );
-        m_mapTypeID2ClassInfo.Insert( *pClassInfo );
+		CClassRegistInfo* pClassInfo = new CClassRegistInfo( szClass, szTypeIDName, nSize );
 
         //调用完毕之后，lua stack 还有一个值，新的class
         lua_State* L = GetLuaState();
@@ -1456,10 +1359,8 @@ namespace Gamma
         const char* szBaseClass = NULL;
         while( ( szBaseClass = va_arg( listBase, const char* ) ) !=NULL )
 		{
-			gammacstring strKey( szBaseClass, true );
-			CTypeIDName* pType = m_mapTypeID2ClassInfo.Find( strKey );
-			assert( pType != NULL );
-			CClassRegistInfo* pBaseInfo = static_cast<CClassRegistInfo*>( pType );
+			CClassRegistInfo* pBaseInfo = CClassRegistInfo::GetRegistInfo(szBaseClass);
+			assert( pBaseInfo != NULL );
             pClassInfo->AddBaseRegist( pBaseInfo, va_arg( listBase, int32 ) );
             lua_getglobal( L, pBaseInfo->GetClassName().c_str() );
             assert( !lua_isnil(L,-1) );            //Base class do not exsit.
@@ -1492,8 +1393,8 @@ namespace Gamma
     void CScriptLua::RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize )
     {
         lua_State* L = GetLuaState();
-        assert( szTableName && szTableName[0] );
-        m_mapSizeOfEnum[szTypeIDName] = nTypeSize;
+		assert(szTableName && szTableName[0]);
+		new CClassRegistInfo(szTableName, szTypeIDName, nTypeSize);
         lua_newtable( L );
         lua_setglobal( L, szTableName );
     }

@@ -5,7 +5,7 @@
 // 2012-08-09
 //=====================================================================
 #pragma once
-#include "core/GammaScriptDef.h"
+#include "core/CScriptBase.h"
 
 namespace Gamma
 {
@@ -206,7 +206,7 @@ namespace Gamma
 
 	//=======================================================================
 	// 类非常量成员函数回调包装
-	//=======================================================================	
+	//=======================================================================
 	template< typename T >
 	struct TCallBack
 	{
@@ -238,17 +238,6 @@ namespace Gamma
 		static void OnCall( uint32 nCallBackIndex, void* pObject, void** pArgArray )
 		{
 			CScriptBase::CallBack( nCallBackIndex, pObject, NULL, pArgArray );
-		}
-	};
-
-	template<>
-	struct TCallBack<bool>
-	{
-		static bool OnCall( uint32 nCallBackIndex, void* pObject, void** pArgArray )
-		{
-			uint32 ReturnValue = 0;
-			CScriptBase::CallBack( nCallBackIndex, pObject, &ReturnValue, pArgArray );
-			return ReturnValue != 0;
 		}
 	};
 
@@ -351,7 +340,7 @@ namespace Gamma
 			void Wrap( uint32 p0 )	
 			{ 
 				void* pArg = &p0;
-				CallBack( s_nIndex, this, NULL, &pArg );
+				CScriptBase::CallBack( s_nIndex, this, NULL, &pArg );
 			}
 		};
 

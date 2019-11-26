@@ -59,15 +59,12 @@ namespace Gamma
 		static void*			Realloc( void* pContex, void* pPreBuff, size_t nOldSize, size_t nNewSize );	
 		static int32			Print( lua_State* pL );
 
-		static CTypeBase*		MakeType( CClassRegistInfo* pInfo, bool bValue );
-        CTypeBase*				MakeObject( const STypeInfo& argInfo, bool bValue );
-		bool					LoadFile( lua_State* pL, const char* szFileName, bool bReload );
-		int32					LoadSingleFile( lua_State* pL, const char* szFileName, bool bReload );
-
 		static void				DebugHookProc( lua_State *pState, lua_Debug* pDebug );
 		static bool				GetGlobObject( lua_State* pL, const char* szKey );
 		static bool				SetGlobObject( lua_State* pL, const char* szKey );
 
+		bool					LoadFile( lua_State* pL, const char* szFileName, bool bReload );
+		int32					LoadSingleFile( lua_State* pL, const char* szFileName, bool bReload );
 		bool					RunString( lua_State* pL, const char* szStr );
         void					AddLoader();
 		void					IO_Replace();
@@ -101,8 +98,6 @@ namespace Gamma
 		lua_State*              GetLuaState();
 		void					PushLuaState( lua_State* pL );
 		void					PopLuaState();
-		CTypeBase*              MakeParamType( const STypeInfo& argTypeInfo );
-
 		void					SetDebugLine();
 
         static  CScriptLua*     GetScript( lua_State* pL );

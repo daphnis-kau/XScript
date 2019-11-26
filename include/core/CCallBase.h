@@ -41,7 +41,6 @@ namespace Gamma
 		DataType				m_nThis;
 		DataType				m_nResult;
 		vector<DataType>		m_listParam;
-		uint32					m_nParamSize;
 		uint32					m_nParamCount;
 		int32					m_nFunIndex;
 
@@ -56,7 +55,6 @@ namespace Gamma
 		const vector<DataType>&	GetParamList()				{ return m_listParam; }
 		DataType				GetResultType()				{ return m_nResult; }
 		DataType				GetThisType()				{ return m_nThis; }
-		uint32					GetParamSize()				{ return m_nParamSize; }
 		uint32					GetParamCount()				{ return m_nParamCount; }
 		int32					GetFunctionIndex()			{ return m_nFunIndex; }
 		const gammacstring&		GetFunctionName()			{ return m_sFunName; }

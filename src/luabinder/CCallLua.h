@@ -15,12 +15,22 @@ namespace Gamma
 {
 	class CScriptLua;
 
+	extern CLuaTypeBase* s_aryType[eDT_count];
+	inline CLuaTypeBase* GetTypeBase(DataType eType)
+	{
+		if (eType < eDT_count)
+			return s_aryType[eType];
+		if (eType & 1)
+			return &CLuaObject::GetInst();
+		return &CLuaValueObject::GetInst();
+	}
+
     //=====================================================================
     // Lua脚本调用C++的接口
     //=====================================================================
     class CByScriptLua
 	{
-		static void GetParam( lua_State* pL, int32 nStartIndex, 
+		static void GetParam( lua_State* pL, int32 nStartIndex, size_t arySize[],
 			const vector<DataType>& listParam, char* pDataBuf, void** pArgArray );
     public:
         static int32 CallByLua( lua_State* pL );

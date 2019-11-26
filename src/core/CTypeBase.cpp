@@ -3,8 +3,7 @@
 
 namespace Gamma
 {
-
-	const int32 s_arySize[eDT_count] =
+	const size_t s_aryOrgSize[eDT_count] =
 	{
 		0,
 		sizeof( char ),
@@ -25,6 +24,29 @@ namespace Gamma
 		sizeof( const char* ),
 		sizeof( const wchar_t* ),
 		sizeof( void* )
+	};
+
+	const size_t s_aryAligenSize[eDT_count] =
+	{
+		0,
+		AligenUp(sizeof(char), sizeof(void*)),
+		AligenUp(sizeof(int8), sizeof(void*)),
+		AligenUp(sizeof(int16), sizeof(void*)),
+		AligenUp(sizeof(int32), sizeof(void*)),
+		AligenUp(sizeof(int64), sizeof(void*)),
+		AligenUp(sizeof(long), sizeof(void*)),
+		AligenUp(sizeof(uint8), sizeof(void*)),
+		AligenUp(sizeof(uint16), sizeof(void*)),
+		AligenUp(sizeof(uint32), sizeof(void*)),
+		AligenUp(sizeof(uint64), sizeof(void*)),
+		AligenUp(sizeof(ulong), sizeof(void*)),
+		AligenUp(sizeof(wchar_t), sizeof(void*)),
+		AligenUp(sizeof(bool), sizeof(void*)),
+		AligenUp(sizeof(float), sizeof(void*)),
+		AligenUp(sizeof(double), sizeof(void*)),
+		AligenUp(sizeof(const char*), sizeof(void*)),
+		AligenUp(sizeof(const wchar_t*), sizeof(void*)),
+		AligenUp(sizeof(void*), sizeof(void*))
 	};
 
 	DataType ToDataType( const STypeInfo& argTypeInfo )
@@ -68,9 +90,27 @@ namespace Gamma
 	size_t GetSizeOfType( DataType nType )
 	{
 		if( nType < eDT_count )
-			return s_arySize[nType];
+			return s_aryOrgSize[nType];
 		if( nType&1 )
 			return sizeof( void* );
 		return ( (CClassRegistInfo *)nType )->GetClassSize();
 	}
+
+	size_t GetAligenSizeOfType(DataType nType)
+	{
+		if (nType < eDT_count)
+			return s_aryAligenSize[nType];
+		if (nType & 1)
+			return sizeof(void*);
+		return ((CClassRegistInfo *)nType)->GetClassAligenSize();
+	}
+
+	size_t CalBufferSize(const std::vector<DataType>& aryParam, size_t arySize[])
+	{
+		size_t nTotalSize = 0;
+		for (size_t i = 0; i < aryParam.size(); i++)
+			nTotalSize += (arySize[i] = GetAligenSizeOfType(aryParam[i]));
+		return nTotalSize;
+	}
+
 }

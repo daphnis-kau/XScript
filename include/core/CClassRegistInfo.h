@@ -24,7 +24,8 @@ namespace Gamma
 	class CTypeBase;
 	class CScriptBase;
 	class CCallScriptBase;
-	class CClassRegistInfo;
+	class CClassRegistInfo; 
+	class CGlobalClassRegist;
 	typedef TRBTree<CCallBase> CCallBaseMap;
 	typedef TRBTree<CClassRegistInfo> CTypeIDNameMap;
 
@@ -38,24 +39,26 @@ namespace Gamma
 
 		gammacstring					m_szClassName;		// 类的名字
 		gammacstring					m_szTypeIDName;		// 编译器生成的类型信息
-		gammacstring					m_strObjectIndex;	// 对象指针域
 
 		vector<CCallScriptBase*>		m_vecNewFunction;	// 需要注册的函数对应的索引以及对应的引导函数
 		vector<SBaseInfo>				m_vecBaseRegist;    // 包含的基类信息
 		vector<SBaseInfo>				m_vecChildRegist;   // 包含的子类信息
         IObjectConstruct*				m_pObjectConstruct;
-        uint32							m_nSizeOfClass;
+		uint32							m_nSizeOfClass;
+		uint32							m_nAligenSizeOfClass;
 		bool							m_bIsEnum;
 		uint8							m_nInheritDepth;
 		CCallBaseMap					m_mapRegistFunction;
-
-    public:
-        CClassRegistInfo( const char* szClassName, const char* szTypeIDName, uint32 nSize );
+		
+		friend class CGlobalClassRegist;
+		CClassRegistInfo(const char* szClassName);
 		~CClassRegistInfo( void );
+    public:
 
 		operator const gammacstring&( ) const { return m_szTypeIDName; }
 		bool operator < ( const gammacstring& strKey ) { return (const gammacstring&)*this < strKey; }
 
+		static CClassRegistInfo*		Register(const char* szClassName, const char* szTypeIDName, uint32 nSize);
 		static CClassRegistInfo*		GetRegistInfo( const char* szTypeInfoName );
 		static CCallBase*				GetGlobalCallBase( const STypeInfoArray& aryTypeInfo );
 
@@ -79,8 +82,9 @@ namespace Gamma
 		const vector<SBaseInfo>&    	BaseRegist() const { return m_vecBaseRegist; }
 		const gammacstring&            	GetTypeIDName() const { return m_szTypeIDName; }
 		const gammacstring&            	GetClassName() const { return m_szClassName; }
-		const gammacstring&            	GetObjectIndex() const { return m_strObjectIndex; }
-        uint32                          GetClassSize() const { return m_nSizeOfClass; }
+		const gammacstring&            	GetObjectIndex() const { return m_szTypeIDName; }
+		uint32                          GetClassSize() const { return m_nSizeOfClass; }
+		uint32                          GetClassAligenSize() const { return m_nAligenSizeOfClass; }
 		uint8							GetInheritDepth() const { return m_nInheritDepth; }
 		const CCallBaseMap&				GetRegistFunction() const { return m_mapRegistFunction; }
 		CCallBaseMap&					GetRegistFunction() { return m_mapRegistFunction; }

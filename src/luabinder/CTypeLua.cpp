@@ -40,7 +40,7 @@ namespace Gamma
     { 
     }
 
-    void CLuaObject::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+    void CLuaObject::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId )
     {
         nStkId = AbsStackIdx( pL, nStkId );
 		int32 nType = lua_type( pL, nStkId );
@@ -145,13 +145,13 @@ namespace Gamma
 	{
 	}
 
-	void CLuaValueObject::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+	void CLuaValueObject::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId )
 	{
 		void* pObject = NULL;
 		CClassRegistInfo* pClassInfo = (CClassRegistInfo*)( ( eType >> 1 ) << 1 );
-		CLuaObject::GetFromVM( eType, pL, (char*)&pObject, nStkId, bExtend32Bit );
+		CLuaObject::GetFromVM( eType, pL, (char*)&pObject, nStkId );
 		pClassInfo->Assign( pDataBuf, pObject );
-		pScriptLua->CheckUnlinkCppObj();
+		CScriptLua::GetScript( pL )->CheckUnlinkCppObj();
 	}
 
 	void CLuaValueObject::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
@@ -167,7 +167,7 @@ namespace Gamma
 		CScriptLua::NewLuaObj( pL, pClassInfo, pDataBuf );
 		ConstructLua( pL );
 		pClassInfo->Release( pDataBuf );
-		m_pScriptBase->CheckUnlinkCppObj();
+		CScriptLua::GetScript(pL)->CheckUnlinkCppObj();
 	}
 
 	//=====================================================================
@@ -244,7 +244,7 @@ namespace Gamma
 		lua_pop( pL, 1 );
     }
 
-    void CLuaBuffer::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId, bool bExtend32Bit )
+    void CLuaBuffer::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId )
     {
 		nStkId = AbsStackIdx( pL, nStkId );
 		int32 nType = lua_type( pL, nStkId );

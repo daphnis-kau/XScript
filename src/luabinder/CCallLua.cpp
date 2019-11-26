@@ -23,95 +23,115 @@ extern "C"
 
 namespace Gamma
 {
+	CLuaTypeBase* s_aryType[eDT_count] =
+	{
+		0,
+		&CLuaChar::GetInst(),
+		&CLuaInt8::GetInst(),
+		&CLuaInt16::GetInst(),
+		&CLuaInt32::GetInst(),
+		&CLuaInt64::GetInst(),
+		&CLuaLong::GetInst(),
+		&CLuaUint8::GetInst(),
+		&CLuaUint16::GetInst(),
+		&CLuaUint32::GetInst(),
+		&CLuaUint64::GetInst(),
+		&CLuaUlong::GetInst(),
+		&CLuaWChar::GetInst(),
+		&CLuaBool::GetInst(),
+		&CLuaFloat::GetInst(),
+		&CLuaDouble::GetInst(),
+		&CLuaString::GetInst(),
+		&CLuaWString::GetInst(),
+		&CLuaBuffer::GetInst()
+	};
 
     //=====================================================================
     // Lua脚本调用C++的接口
     //=====================================================================
-    void CByScriptLua::GetParam( lua_State* pL, int32 nStartIndex, 
+    void CByScriptLua::GetParam( lua_State* pL, int32 nStartIndex, size_t arySize[],
 		const vector<DataType>& listParam, char* pDataBuf, void** pArgArray )
     {
-        int32 nStkId = nStartIndex;
-		int32 nArgIndex = 0;
-
 		//Lua函数最右边的参数，在Lua stack的栈顶,         
         //放在m_listParam的第一个成员中
-        for( list<CTypeBase*>::const_iterator it = listParam.begin();
-			it != listParam.end(); ++it, nStkId++ )
+        for( int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++ )
 		{
-			CLuaTypeBase* pParamType = static_cast<CLuaTypeBase*>(*it);
-            pParamType->GetFromVM( pL, pDataBuf, nStkId, true ); 
-			pArgArray[nArgIndex++] = pDataBuf;
-			pDataBuf += AligenUp( pParamType->GetLen(), sizeof(void*) );
+			DataType nType = listParam[nArgIndex];
+			CLuaTypeBase* pParamType = GetTypeBase(nType);
+            pParamType->GetFromVM(nType, pL, pDataBuf, nStartIndex++ );
+			pArgArray[nArgIndex] = pDataBuf;
+			pDataBuf += arySize[nArgIndex];
 		}
 	}
 
     int32 CByScriptLua::CallByLua( lua_State* pL )
 	{
-		CByScriptBase* pScript = (CByScriptBase*)lua_touserdata( pL, lua_upvalueindex(1) );
+		CByScriptBase* pCallBase = (CByScriptBase*)lua_touserdata( pL, lua_upvalueindex(1) );
 		uint32 nTop = lua_gettop( pL );
 
-		CScriptLua* pScriptLua = (CScriptLua*)pScript->GetScript();
-		pScriptLua->CheckUnlinkCppObj();
-		pScriptLua->PushLuaState( pL );
+		CScriptLua* pScript = CScriptLua::GetScript(pL);
+		pScript->CheckUnlinkCppObj();
+		pScript->PushLuaState( pL );
 
 		try
 		{
-			const list<CTypeBase*>& listParam = pScript->GetParamList();
-			CLuaTypeBase* pResultType = static_cast<CLuaTypeBase*>( pScript->GetResultType() );
-			uint32 nParamSize = AligenUp( pScript->GetParamSize(), sizeof(void*) );
-			uint32 nReturnSize = AligenUp( pResultType ? pResultType->GetLen() : sizeof(int64), sizeof(void*) );
-			uint32 nArgSize = AligenUp( pScript->GetParamCount()*sizeof(void*), sizeof(void*) );
+			const vector<DataType>& listParam = pCallBase->GetParamList();
+			size_t nParamCount = listParam.size();
+			size_t* aryParamSize = (size_t*)alloca(sizeof(size_t)*nParamCount);
+			size_t nParamSize = CalBufferSize(listParam, aryParamSize);
+			DataType nResultType = pCallBase->GetResultType();
+			uint32 nReturnSize = nResultType ? GetAligenSizeOfType(nResultType) : sizeof(int64);
+			uint32 nArgSize = pCallBase->GetParamCount()*sizeof(void*);
 			char* pDataBuf = (char*)alloca( nParamSize + nReturnSize + nArgSize );
 			char* pResultBuf = pDataBuf + nParamSize;
 			void** pArgArray = (void**)( pResultBuf + nReturnSize );
 			void* pObject = NULL;
 
 			int32 nStkId = 1;
-			if( pScript->GetThisType() )				
+			DataType nThisType = pCallBase->GetThisType();
+			if(nThisType)
 			{
-				CLuaTypeBase* pThis = static_cast<CLuaTypeBase*>( pScript->GetThisType() );
-				pThis->GetFromVM( pL, (char*)&pObject, nStkId++, false ); 
+				CLuaObject::GetInst().GetFromVM( nThisType, pL, (char*)&pObject, nStkId++ ); 
 				assert( pObject );
 			}
 
-			memset( pDataBuf, 0, pScript->GetParamSize() );
-			if( pScript->GetFunctionIndex() == eCT_MemberFunction )
+			if( pCallBase->GetFunctionIndex() == eCT_MemberFunction )
 			{
 				if( nTop > 1 )
-					GetParam( pL, nStkId, listParam, pDataBuf, pArgArray );
+					GetParam( pL, nStkId, aryParamSize, listParam, pDataBuf, pArgArray );
 				lua_settop( pL, 0 );
-				pScript->Call(pObject, nTop > 1 ? NULL : pResultBuf, pArgArray);
-				pScriptLua->CheckUnlinkCppObj();
-				if( pResultType && nTop <= 1 )
-					pResultType->PushToVM( pL, pResultBuf );
+				pCallBase->Call(pObject, nTop > 1 ? NULL : pResultBuf, pArgArray, *pScript);
+				pScript->CheckUnlinkCppObj();
+				if( nResultType && nTop <= 1 )
+					GetTypeBase(nResultType)->PushToVM( nResultType, pL, pResultBuf );
 			}
 			else
 			{
-				GetParam( pL, nStkId, listParam, pDataBuf, pArgArray );
+				GetParam( pL, nStkId, aryParamSize, listParam, pDataBuf, pArgArray );
 				lua_settop( pL, 0 );
-				pScript->Call(pObject, pResultBuf, pArgArray);
-				pScriptLua->CheckUnlinkCppObj();
-				if( pResultType )
-					pResultType->PushToVM( pL, pResultBuf );
+				pCallBase->Call(pObject, pResultBuf, pArgArray, *pScript);
+				pScript->CheckUnlinkCppObj();
+				if(nResultType)
+					GetTypeBase(nResultType)->PushToVM( nResultType, pL, pResultBuf );
 			}
-			pScriptLua->PopLuaState();
+			pScript->PopLuaState();
 			return 1;
 		}
         catch( std::exception& exp )
 		{
 			char szBuf[256];
-			sprintf( szBuf, "An unknow exception occur on calling %s\n", pScript->GetFunctionName().c_str() );
+			sprintf( szBuf, "An unknow exception occur on calling %s\n", pCallBase->GetFunctionName().c_str() );
 			std::cout << szBuf << endl;
             luaL_error( pL, exp.what() );
         }
 		catch( ... )
         {
 			char szBuf[256];
-			sprintf( szBuf, "An unknow exception occur on calling %s\n", pScript->GetFunctionName().c_str() );
+			sprintf( szBuf, "An unknow exception occur on calling %s\n", pCallBase->GetFunctionName().c_str() );
             luaL_error( pL, szBuf );
         }
 
-		pScriptLua->PopLuaState();
+		pScript->PopLuaState();
         return 0;
     }
 
@@ -121,16 +141,18 @@ namespace Gamma
 	void CCallBackLua::PushParam2VM( CScriptLua* pScript,
 		const vector<DataType>& listParam, lua_State* pL, void** pArgArray )
 	{
-		uint32 i = 0;
-		for( list<CTypeBase*>::iterator it = m_listParam.begin(); it != m_listParam.end(); ++it )
-			static_cast<CLuaTypeBase*>( *it )->PushToVM( (lua_State*)pVM, (char*)pArgArray[i++] );
+		for (int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++)
+		{
+			DataType nType = listParam[nArgIndex];
+			CLuaTypeBase* pParamType = GetTypeBase(nType);
+			pParamType->PushToVM( nType, pL, (char*)pArgArray[nArgIndex] );
+		}
 	}
 
 	bool CCallBackLua::CallVM( CScriptLua* pScript,	CCallScriptBase* pCallBase,
 		SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
 	{	
-		CScriptLua* pScriptLua = static_cast<CScriptLua*>( m_pScript );
-		lua_State* pL = pScriptLua->GetLuaState();
+		lua_State* pL = pScript->GetLuaState();
 
 		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
@@ -148,12 +170,12 @@ namespace Gamma
 			return false;                //*******表不存在时，此代码有问题************
 		}
 
-		lua_getfield( pL, -1, m_sFunName.c_str() ); // 4
+		lua_getfield( pL, -1, pCallBase->GetFunctionName().c_str() ); // 4
 
 		if( lua_tocfunction( pL, -1 ) == &CByScriptLua::CallByLua )
 		{
 			lua_getupvalue( pL, -1, 1 );
-			if( this == lua_touserdata( pL, -1 ) )
+			if( pCallBase == lua_touserdata( pL, -1 ) )
 			{
 				// call self
 				lua_pop( pL, 5 );
@@ -167,12 +189,14 @@ namespace Gamma
 			return false;
 		}
 
-		lua_insert( pL, -2 );
-		PushParam2VM( pL, pArgArray );
-		int32 nArg = (int32)( m_listParam.size() + 1 );
-		lua_pcall( pL, nArg, m_pResult ? 1 : 0, nErrFunIndex );
-		if( m_pResult )
-			static_cast<CLuaTypeBase*>( m_pResult )->GetFromVM( pL, (char*)pRetBuf, -1, true );
+		lua_insert(pL, -2);
+		const vector<DataType>& listParam = pCallBase->GetParamList();
+		DataType nResultType = pCallBase->GetResultType();
+		PushParam2VM( pScript, listParam, pL, pArgArray );
+		int32 nArg = (int32)( listParam.size() + 1 );
+		lua_pcall( pL, nArg, nResultType ? 1 : 0, nErrFunIndex );
+		if(nResultType)
+			GetTypeBase(nResultType)->GetFromVM( nResultType, pL, (char*)pRetBuf, -1 );
 		lua_settop( pL, nErrFunIndex - 1 );
 		return true;
     }

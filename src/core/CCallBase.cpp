@@ -11,8 +11,7 @@ namespace Gamma
 {
 	CCallBase::CCallBase(const STypeInfoArray& aryTypeInfo, int32 nFunIndex,
 		const char* szTypeInfoName, gammacstring strFunName )
-		: m_nParamSize( 0 )
-		, m_nThis( eDT_void )
+		: m_nThis( eDT_void )
         , m_nResult( eDT_void )
 		, m_nFunIndex( nFunIndex )
 		, m_sFunName( strFunName.c_str(), strFunName.size() )
@@ -33,8 +32,6 @@ namespace Gamma
 				m_listParam.push_back( nType );
 		}
 
-		//for(int32 i = 0; i < m_listParam.size(); i++)
-		//	m_nParamSize += AligenUp(m_listParam[i]->GetLen(), sizeof(void*));
 		m_nParamCount = (uint32)m_listParam.size();
     }
 
@@ -65,7 +62,6 @@ namespace Gamma
 		, m_funSet( funGetSet[1] )
 	{
 		DataType nType = ToDataType( aryTypeInfo.aryInfo[1] );
-		//m_nParamSize = AligenUp( pType->GetLen(), sizeof(void*) );
 		m_listParam.push_back( nType );
 		m_nParamCount = 1;
 	}

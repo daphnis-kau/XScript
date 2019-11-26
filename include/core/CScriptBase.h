@@ -44,9 +44,7 @@ namespace Gamma
 		virtual ~CScriptBase( void );
 
 		CDebugBase*				GetDebugger() const { return m_pDebugger; }
-
-        virtual CTypeBase*		MakeParamType( const STypeInfo& argTypeInfo ) = 0;
-		static bool				IsAllocVirtualTable( void* pVirtualTable );
+        static bool				IsAllocVirtualTable( void* pVirtualTable );
 		static void				UnlinkCppObj( void* pObj );
 		static int32			CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray );
 								

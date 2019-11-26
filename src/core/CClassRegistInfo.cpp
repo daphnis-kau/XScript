@@ -14,13 +14,10 @@ namespace Gamma
 	public:
 		static CGlobalClassRegist& GetInst();
 		CTypeIDNameMap	m_mapTypeID2ClassInfo;
-		map<string, int32>		m_mapSizeOfEnum;
 	};
 
 	CGlobalClassRegist::CGlobalClassRegist()
 	{
-		CClassRegistInfo* pClassInfo = new CClassRegistInfo( "", "", 1 );
-		m_mapTypeID2ClassInfo.Insert( *pClassInfo );
 	}
 
 	CGlobalClassRegist::~CGlobalClassRegist()
@@ -38,11 +35,38 @@ namespace Gamma
 		return s_Instance;
 	}
 
-	CClassRegistInfo* CClassRegistInfo::GetRegistInfo( const char* szTypeInfoName )
+	CClassRegistInfo* CClassRegistInfo::Register(
+		const char* szClassName, const char* szTypeIDName, uint32 nSize )
+	{
+		CClassRegistInfo::CClassRegistInfo(const char* szClassName,
+			const char* szTypeIDName, uint32 nSize)
+			: m_szClassName(szClassName)
+			, m_szTypeIDName(szTypeIDName)
+			, m_nSizeOfClass(nSize)
+			, m_nAligenSizeOfClass(AligenUp(nSize, sizeof(void*)))
+			, m_pObjectConstruct(NULL)
+			, m_bIsEnum(false)
+			, m_nInheritDepth(0)
+		{
+			// 类的名字太长会导致CLuaObject::GetFromVM函数里面堆栈越界
+			assert(m_szClassName.size() < 240);
+			char szBuffer[1024];
+			strcpy2array_safe(szBuffer, m_szClassName.c_str());
+			strcat2array_safe(szBuffer, "_hObject");
+			m_strObjectIndex = szBuffer;
+			CGlobalClassRegist::GetInst().m_mapTypeID2ClassInfo.Insert(*this);
+		}
+
+	}
+
+	CClassRegistInfo* CClassRegistInfo::GetRegistInfo(const char* szTypeInfoName)
 	{
 		gammacstring strKey( szTypeInfoName, true );
 		static auto& Inst = CGlobalClassRegist::GetInst();
-		return Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		if (pInfo)
+			return pInfo;
+		return Register("", szTypeInfoName, 0);
 	}
 
 	CCallBase* CClassRegistInfo::GetGlobalCallBase( const STypeInfoArray& aryTypeInfo )
@@ -60,21 +84,14 @@ namespace Gamma
 	//=====================================================================
     // 类型的继承关系
     //=====================================================================
-	CClassRegistInfo::CClassRegistInfo( const char* szClassName, 
-		const char* szTypeIDName, uint32 nSize )
-		: m_szClassName( szClassName )
-		, m_szTypeIDName( szTypeIDName )
-        , m_nSizeOfClass( nSize )
+	CClassRegistInfo::CClassRegistInfo( const char* szTypeIDName )
+		: m_szTypeIDName( szTypeIDName )
+        , m_nSizeOfClass( 0 )
+		, m_nAligenSizeOfClass( 0 )
         , m_pObjectConstruct( NULL )
         , m_bIsEnum(false)
 		, m_nInheritDepth(0)
     {
-		// 类的名字太长会导致CLuaObject::GetFromVM函数里面堆栈越界
-		assert( m_szClassName.size() < 240 );
-		char szBuffer[1024];
-		strcpy2array_safe( szBuffer, m_szClassName.c_str() );
-		strcat2array_safe( szBuffer, "_hObject" );
-		m_strObjectIndex = szBuffer;
     }
 
     CClassRegistInfo::~CClassRegistInfo()

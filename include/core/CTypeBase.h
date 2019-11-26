@@ -17,6 +17,7 @@ namespace Gamma
 
 	DataType ToDataType( const STypeInfo& argTypeInfo );
 	size_t	 GetSizeOfType( DataType nType );
+	size_t	 GetAligenSizeOfType( DataType nType );
 	size_t	 CalBufferSize( const std::vector<DataType>& aryParam, size_t arySize[] );
 }
 
