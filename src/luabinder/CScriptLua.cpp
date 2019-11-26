@@ -1218,9 +1218,9 @@ namespace Gamma
 		if( GetGlobObject( pL, szFuncBuf ) || ( !luaL_loadstring( pL, szFuncBuf ) && SetGlobObject( pL, szFuncBuf ) ) )
 			lua_pcall( pL, 0, LUA_MULTRET, 0 );
 
-		uint32 nParamIndex = 0;
+		uint32 nParamCount = (uint32)pCallBase->GetParamCount();
 		const vector<DataType>& listParam = pCallBase->GetParamList();
-		for (int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++)
+		for (int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++)
 		{
 			DataType nType = listParam[nArgIndex];
 			CLuaTypeBase* pParamType = GetTypeBase(nType);
@@ -1228,7 +1228,7 @@ namespace Gamma
 		}
 
 		DataType nResultType = pCallBase->GetResultType();
-		lua_pcall( pL, nParamIndex, nResultType && pResultBuf, nErrFunIndex );
+		lua_pcall( pL, nParamCount, nResultType && pResultBuf, nErrFunIndex );
 
 		if( nResultType && pResultBuf )
 		{
@@ -1341,7 +1341,7 @@ namespace Gamma
 	{
 		va_list listBase;
 		va_start( listBase, szClass );
-		CClassRegistInfo* pClassInfo = new CClassRegistInfo( szClass, szTypeIDName, nSize );
+		CClassRegistInfo* pClassInfo = CClassRegistInfo::Register( szClass, szTypeIDName, nSize );
 
         //调用完毕之后，lua stack 还有一个值，新的class
         lua_State* L = GetLuaState();
@@ -1394,7 +1394,7 @@ namespace Gamma
     {
         lua_State* L = GetLuaState();
 		assert(szTableName && szTableName[0]);
-		new CClassRegistInfo(szTableName, szTypeIDName, nTypeSize);
+		CClassRegistInfo::Register( szTableName, szTypeIDName, nTypeSize );
         lua_newtable( L );
         lua_setglobal( L, szTableName );
     }

@@ -29,7 +29,7 @@ namespace Gamma
 		}
 	}
 
-	CGlobalClassRegist& CGlobalClassRegist::GetInst()
+	inline CGlobalClassRegist& CGlobalClassRegist::GetInst()
 	{
 		static CGlobalClassRegist s_Instance;
 		return s_Instance;
@@ -38,35 +38,26 @@ namespace Gamma
 	CClassRegistInfo* CClassRegistInfo::Register(
 		const char* szClassName, const char* szTypeIDName, uint32 nSize )
 	{
-		CClassRegistInfo::CClassRegistInfo(const char* szClassName,
-			const char* szTypeIDName, uint32 nSize)
-			: m_szClassName(szClassName)
-			, m_szTypeIDName(szTypeIDName)
-			, m_nSizeOfClass(nSize)
-			, m_nAligenSizeOfClass(AligenUp(nSize, sizeof(void*)))
-			, m_pObjectConstruct(NULL)
-			, m_bIsEnum(false)
-			, m_nInheritDepth(0)
-		{
-			// 类的名字太长会导致CLuaObject::GetFromVM函数里面堆栈越界
-			assert(m_szClassName.size() < 240);
-			char szBuffer[1024];
-			strcpy2array_safe(szBuffer, m_szClassName.c_str());
-			strcat2array_safe(szBuffer, "_hObject");
-			m_strObjectIndex = szBuffer;
-			CGlobalClassRegist::GetInst().m_mapTypeID2ClassInfo.Insert(*this);
-		}
-
+		gammacstring strKey( szTypeIDName, true );
+		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
+		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		if( !pInfo )
+			pInfo = new CClassRegistInfo(szTypeIDName);
+		assert( pInfo->GetClassSize() == 0 );
+		pInfo->m_szClassName = szClassName;
+		pInfo->m_nSizeOfClass = nSize;
+		pInfo->m_nAligenSizeOfClass = AligenUp( nSize, sizeof( void* ) );
+		return pInfo;
 	}
 
-	CClassRegistInfo* CClassRegistInfo::GetRegistInfo(const char* szTypeInfoName)
+	CClassRegistInfo* CClassRegistInfo::GetRegistInfo( const char* szTypeInfoName )
 	{
 		gammacstring strKey( szTypeInfoName, true );
-		static auto& Inst = CGlobalClassRegist::GetInst();
+		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
-		if (pInfo)
+		if( pInfo )
 			return pInfo;
-		return Register("", szTypeInfoName, 0);
+		return new CClassRegistInfo( szTypeInfoName );
 	}
 
 	CCallBase* CClassRegistInfo::GetGlobalCallBase( const STypeInfoArray& aryTypeInfo )
@@ -91,7 +82,8 @@ namespace Gamma
         , m_pObjectConstruct( NULL )
         , m_bIsEnum(false)
 		, m_nInheritDepth(0)
-    {
+	{
+		CGlobalClassRegist::GetInst().m_mapTypeID2ClassInfo.Insert( *this );
     }
 
     CClassRegistInfo::~CClassRegistInfo()

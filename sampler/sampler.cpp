@@ -86,12 +86,10 @@ class CCC
 {
 };
 
-void run_cpp_lua( int a, int b, int c, int d )
+void run_cpp_lua( int a, const int& b, int c, int d )
 {
 	g_ScriptLua->RunFunction( NULL, "aaa", a, "qqqqqq" );
 }
-
-
 
 void TestLua()
 {
