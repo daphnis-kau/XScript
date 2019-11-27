@@ -63,16 +63,7 @@ namespace Gamma
 		static bool				GetGlobObject( lua_State* pL, const char* szKey );
 		static bool				SetGlobObject( lua_State* pL, const char* szKey );
 
-		virtual void            RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		virtual void            RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		virtual void            RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		virtual ICallBackWrap&	RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		virtual ICallBackWrap&	RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap );
-		virtual void            RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
-		virtual void            RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName );
-		virtual void            RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... );
-		virtual void            RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize );
-
+		void					BuildRegisterInfo();
 		bool					LoadFile( lua_State* pL, const char* szFileName, bool bReload );
 		int32					LoadSingleFile( lua_State* pL, const char* szFileName, bool bReload );
 		bool					RunString( lua_State* pL, const char* szStr );

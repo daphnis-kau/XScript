@@ -58,9 +58,10 @@ namespace Gamma
 		operator const gammacstring&( ) const { return m_szTypeIDName; }
 		bool operator < ( const gammacstring& strKey ) { return (const gammacstring&)*this < strKey; }
 
-		static CClassRegistInfo*		Register(const char* szClassName, const char* szTypeIDName, uint32 nSize);
+		static CClassRegistInfo*		Register( const char* szClassName, const char* szTypeIDName, uint32 nSize, bool bEnum );
 		static CClassRegistInfo*		GetRegistInfo( const char* szTypeInfoName );
 		static CCallBase*				GetGlobalCallBase( const STypeInfoArray& aryTypeInfo );
+		static const CTypeIDNameMap&	GetAllRegisterInfo();
 
 		void							Create( void * pObject );
 		void							Assign( void* pDest, void* pSrc );

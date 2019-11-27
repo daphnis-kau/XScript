@@ -36,7 +36,7 @@ namespace Gamma
 	}
 
 	CClassRegistInfo* CClassRegistInfo::Register(
-		const char* szClassName, const char* szTypeIDName, uint32 nSize )
+		const char* szClassName, const char* szTypeIDName, uint32 nSize, bool bEnum )
 	{
 		gammacstring strKey( szTypeIDName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
@@ -46,6 +46,7 @@ namespace Gamma
 		assert( pInfo->GetClassSize() == 0 );
 		pInfo->m_szClassName = szClassName;
 		pInfo->m_nSizeOfClass = nSize;
+		pInfo->m_bIsEnum = bEnum;
 		pInfo->m_nAligenSizeOfClass = AligenUp( nSize, sizeof( void* ) );
 		return pInfo;
 	}
@@ -70,6 +71,11 @@ namespace Gamma
 		if( pCallBase == NULL )
 			return new CCallBase( aryTypeInfo, eCT_TempFunction, "", key );
 		return pCallBase;
+	}
+
+	const Gamma::CTypeIDNameMap& CClassRegistInfo::GetAllRegisterInfo()
+	{
+		return CGlobalClassRegist::GetInst().m_mapTypeID2ClassInfo;
 	}
 
 	//=====================================================================

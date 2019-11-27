@@ -297,6 +297,8 @@ namespace Gamma
 
 		CLuaBuffer::RegistClass( this );
 		lua_register( pL, "print",		&CScriptLua::Print );
+
+		BuildRegisterInfo();
     }
 
     CScriptLua::~CScriptLua(void)
@@ -1108,6 +1110,73 @@ namespace Gamma
 		 return false;
 	 }
 
+	 void CScriptLua::BuildRegisterInfo()
+	 {
+		lua_State* pL = GetLuaState();
+		 const CTypeIDNameMap& mapRegisterInfo = CClassRegistInfo::GetAllRegisterInfo();
+		 for( auto pInfo = mapRegisterInfo.GetFirst(); pInfo; pInfo = pInfo->GetNext() )
+		 {
+			 if( pInfo->IsEnum() )
+				 continue;
+
+			 const CCallBaseMap& mapFunction = pInfo->GetRegistFunction();
+			 const char* szClass = pInfo->GetClassName().c_str();
+			 if( szClass && szClass[0] )
+			 {
+				 //调用完毕之后，lua stack 还有一个值，新的class
+				 lua_getglobal( pL, "class" );
+				 assert( !lua_isnil( pL, -1 ) );            //"class"没被注册
+
+				 int nClassIdx = lua_gettop( pL );
+				 lua_getglobal( pL, szClass );
+				 assert( lua_isnil( pL, -1 ) );            //szClass已被注册
+				 lua_pop( pL, 1 );                        //1
+
+				 //生成全局类名
+				 for( size_t i = 0; i < pInfo->BaseRegist().size(); i++ )
+				 {
+					 auto pBaseInfo = pInfo->BaseRegist()[i].m_pBaseInfo;
+					 assert( pBaseInfo != NULL );
+					 lua_getglobal( pL, pBaseInfo->GetClassName().c_str() );
+					 assert( !lua_isnil( pL, -1 ) );            //Base class do not exsit.
+				 }
+
+				 lua_call( pL, (int32)pInfo->BaseRegist().size(), 1 );            //top = 1, the new class 
+				 lua_pushvalue( pL, -1 );
+				 lua_setglobal( pL, szClass );            //top = 1, the new class
+
+				 //给类设置类属性结构
+				 lua_pushstring( pL, "_info" );
+				 lua_pushlightuserdata( pL, pInfo );
+				 lua_rawset( pL, nClassIdx );            //top = 1
+
+				 //设置垃圾回收函数
+				 lua_pushstring( pL, "__gc" );
+				 lua_pushcfunction( pL, Delete );
+				 lua_rawset( pL, nClassIdx );            //top = 1
+
+				 //将默认的new替换成新的new
+				 lua_pushstring( pL, "ctor" );
+				 lua_pushcfunction( pL, Construct );
+				 lua_rawset( pL, nClassIdx );
+			 }
+			 else
+			 {
+				lua_getglobal( pL, "_G" );
+			 }
+
+			 assert( !lua_isnil( pL, -1 ) );
+
+			 for( auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext() )
+			 {
+				 lua_pushlightuserdata( pL, pCall );
+				 lua_pushcclosure( pL, CByScriptLua::CallByLua, 1 );
+				 lua_setfield( pL, -2, pCall->GetFunctionName().c_str() );
+			 }
+			 lua_pop( pL, 1 );
+		 }
+	 }
+
 #ifdef _DEBUG
 	 uint32 g_nIndex = 0;
 	 pair<const char*, uint32> g_aryLog[1024];
@@ -1239,165 +1308,6 @@ namespace Gamma
 		lua_pop( pL, 1 );
 		return true;
 	}
-
-    void CScriptLua::RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
-    {
-		CByScriptBase* pByScript = new CByScriptBase( aryTypeInfo, funWrap, "", eCT_GlobalFunction, szFunctionName );
-		lua_State* pL = GetLuaState();
-        lua_pushlightuserdata( pL, pByScript );
-        lua_pushcclosure( pL, CByScriptLua::CallByLua, 1 );
-        lua_setglobal( pL, szFunctionName );
-	}
-
-	void CScriptLua::RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
-	{
-		CByScriptBase* pByScript = new CByScriptBase( aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassStaticFunction, szFunctionName );
-		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo( szTypeInfoName );
-		assert( pInfo );
-
-		lua_State* pL = GetLuaState();
-		lua_getglobal( pL, pInfo->GetClassName().c_str() );
-		assert( !lua_isnil( pL, -1 ) ); 
-
-		lua_pushlightuserdata( pL, pByScript );
-		lua_pushcclosure( pL, CByScriptLua::CallByLua, 1 );
-		lua_setfield( pL, -2, szFunctionName );
-		lua_pop( pL, 1 );
-	}
-
-    void CScriptLua::RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
-    {
-		CByScriptBase* pByScript = new CByScriptBase( aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassFunction, szFunctionName );
-		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo(szTypeInfoName);
-		assert( pInfo );
-
-		lua_State* pL = GetLuaState();
-		lua_getglobal( pL, pInfo->GetClassName().c_str() );
-        assert( !lua_isnil( pL, -1 ) ); 
-
-        lua_pushlightuserdata( pL, pByScript );
-        lua_pushcclosure( pL, CByScriptLua::CallByLua, 1 );
-        lua_setfield( pL, -2, szFunctionName );
-        lua_pop( pL, 1 );
-    }
-
-    ICallBackWrap& CScriptLua::RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
-	{
-		CCallScriptBase* pToScript = new CCallScriptBase( aryTypeInfo, funWrap, szTypeInfoName, szFunctionName );
-		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo(szTypeInfoName);
-		assert( pInfo );
-
-		lua_State* pL = GetLuaState();
-		lua_getglobal( pL, pInfo->GetClassName().c_str() );
-		assert( !lua_isnil( pL, -1 ) ); 
-
-		lua_pushlightuserdata( pL, pToScript );
-		lua_pushcclosure( pL, CByScriptLua::CallByLua, 1 );
-		lua_setfield( pL, -2, szFunctionName );
-		lua_pop( pL, 1 );
-
-		return *pToScript;
-	}
-
-	void CScriptLua::RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName )
-	{
-		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo(szTypeIDName);
-		assert( pInfo );
-		pInfo->SetObjectConstruct( pObjectConstruct );
-	}
-
-	ICallBackWrap& CScriptLua::RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap )
-	{
-		STypeInfo aryInfo[2];
-		aryInfo[0].m_nType = ( eDT_custom_type << 24 )|eDTE_Pointer;
-		aryInfo[0].m_szTypeName = szTypeInfoName;
-		aryInfo[1].m_nType = eDT_void;
-		aryInfo[1].m_szTypeName = typeid( void ).name();
-		STypeInfoArray aryTypeInfo = { aryInfo, 2 };
-		return *( new CCallScriptBase( aryTypeInfo, funWrap, szTypeInfoName, "" ) );
-	}
-
-    void CScriptLua::RegistClassMember( const STypeInfoArray& aryTypeInfo, 
-		IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName )
-	{
-		if( !funGetSet || !funGetSet[0] && !funGetSet[1] )
-			return;
-		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo(szTypeInfoName);
-		CCallBaseMap& mapRegisterFun = pInfo->GetRegistFunction();
-		gammacstring keyName(szMemberName, true);
-		assert( mapRegisterFun.Find( keyName ) == nullptr );
-
-		CCallBase* pByScript = new CByScriptMember(	aryTypeInfo, funGetSet, szTypeInfoName, szMemberName );
-		lua_State* pL = GetLuaState();
-		lua_getglobal( pL, pInfo->GetClassName().c_str() );
-		assert( !lua_isnil( pL, -1 ) ); 
-		lua_pushlightuserdata( pL, pByScript );
-		lua_pushcclosure( pL, CByScriptLua::CallByLua, 1 );
-		lua_setfield( pL, -2, szMemberName );
-		lua_pop( pL, 1 );
-    }
-
-    void CScriptLua::RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... )
-	{
-		va_list listBase;
-		va_start( listBase, szClass );
-		CClassRegistInfo* pClassInfo = CClassRegistInfo::Register( szClass, szTypeIDName, nSize );
-
-        //调用完毕之后，lua stack 还有一个值，新的class
-        lua_State* L = GetLuaState();
-
-        lua_getglobal( L, "class" );
-        assert( !lua_isnil( L, -1 ) );            //"class"没被注册
-
-        int nClassIdx = lua_gettop( L );
-        lua_getglobal( L, szClass );
-        assert( lua_isnil( L, -1 ) );            //szClass已被注册
-        lua_pop( L, 1 );                        //1
-
-        //生成全局类名
-        int32 nParam = 0;
-        const char* szBaseClass = NULL;
-        while( ( szBaseClass = va_arg( listBase, const char* ) ) !=NULL )
-		{
-			CClassRegistInfo* pBaseInfo = CClassRegistInfo::GetRegistInfo(szBaseClass);
-			assert( pBaseInfo != NULL );
-            pClassInfo->AddBaseRegist( pBaseInfo, va_arg( listBase, int32 ) );
-            lua_getglobal( L, pBaseInfo->GetClassName().c_str() );
-            assert( !lua_isnil(L,-1) );            //Base class do not exsit.
-            ++ nParam;
-        }
-
-        lua_call( L, nParam, 1 );            //top = 1, the new class 
-        lua_pushvalue( L, -1 );
-        lua_setglobal( L, szClass );            //top = 1, the new class
-
-        //给类设置类属性结构
-		lua_pushstring( L, "_info" );
-        lua_pushlightuserdata( L, pClassInfo );
-        lua_rawset( L, nClassIdx );            //top = 1
-
-		//设置垃圾回收函数
-		lua_pushstring( L, "__gc" );
-        lua_pushcfunction( L, Delete );
-        lua_rawset( L, nClassIdx );            //top = 1
-
-		//将默认的new替换成新的new
-		lua_pushstring( L, "ctor" );
-        lua_pushcfunction( L, Construct );
-        lua_rawset( L, nClassIdx );
-
-        lua_pop( L, 1 );
-		va_end( listBase );
-    }
-
-    void CScriptLua::RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize )
-    {
-        lua_State* L = GetLuaState();
-		assert(szTableName && szTableName[0]);
-		CClassRegistInfo::Register( szTableName, szTypeIDName, nTypeSize );
-        lua_newtable( L );
-        lua_setglobal( L, szTableName );
-    }
 
     void CScriptLua::RefScriptObj( void* pObj )
 	{

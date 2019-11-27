@@ -43,15 +43,15 @@ namespace Gamma
         CScriptBase(void);
 		virtual ~CScriptBase( void );
 
-		static void        		RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		static void        		RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		static void				RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
+		static bool        		RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
+		static bool        		RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
+		static bool				RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
 		static ICallBackWrap&	RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		static void				RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName );
-		static void				RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... );
-		static void				RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
+		static bool				RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName );
+		static bool				RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... );
+		static bool				RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
 		static ICallBackWrap&	RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap );
-		static void				RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize );
+		static bool				RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize );
 
         static bool				IsAllocVirtualTable( void* pVirtualTable );
 		static void				UnlinkCppObj( void* pObj );
