@@ -149,6 +149,7 @@ void TestLua()
 	);
 
 	g_ScriptLua->RunString( " " );
+	delete g_ScriptLua;
 }
 
 int main( int argc, const char* argv[] )
