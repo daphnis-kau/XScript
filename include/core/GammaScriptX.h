@@ -63,8 +63,18 @@ class CScriptRegisterNode : public Gamma::TList<CScriptRegisterNode>::CListNode
 	typedef typename Gamma::TList<CScriptRegisterNode>::CListNode ParentType;
 public:
 	CScriptRegisterNode( Gamma::TList<CScriptRegisterNode>& list, void(*fun)() )
-		: m_funRegister( fun ){ list.PushBack(*this); }
-	void Register() { ParentType::Remove(); m_funRegister(); }
+		: m_funRegister( fun )
+	{
+		list.PushBack(*this);
+	}
+
+	bool Register() 
+	{ 
+		m_funRegister(); 
+		auto n = GetNext(); 
+		Remove(); 
+		return n ? n->Register() : true;
+	}
 };
 
 typedef Gamma::TList<CScriptRegisterNode> CScriptRegisterList;
@@ -157,6 +167,7 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 
 
 #define REGIST_CLASS_FUNCTION_BEGIN( _class ) \
+	namespace _class##_namespace { \
 	typedef _class org_class; CScriptRegisterList listRegister; \
 	typedef Gamma::SFunctionTable* (*GetVirtualTableFun)( void* ); \
 	static GetVirtualTableFun funGetVirtualTable = NULL; \
@@ -167,7 +178,8 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 
 
 #define REGIST_CLASS_FUNCTION_BEGIN_UNDUPLICATION( _class ) \
-	{ typedef _class org_class; CScriptRegisterList listRegister; \
+	namespace _class##_namespace { \
+	typedef _class org_class; CScriptRegisterList listRegister; \
 	typedef Gamma::SFunctionTable* (*GetVirtualTableFun)( void* ); \
 	static GetVirtualTableFun funGetVirtualTable = NULL; \
 	static Gamma::SFunctionTable* pVirtual = NULL; \
@@ -177,7 +189,8 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 
 
 #define REGIST_CLASS_FUNCTION_BEGIN_ABSTRACT( _class ) \
-	{ typedef _class org_class; CScriptRegisterList listRegister; \
+	namespace _class##_namespace { \
+	typedef _class org_class; CScriptRegisterList listRegister; \
 	typedef Gamma::SFunctionTable* (*GetVirtualTableFun)( void* ); \
 	static GetVirtualTableFun funGetVirtualTable = NULL; \
 	static Gamma::SFunctionTable* pVirtual = NULL; \
@@ -187,23 +200,26 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 
 #define REGIST_CLASS_FUNCTION_END() _last;\
 	struct _class : public _last {}; \
-	while( listRegister.GetFirst() )listRegister.GetFirst()->Register(); \
+	static SGlobalExe _class_fun_register( listRegister.GetFirst()->Register() ); \
 	NORMAL_OBJECT_CONSTRUCT( _class, funGetVirtualTable, pVirtual ); \
 	static _class##Construct s_Instance; \
-	CScriptBase::RegistConstruct( &s_Instance, typeid( org_class ).name() ); }
+	static SGlobalExe _class_construct_register( \
+	CScriptBase::RegistConstruct( &s_Instance, typeid( org_class ).name() ) ); }
 
 
 #define REGIST_CLASS_FUNCTION_END_UNDUPLICATION() _last;\
 	struct _class : public _last {}; \
-	while( listRegister.GetFirst() )listRegister.GetFirst()->Register(); \
+	static SGlobalExe _class_fun_register( listRegister.GetFirst()->Register() ); \
 	UNDUPLICATION_OBJECT_CONSTRUCT( _class, funGetVirtualTable, pVirtual ); \
 	static _class##Construct s_Instance; \
-	CScriptBase::RegistConstruct( &s_Instance, typeid( org_class ).name() ); }
+	static SGlobalExe _class_construct_register( \
+	CScriptBase::RegistConstruct( &s_Instance, typeid( org_class ).name() ) ); }
 
 
 #define REGIST_CLASS_FUNCTION_END_ABSTRACT() \
-	_class; while( listRegister.GetFirst() )listRegister.GetFirst()->Register(); \
-	CScriptBase::RegistConstruct( NULL, typeid( org_class ).name() ); }
+	_class; static SGlobalExe _class_fun_register( listRegister.GetFirst()->Register() ); \
+	static SGlobalExe _class_construct_register( \
+	CScriptBase::RegistConstruct( NULL, typeid( org_class ).name() ) ); }
 
 
 #define REGIST_CLASSFUNCTION( _function ) \
@@ -215,8 +231,7 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 			Gamma::CreateFunWrap( &org_class::_function ), typeid( org_class ).name(), #_function );\
 		} \
 	};  \
-	CScriptRegisterNode _function##RegisterNode( &_function##_Impl_Class::Register ); \
-	listRegister.PushBack( _function##RegisterNode ); \
+	static CScriptRegisterNode _function##RegisterNode( listRegister, &_function##_Impl_Class::Register ); \
 	typedef _function##_Base_Class 
 
 
@@ -229,8 +244,7 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 			Gamma::CreateFunWrap( &org_class::_function ), typeid( org_class ).name(), #_function_name );\
 		} \
 	};  \
-	CScriptRegisterNode _function_name##RegisterNode( &_function_name##_Impl_Class::Register ); \
-	listRegister.PushBack( _function_name##RegisterNode ); \
+	static CScriptRegisterNode _function_name##RegisterNode( listRegister, &_function_name##_Impl_Class::Register ); \
 	typedef _function_name##_Base_Class 
 
 
@@ -243,8 +257,7 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 			Gamma::CreateFunWrap( static_cast<_fun_type>(&org_class::_fun_name_cpp) ), typeid( org_class ).name(), #_fun_name_lua );\
 		} \
 	};  \
-	CScriptRegisterNode _fun_name_lua##RegisterNode( &_fun_name_lua##_Impl_Class::Register ); \
-	listRegister.PushBack( _fun_name_lua##RegisterNode ); \
+	static CScriptRegisterNode _fun_name_lua##RegisterNode( listRegister, &_fun_name_lua##_Impl_Class::Register ); \
 	typedef _fun_name_lua##_Base_Class 
 
 
@@ -257,8 +270,7 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 			Gamma::CreateFunWrap( &org_class::_function ), typeid( org_class ).name(), #_function );\
 		} \
 	};  \
-	CScriptRegisterNode _function##RegisterNode( &_function##_Impl_Class::Register ); \
-	listRegister.PushBack( _function##RegisterNode ); \
+	static CScriptRegisterNode _function##RegisterNode( listRegister, &_function##_Impl_Class::Register ); \
 	typedef _function##_Base_Class 
 
 
@@ -271,8 +283,7 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 			Gamma::CreateFunWrap( &org_class::_function ), typeid( org_class ).name(), #_function_name );\
 		} \
 	};  \
-	CScriptRegisterNode _function_name##RegisterNode( &_function_name##_Impl_Class::Register ); \
-	listRegister.PushBack( _function_name##RegisterNode ); \
+	static CScriptRegisterNode _function_name##RegisterNode( listRegister, &_function_name##_Impl_Class::Register ); \
 	typedef _function_name##_Base_Class 
 
 
@@ -285,8 +296,7 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 			Gamma::CreateFunWrap( static_cast<_fun_type>(&org_class::_fun_name_cpp) ), typeid( org_class ).name(), #_fun_name_lua );\
 		} \
 	};  \
-	CScriptRegisterNode _fun_name_lua##RegisterNode( &_fun_name_lua##_Impl_Class::Register ); \
-	listRegister.PushBack( _fun_name_lua##RegisterNode ); \
+	static CScriptRegisterNode _fun_name_lua##RegisterNode( listRegister, &_fun_name_lua##_Impl_Class::Register ); \
 	typedef _fun_name_lua##_Base_Class 
 
 
@@ -302,7 +312,7 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 			funGetSet, typeid( org_class ).name(), #_member );\
 		} \
 	};  \
-	CScriptRegisterNode _member##_get_RegisterNode( listRegister, &_member##_Impl_Class::Register ); \
+	static CScriptRegisterNode _member##_get_RegisterNode( listRegister, &_member##_Impl_Class::Register ); \
 	typedef _member##_Base_Class 
 
 
@@ -318,8 +328,7 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 			funGetSet, typeid( org_class ).name(), #_new_name );\
 		} \
 	};  \
-	CScriptRegisterNode _new_name##_get_RegisterNode( &_new_name##_Impl_Class::Register ); \
-	listRegister.PushBack( _new_name##_get_RegisterNode ); \
+	static CScriptRegisterNode _new_name##_get_RegisterNode( listRegister, &_new_name##_Impl_Class::Register ); \
 	typedef _new_name##_Base_Class 
 
 
@@ -356,22 +365,24 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 			Gamma::CreateDestructorWrap<org_class>( Gamma::GetDestructorFunIndex<org_class>() ) ) );\
 		} \
 	};  \
-	CScriptRegisterNode destructor##_RegisterNode( &destructor_Impl_Class::Register ); \
-	listRegister.PushBack( destructor##_RegisterNode ); \
+	static CScriptRegisterNode destructor##_register_node( listRegister, &destructor_Impl_Class::Register ); \
 	typedef destructor_Base_Class
 
 
 #define REGIST_GLOBALFUNCTION( _function ) \
-	CScriptBase::RegistFunction( Gamma::MakeFunArg( &_function ), Gamma::CreateFunWrap( &_function ), typeid( _function ).name(), #_function ); 
+	SGlobalExe _function##_register( CScriptBase::RegistFunction( \
+	Gamma::MakeFunArg( &_function ), Gamma::CreateFunWrap( &_function ), typeid( _function ).name(), #_function ) ); 
 
 
 #define REGIST_GLOBALFUNCTION_WITHNAME( _function, _function_name ) \
-	CScriptBase::RegistFunction( Gamma::MakeFunArg( &_function ), Gamma::CreateFunWrap( &_function ), NULL, #_function_name ); 
+	SGlobalExe _function_name##_register( CScriptBase::RegistFunction( \
+	Gamma::MakeFunArg( &_function ), Gamma::CreateFunWrap( &_function ), NULL, #_function_name ) ); 
 
 
 #define REGIST_GLOBALFUNCTION_OVERLOAD(  _fun_type, _fun_name_cpp, _fun_name_lua ) \
-    CScriptBase::RegistFunction( Gamma::MakeFunArg( static_cast<_fun_type>(&_fun_name_cpp) ), \
-	Gamma::CreateFunWrap( static_cast<_fun_type>(&_fun_name_cpp) ), NULL, #_fun_name_lua ); 	
+    SGlobalExe _fun_name_lua##_register( CScriptBase::RegistFunction( \
+	Gamma::MakeFunArg( static_cast<_fun_type>(&_fun_name_cpp) ), \
+	Gamma::CreateFunWrap( static_cast<_fun_type>(&_fun_name_cpp) ), NULL, #_fun_name_lua ) ); 	
 
 
 #define REGIST_CALLBACKFUNCTION( _function ) \
@@ -386,9 +397,8 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
 	}; \
-	CScriptRegisterNode _function##_RegisterNode( &_function##_Impl_Class::Register ); \
-	listRegister.PushBack( _function##_RegisterNode ); \
-	funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable;\
+	static CScriptRegisterNode _function##_register_node( listRegister, &_function##_Impl_Class::Register ); \
+	static SGlobalExe _function##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable );\
 	typedef _function##_Impl_Class 
 
 
@@ -405,9 +415,8 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
 	}; \
-	CScriptRegisterNode _function_name##_RegisterNode( &_function_name##_Impl_Class::Register ); \
-	listRegister.PushBack( _function##_RegisterNode ); \
-	funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable;\
+	static CScriptRegisterNode _function_name##_register_node( listRegister, &_function_name##_Impl_Class::Register ); \
+	static SGlobalExe _function_name##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable );\
 	typedef _function_name##_Impl_Class 
 
 
@@ -424,9 +433,8 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
 	}; \
-	CScriptRegisterNode _fun_name_lua##_RegisterNode( &_fun_name_lua##_Impl_Class::Register ); \
-	listRegister.PushBack( _fun_name_lua##_RegisterNode ); \
-	funGetVirtualTable = (GetVirtualTableFun)&_fun_name_lua##_Impl_Class::GetVirtualTable;\
+	static CScriptRegisterNode _fun_name_lua##_register_node( listRegister, &_fun_name_lua##_Impl_Class::Register ); \
+	static SGlobalExe _fun_name_lua##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_fun_name_lua##_Impl_Class::GetVirtualTable );\
 	typedef _fun_name_lua##_Impl_Class 	
 
 
@@ -447,9 +455,8 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
 	}; \
-	CScriptRegisterNode _function##_RegisterNode( &_function##_Impl_Class::Register ); \
-	listRegister.PushBack( _function##_RegisterNode ); \
-	funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable;\
+	static CScriptRegisterNode _function##_register_node( listRegister, &_function##_Impl_Class::Register ); \
+	static SGlobalExe _function##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable );\
 	typedef _function##_Impl_Class 
 
 
@@ -471,9 +478,8 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
 	}; \
-	CScriptRegisterNode _function_name##_RegisterNode( &_function_name##_Impl_Class::Register ); \
-	listRegister.PushBack( _function##_RegisterNode ); \
-	funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable;\
+	static CScriptRegisterNode _function_name##_register_node( listRegister, &_function_name##_Impl_Class::Register ); \
+	static SGlobalExe _function_name##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable );\
 	typedef _function_name##_Impl_Class 
 
 
@@ -494,9 +500,8 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
 	}; \
-	CScriptRegisterNode _fun_name_lua##_RegisterNode( &_fun_name_lua##_Impl_Class::Register ); \
-	listRegister.PushBack( _fun_name_lua##_RegisterNode ); \
-	funGetVirtualTable = (GetVirtualTableFun)&_fun_name_lua##_Impl_Class::GetVirtualTable;\
+	static CScriptRegisterNode _fun_name_lua##_register_node( listRegister, &_fun_name_lua##_Impl_Class::Register ); \
+	static SGlobalExe _fun_name_lua##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_fun_name_lua##_Impl_Class::GetVirtualTable );\
 	typedef _fun_name_lua##_Impl_Class 
 
 
