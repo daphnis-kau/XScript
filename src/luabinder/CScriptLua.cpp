@@ -1276,7 +1276,7 @@ namespace Gamma
 	{
 		CheckUnlinkCppObj();
 		lua_State* pL = GetLuaState();
-		CCallBase* pCallBase = CClassRegistInfo::GetGlobalCallBase( aryTypeInfo );
+		const CCallBase* pCallBase = CClassRegistInfo::GetGlobalCallBase( aryTypeInfo );
 		lua_pushlightuserdata( pL, ms_pErrorHandlerKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		int32 nErrFunIndex = lua_gettop( pL );

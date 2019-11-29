@@ -9,6 +9,9 @@
 
 namespace Gamma
 {
+	//=======================================================================
+	// 获取函数类型
+	//=======================================================================
 	template<typename ClassType, typename RetType, typename... Param>
 	inline STypeInfoArray MakeClassFunArg( RetType ( ClassType::*pFun )( Param... ) )
 	{

@@ -24,7 +24,7 @@ namespace Gamma
 	class CCallBase;
 	class CDebugBase;
 	typedef pair<SFunctionTable*, uint32> CVMObjVTableInfo;
-	typedef map<CClassRegistInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
+	typedef map<const CClassRegistInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
 	typedef map<SFunctionTable*, SFunctionTable*> CFunctionTableMap;
 
     class CScriptBase : public TList<CScriptBase>::CListNode
@@ -61,7 +61,7 @@ namespace Gamma
 		void					CheckUnlinkCppObj();
 		bool					IsVirtualTableValid( SVirtualObj* pVObj );
         SFunctionTable*			GetOrgVirtualTable( void* pObj );
-		SFunctionTable*     	CheckNewVirtualTable( SFunctionTable* pOldFunTable, CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth );
+		SFunctionTable*     	CheckNewVirtualTable( SFunctionTable* pOldFunTable, const CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth );
         void                	AddSearchPath( const char* szPath );
 		int						Input( char* szBuffer, int nCount );
 

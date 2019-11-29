@@ -16,10 +16,9 @@ namespace Gamma
 		, m_nFunIndex( nFunIndex )
 		, m_sFunName( strFunName.c_str(), strFunName.size() )
 	{
-		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo( szTypeInfoName );
-		if( pInfo == NULL )
+		if( CClassRegistInfo::GetRegistInfo(szTypeInfoName) == NULL )
 			throw( "register function on a unregister class." );
-		pInfo->RegistFunction( this );
+		CClassRegistInfo::RegisterFunction( szTypeInfoName, this );
 
 		for( uint32 i = 0; i < aryTypeInfo.nSize; i++ )
 		{
@@ -83,10 +82,9 @@ namespace Gamma
 		, m_pBootFun( NULL )
 		, m_bPureVirtual( false )
 	{
-		auto pInfo = CClassRegistInfo::GetRegistInfo(szTypeInfoName);
 		m_nFunIndex = szFunName && szFunName[0] ?
 			GetVirtualFunIndex( funWrap->GetOrgFun() ) : (uint32)funWrap->GetOrgFun().funPoint;
-		pInfo->RegistClassCallBack( m_nFunIndex, this );
+		CClassRegistInfo::RegisterCallBack( szTypeInfoName, m_nFunIndex, this );
 	}
 
     CCallScriptBase::~CCallScriptBase()

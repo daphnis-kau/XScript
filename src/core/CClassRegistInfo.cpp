@@ -35,7 +35,7 @@ namespace Gamma
 		return s_Instance;
 	}
 
-	CClassRegistInfo* CClassRegistInfo::Register(
+	const CClassRegistInfo* CClassRegistInfo::RegisterClass(
 		const char* szClassName, const char* szTypeIDName, uint32 nSize, bool bEnum )
 	{
 		gammacstring strKey( szTypeIDName, true );
@@ -51,7 +51,7 @@ namespace Gamma
 		return pInfo;
 	}
 
-	CClassRegistInfo* CClassRegistInfo::GetRegistInfo( const char* szTypeInfoName )
+	const CClassRegistInfo* CClassRegistInfo::GetRegistInfo( const char* szTypeInfoName )
 	{
 		gammacstring strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
@@ -61,13 +61,95 @@ namespace Gamma
 		return new CClassRegistInfo( szTypeInfoName );
 	}
 
-	CCallBase* CClassRegistInfo::GetGlobalCallBase( const STypeInfoArray& aryTypeInfo )
+	const CClassRegistInfo* CClassRegistInfo::SetObjectConstruct( 
+		const char* szTypeInfoName, IObjectConstruct* pObjectConstruct )
+	{
+		gammacstring strKey( szTypeInfoName, true );
+		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
+		assert( Inst.m_mapTypeID2ClassInfo.Find( strKey ) );
+		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		pInfo->m_pObjectConstruct = pObjectConstruct;
+		return pInfo;
+	}
+
+	const CClassRegistInfo* CClassRegistInfo::AddBaseRegist( 
+		const char* szTypeInfoName, const char* szBaseTypeInfoName, ptrdiff_t nOffset )
+	{
+		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
+		gammacstring strDeriveKey( szTypeInfoName, true );
+		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strDeriveKey );
+		gammacstring strBaseKey( szBaseTypeInfoName, true );
+		CClassRegistInfo* pBaseInfo = Inst.m_mapTypeID2ClassInfo.Find( strBaseKey );
+		assert( pInfo && pBaseInfo && nOffset >= 0 );
+		SBaseInfo BaseInfo = { pBaseInfo, (int32)nOffset };
+		if( pBaseInfo->m_nInheritDepth + 1 > pInfo->m_nInheritDepth )
+			pInfo->m_nInheritDepth = pBaseInfo->m_nInheritDepth + 1;
+		pInfo->m_vecBaseRegist.push_back( BaseInfo );
+
+		BaseInfo.m_pBaseInfo = pInfo;
+		BaseInfo.m_nBaseOff = -BaseInfo.m_nBaseOff;
+		pBaseInfo->m_vecChildRegist.push_back( BaseInfo );
+
+		if( nOffset )
+			return pInfo;
+
+		// 自然继承，虚表要延续
+		vector<CCallScriptBase*>& vecNewFunction = pBaseInfo->m_vecNewFunction;
+		for( uint32 i = 0; i < vecNewFunction.size(); i++ )
+		{
+			if( !vecNewFunction[i] )
+				continue;
+			assert( vecNewFunction[i]->GetFunIndex() == i );
+			RegisterCallBack( szTypeInfoName, i, vecNewFunction[i] );
+		}
+		return pInfo;
+	}
+
+	const Gamma::CCallBase* CClassRegistInfo::RegisterFunction( 
+		const char* szTypeInfoName, CCallBase* pCallBase )
+	{
+		gammacstring strKey( szTypeInfoName, true );
+		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
+		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		if( !pInfo )
+			return nullptr;
+		auto& strName = pCallBase->GetFunctionName();
+		assert( pInfo->m_mapRegistFunction.find( strName ) == pInfo->m_mapRegistFunction.end() );
+		pInfo->m_mapRegistFunction.Insert( *pCallBase );
+		return pCallBase;
+	}
+
+	const CCallBase* CClassRegistInfo::RegisterCallBack(
+		const char* szTypeInfoName, uint32 nIndex, CCallScriptBase* pCallScriptBase )
+	{
+		gammacstring strKey( szTypeInfoName, true );
+		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
+		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		if( !pInfo )
+			return nullptr;
+		// 不能重复注册
+		if( nIndex >= pInfo->m_vecNewFunction.size() )
+			pInfo->m_vecNewFunction.resize( nIndex + 1 );
+		assert( pInfo->m_vecNewFunction[nIndex] == NULL );
+		pInfo->m_vecNewFunction[nIndex] = pCallScriptBase;
+
+		for( size_t i = 0; i < pInfo->m_vecChildRegist.size(); ++i )
+		{
+			if( pInfo->m_vecChildRegist[i].m_nBaseOff )
+				continue;
+			auto& strName = pInfo->m_vecChildRegist[i].m_pBaseInfo->GetTypeIDName();
+			RegisterCallBack( strName.c_str(), nIndex, pCallScriptBase );
+		}
+		return pCallScriptBase;
+	}
+
+	const CCallBase* CClassRegistInfo::GetGlobalCallBase( const STypeInfoArray& aryTypeInfo )
 	{
 		static auto& Inst = CGlobalClassRegist::GetInst();
 		const char* szBuffer = (const char*)aryTypeInfo.aryInfo;
 		gammacstring key( szBuffer, (uint32)( sizeof( STypeInfo )*aryTypeInfo.nSize ), true );
 		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( gammacstring() );
-		CCallBase* pCallBase = pInfo->GetCallBase( key );
+		const CCallBase* pCallBase = pInfo->GetCallBase( key );
 		if( pCallBase == NULL )
 			return new CCallBase( aryTypeInfo, eCT_TempFunction, "", key );
 		return pCallBase;
@@ -98,12 +180,7 @@ namespace Gamma
 			delete m_mapRegistFunction.GetFirst();
     }
 
-	void CClassRegistInfo::SetObjectConstruct( IObjectConstruct* pObjectConstruct )
-	{
-		 m_pObjectConstruct = pObjectConstruct;
-	}
-
-    void CClassRegistInfo::InitVirtualTable( SFunctionTable* pNewTable )
+    void CClassRegistInfo::InitVirtualTable( SFunctionTable* pNewTable ) const
 	{
 		for( uint32 i = 0; i < m_vecNewFunction.size(); i++ )
 		{
@@ -115,12 +192,12 @@ namespace Gamma
 		}
     }
 
-    int32 CClassRegistInfo::GetMaxRegisterFunctionIndex()
+    int32 CClassRegistInfo::GetMaxRegisterFunctionIndex() const
     {        
 		return (int32)m_vecNewFunction.size();
     }
 
-    void CClassRegistInfo::Create( void* pObject )
+    void CClassRegistInfo::Create( void* pObject ) const
     {
 		//声明性质的类不可创建
 		assert( m_nSizeOfClass );
@@ -130,7 +207,7 @@ namespace Gamma
 		m_pObjectConstruct->Construct( pObject );
 	}
 
-	void CClassRegistInfo::Assign( void* pDest, void* pSrc )
+	void CClassRegistInfo::Assign( void* pDest, void* pSrc ) const
 	{
 		assert( m_pObjectConstruct );
 		if( !m_pObjectConstruct )
@@ -138,7 +215,7 @@ namespace Gamma
 		m_pObjectConstruct->Assign( pDest, pSrc );
 	}
 
-    void CClassRegistInfo::Release( void* pObject )
+    void CClassRegistInfo::Release( void* pObject ) const
 	{
 		//声明性质的类不可销毁
 		assert( m_pObjectConstruct );
@@ -147,68 +224,17 @@ namespace Gamma
 		m_pObjectConstruct->Destruct( pObject );
 	}
 
-	void CClassRegistInfo::RegistFunction( CCallBase* pCallBase )
-	{
-		auto& strName = pCallBase->GetFunctionName();
-		assert( m_mapRegistFunction.find( strName ) == m_mapRegistFunction.end() );
-		m_mapRegistFunction.Insert(*pCallBase);
-	}
-
-	CCallBase* CClassRegistInfo::GetCallBase( const gammacstring& strFunName )
+	const CCallBase* CClassRegistInfo::GetCallBase( const gammacstring& strFunName ) const
 	{
 		return m_mapRegistFunction.Find( strFunName );
 	}
 
-    void CClassRegistInfo::RegistClassCallBack( uint32 nIndex, CCallScriptBase* pCallScriptBase )
-	{
-		// 不能重复注册
-		if( nIndex >= m_vecNewFunction.size() )
-			m_vecNewFunction.resize( nIndex + 1 );
-		assert( m_vecNewFunction[nIndex] == NULL );
-		m_vecNewFunction[nIndex] = pCallScriptBase;
-
-		for( size_t i = 0; i < m_vecChildRegist.size(); ++i )
-		{
-			if( m_vecChildRegist[i].m_nBaseOff )
-				continue;
-			m_vecChildRegist[i].m_pBaseInfo->RegistClassCallBack( nIndex, pCallScriptBase );
-		}
-	}
-
-    bool CClassRegistInfo::IsCallBack()
+    bool CClassRegistInfo::IsCallBack() const
     {
 		return !m_vecNewFunction.empty();
     }
 
-    void CClassRegistInfo::AddBaseRegist( CClassRegistInfo* pRegist, ptrdiff_t nOffset ) 
-    { 
-        if( ! pRegist )
-            return;
-		assert( nOffset >= 0 );
-        SBaseInfo BaseInfo = { pRegist, (int32)nOffset };
-		if( pRegist->m_nInheritDepth + 1 > m_nInheritDepth )
-			m_nInheritDepth = pRegist->m_nInheritDepth + 1;
-        m_vecBaseRegist.push_back( BaseInfo );
-
-		BaseInfo.m_pBaseInfo = this;
-		BaseInfo.m_nBaseOff = -BaseInfo.m_nBaseOff;
-		pRegist->m_vecChildRegist.push_back( BaseInfo );
-
-		if( nOffset )
-			return;
-
-		// 自然继承，虚表要延续
-		vector<CCallScriptBase*>& vecNewFunction = pRegist->m_vecNewFunction;
-		for( uint32 i = 0; i < vecNewFunction.size(); i++ )
-		{
-			if( !vecNewFunction[i] )
-				continue;
-			assert( vecNewFunction[i]->GetFunIndex() == i );
-			RegistClassCallBack( i, vecNewFunction[i] );
-		}
-    }
-
-    int32 CClassRegistInfo::GetBaseOffset( CClassRegistInfo* pRegist )
+    int32 CClassRegistInfo::GetBaseOffset( CClassRegistInfo* pRegist ) const
     {
         if( pRegist == this )
             return 0;
@@ -224,7 +250,7 @@ namespace Gamma
 	}
 
     void CClassRegistInfo::ReplaceVirtualTable( CScriptBase* pScript,
-		void* pObj, bool bNewByVM, uint32 nInheritDepth )
+		void* pObj, bool bNewByVM, uint32 nInheritDepth ) const
     {
         SVirtualObj* pVObj        = (SVirtualObj*)pObj;
         SFunctionTable* pOldTable = pVObj->m_pTable;
@@ -255,7 +281,7 @@ namespace Gamma
 		}
     }
 
-    void CClassRegistInfo::RecoverVirtualTable( CScriptBase* pScript, void* pObj )
+    void CClassRegistInfo::RecoverVirtualTable( CScriptBase* pScript, void* pObj ) const
     {
         SFunctionTable* pOrgTable = NULL;
         if( !m_vecNewFunction.empty() )
@@ -269,7 +295,7 @@ namespace Gamma
             ( (SVirtualObj*)pObj )->m_pTable = pOrgTable;
     }
 
-    bool CClassRegistInfo::FindBase( CClassRegistInfo* pRegistBase )
+    bool CClassRegistInfo::FindBase( CClassRegistInfo* pRegistBase ) const
     {
         if( pRegistBase == this )
             return true;
@@ -279,7 +305,7 @@ namespace Gamma
         return false;
     }
 
-	bool CClassRegistInfo::IsBaseObject( ptrdiff_t nDiff )
+	bool CClassRegistInfo::IsBaseObject( ptrdiff_t nDiff ) const
 	{
 		// 命中基类
 		if( nDiff == 0 )

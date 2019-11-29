@@ -52,13 +52,13 @@ namespace Gamma
 
 		virtual ~CCallBase(void);
 
-		const vector<DataType>&	GetParamList()				{ return m_listParam; }
-		DataType				GetResultType()				{ return m_nResult; }
-		DataType				GetThisType()				{ return m_nThis; }
-		uint32					GetParamCount()				{ return m_nParamCount; }
-		int32					GetFunctionIndex()			{ return m_nFunIndex; }
-		const gammacstring&		GetFunctionName()			{ return m_sFunName; }
-		bool					IsCallback()				{ return m_nFunIndex >= eCT_ClassCallBack; }
+		const vector<DataType>&	GetParamList()		const { return m_listParam; }
+		DataType				GetResultType()		const { return m_nResult; }
+		DataType				GetThisType()		const { return m_nThis; }
+		uint32					GetParamCount()		const { return m_nParamCount; }
+		int32					GetFunctionIndex()	const { return m_nFunIndex; }
+		const gammacstring&		GetFunctionName()	const { return m_sFunName; }
+		bool					IsCallback()		const { return m_nFunIndex >= eCT_ClassCallBack; }
     };
 
     //=====================================================================

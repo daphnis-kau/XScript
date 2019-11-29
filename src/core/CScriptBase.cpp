@@ -10,9 +10,9 @@ namespace Gamma
 {
 	struct SFunctionTableHead
 	{
-		CScriptBase*		m_pScript;
-		SFunctionTable*		m_pOldFunTable;
-		CClassRegistInfo*	m_pClassInfo;
+		CScriptBase*			m_pScript;
+		SFunctionTable*			m_pOldFunTable;
+		const CClassRegistInfo*	m_pClassInfo;
 	};
 
 	enum{ eFunctionTableHeadSize = sizeof(SFunctionTableHead)  };
@@ -125,8 +125,8 @@ namespace Gamma
 	bool CScriptBase::RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName )
 	{
 		assert( funGetSet && ( funGetSet[0] || funGetSet[1] ) );
-		CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo( szTypeInfoName );
-		CCallBaseMap& mapRegisterFun = pInfo->GetRegistFunction();
+		const CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo( szTypeInfoName );
+		const CCallBaseMap& mapRegisterFun = pInfo->GetRegistFunction();
 		gammacstring keyName( szMemberName, true );
 		assert( mapRegisterFun.Find( keyName ) == nullptr );
 		return new CByScriptMember( aryTypeInfo, funGetSet, szTypeInfoName, szMemberName ) != nullptr;
@@ -134,12 +134,11 @@ namespace Gamma
 
 	bool CScriptBase::RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue )
 	{
-		CClassRegistInfo* pClassInfo = CClassRegistInfo::Register( szClass, aryType[0], (uint32)aryValue[0], false );
+		auto pClassInfo = CClassRegistInfo::RegisterClass( szClass, aryType[0], (uint32)aryValue[0], false );
 		for( uint32 i = 1; i < nCount; i++ )
 		{
-			CClassRegistInfo* pBaseInfo = CClassRegistInfo::GetRegistInfo(aryType[i]);
-			assert( pBaseInfo != NULL );
-			pClassInfo->AddBaseRegist( pBaseInfo, aryValue[i] );
+			assert( CClassRegistInfo::GetRegistInfo( aryType[i] ) != NULL );
+			pClassInfo->AddBaseRegist( aryType[0], aryType[i], aryValue[i] );
 		}
 		return pClassInfo != nullptr;
 	}
@@ -147,7 +146,7 @@ namespace Gamma
 	bool CScriptBase::RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName )
 	{
 		assert( CClassRegistInfo::GetRegistInfo( szTypeIDName ) );
-		CClassRegistInfo::GetRegistInfo( szTypeIDName )->SetObjectConstruct( pObjectConstruct );
+		CClassRegistInfo::SetObjectConstruct( szTypeIDName, pObjectConstruct );
 		return true;
 	}
 
@@ -164,7 +163,7 @@ namespace Gamma
 
 	bool CScriptBase::RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize )
 	{
-		return CClassRegistInfo::Register( szEnumName, szTypeIDName, nTypeSize, true ) != nullptr;
+		return CClassRegistInfo::RegisterClass( szEnumName, szTypeIDName, nTypeSize, true ) != nullptr;
 	}
 
 	void CScriptBase::CheckUnlinkCppObj()
@@ -211,7 +210,7 @@ namespace Gamma
     }
 
     SFunctionTable* CScriptBase::CheckNewVirtualTable( SFunctionTable* pOldFunTable, 
-		CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth )
+		const CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth )
 	{
 		assert( !CScriptBase::IsAllocVirtualTable( pOldFunTable ) );
 
@@ -265,7 +264,8 @@ namespace Gamma
 			pClassInfo->InitVirtualTable( pNewFunTable );
 			return pNewFunTable;
 		}
-		else if( static_cast<CClassRegistInfo*>( it->second->m_pFun[-1] )->GetInheritDepth() < pClassInfo->GetInheritDepth() )
+		else if( static_cast<const CClassRegistInfo*>( it->second->m_pFun[-1] )
+			->GetInheritDepth() < pClassInfo->GetInheritDepth() )
 		{
 			pClassInfo->InitVirtualTable( it->second );
 		}
