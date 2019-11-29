@@ -350,6 +350,7 @@
     <ClInclude Include="..\..\include\core\CScriptBase.h" />
     <ClInclude Include="..\..\include\core\CTypeBase.h" />
     <ClInclude Include="..\..\include\core\GammaScriptDef.h" />
+    <ClInclude Include="..\..\include\core\GammaScriptHelp.h" />
     <ClInclude Include="..\..\include\core\GammaScriptWrap.h" />
     <ClInclude Include="..\..\include\core\GammaScriptX.h" />
   </ItemGroup>

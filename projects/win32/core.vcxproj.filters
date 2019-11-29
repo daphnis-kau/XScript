@@ -42,6 +42,9 @@
     <ClInclude Include="..\..\include\core\CTypeBase.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\core\GammaScriptHelp.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">
