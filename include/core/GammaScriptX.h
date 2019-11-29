@@ -245,14 +245,18 @@
 #define REGIST_GLOBALFUNCTION_OVERLOAD(  _fun_type, _fun_name_cpp, _fun_name_lua ) \
     Gamma::SGlobalExe _fun_name_lua##_register( Gamma::CScriptBase::RegistFunction( \
 	Gamma::MakeFunArg( static_cast<_fun_type>(&_fun_name_cpp) ), \
-	Gamma::CreateFunWrap( static_cast<_fun_type>(&_fun_name_cpp) ), NULL, #_fun_name_lua ) ); 	
+	Gamma::CreateFunWrap( static_cast<_fun_type>(&_fun_name_cpp) ), NULL, #_fun_name_lua ) ); 
 
 
 #define REGIST_CALLBACKFUNCTION( _function ) \
-	_function##_Base_Class; struct _function##_Impl_Class : public _function##_Base_Class \
-	{	\
+	_function##_Base_Class; \
+	auto _function##_Type = &org_class::_function;\
+	template<typename _BaseClass, typename _RetType, typename... Param> \
+	struct _function##_Impl_ClassTemplate : public _BaseClass \
+	{ \
+		_RetType _function( Param ... p ) { throw; }\
 		struct __class : public org_class { \
-		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, false, &__class::_function ); }\
+		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, true, &__class::_function ); }\
 		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( &__class::_function ); }\
 		static STypeInfoArray MakeFunArg()	{ return Gamma::MakeClassFunArg( &__class::_function ); } }; \
 		static void Register(){ __class::Bind( Gamma::CScriptBase::RegistClassCallback( \
@@ -260,112 +264,63 @@
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
 		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
 	}; \
+	template<typename ClassType, typename RetType, typename... Param> \
+	_function##_Impl_ClassTemplate<_function##_Base_Class, RetType, Param...> \
+	_function##_Impl_ClassTemplateDecl( RetType ( ClassType::*pFun )( Param... ) );\
+	typedef decltype( _function##_Impl_ClassTemplateDecl( _function##_Type ) ) _function##_Impl_Class;\
 	static Gamma::CScriptRegisterNode _function##_register_node( listRegister, &_function##_Impl_Class::Register ); \
 	static Gamma::SGlobalExe _function##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable );\
 	typedef _function##_Impl_Class 
 
 
 #define REGIST_CALLBACKFUNCTION_WITHNAME( _function, _function_name ) \
-	_function##_Base_Class; struct _function_name##_Impl_Class : public _function##_Base_Class \
-	{	\
-		struct __class : public org_class { typedef _function##_Impl_Class T; \
-		static void* GetVirtualTable( SGetVTable* p ){ return ((SVirtualObj*)(T*)( p ))->m_pTable; }\
-		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, false, &__class::_function ); }\
-		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( &__class::_function ); }\
-		static STypeInfoArray MakeFunArg()	{ return Gamma::MakeClassFunArg( &__class::_function ); } }; \
-		static void Register(){ __class::Bind( Gamma::CScriptBase::RegistClassCallback( \
-		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_function_name ) ); } \
-		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
-		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
-	}; \
-	static Gamma::CScriptRegisterNode _function_name##_register_node( listRegister, &_function_name##_Impl_Class::Register ); \
-	static Gamma::SGlobalExe _function_name##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable );\
-	typedef _function_name##_Impl_Class 
-
-
-#define REGIST_CALLBACKFUNCTION_OVERLOAD( _function, _fun_type, _fun_name_cpp, _fun_name_lua ) \
-	_function##_Base_Class; struct _fun_name_lua##_Impl_Class : public _function##_Base_Class \
-	{	\
-		struct __class : public org_class { typedef _function##_Impl_Class T; \
-		static void* GetVirtualTable( SGetVTable* p ){ return ((SVirtualObj*)(T*)( p ))->m_pTable; }\
-		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, false, static_cast<_fun_type>(&__class::_fun_name_cpp) ) ); }\
-		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( static_cast<_fun_type>(&__class::_fun_name_cpp) ); }\
-		static STypeInfoArray MakeFunArg() { return Gamma::MakeClassFunArg( static_cast<_fun_type>(&__class::_fun_name_cpp) ); } }; \
-		static void Register(){ __class::Bind( Gamma::CScriptBase::RegistClassCallback( \
-		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_fun_name_lua ) ); } \
-		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
-		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
-	}; \
-	static Gamma::CScriptRegisterNode _fun_name_lua##_register_node( listRegister, &_fun_name_lua##_Impl_Class::Register ); \
-	static Gamma::SGlobalExe _fun_name_lua##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_fun_name_lua##_Impl_Class::GetVirtualTable );\
-	typedef _fun_name_lua##_Impl_Class 	
-
-
-#define REGIST_PUREVIRTUALFUNCTION( _function ) \
 	_function##_Base_Class; \
-	auto _function##_Type = &org_class::_function;\
-	typedef decltype( GetFunTypeExplain( _function##_Type ) ) _function##_TypeExplain;\
-	struct _function##_Impl_Class : public _function##_Base_Class \
+	auto _function_name##_Type = &org_class::_function;\
+	template<typename _BaseClass, typename _RetType, typename... Param> \
+	struct _function_name##_Impl_ClassTemplate : public _function##_Base_Class \
 	{	\
-		typedef _function##_TypeExplain E;\
-		DEFINE_PUREVIRTUAL_IMPLEMENT( _function, _function##_Base_Class );\
+		_RetType _function( Param ... p ) { throw; }\
 		struct __class : public org_class { \
 		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, true, &__class::_function ); }\
 		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( &__class::_function ); }\
 		static STypeInfoArray MakeFunArg()	{ return Gamma::MakeClassFunArg( &__class::_function ); } }; \
 		static void Register(){ __class::Bind( Gamma::CScriptBase::RegistClassCallback( \
-		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_function ) ); } \
-		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
-		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
-	}; \
-	static Gamma::CScriptRegisterNode _function##_register_node( listRegister, &_function##_Impl_Class::Register ); \
-	static Gamma::SGlobalExe _function##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable );\
-	typedef _function##_Impl_Class 
-
-
-#define REGIST_PUREVIRTUALFUNCTION_WITHNAME( _function, _function_name ) \
-	_function##_Base_Class; \
-	auto _function_name##_Type = &org_class::_function;\
-	typedef decltype( GetFunTypeExplain( _function##_Type ) ) _function_name##_TypeExplain;\
-	struct _function_name##_Impl_Class : public _function##_Base_Class \
-	{	\
-		typedef _function_name##_TypeExplain E;\
-		DEFINE_PUREVIRTUAL_IMPLEMENT( _function, _function##_Base_Class );\
-		struct __class : public org_class { typedef _function##_Impl_Class T; \
-		static void* GetVirtualTable( SGetVTable* p ){ return ((SVirtualObj*)(T*)( p ))->m_pTable; }\
-		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, true, &__class::_function ); }\
-		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( &__class::_function ); }\
-		static STypeInfoArray MakeFunArg()	{ return Gamma::MakeClassFunArg( &__class::_function ); } }; \
-		static void Register(){ __class::Bind( Gamma::CScriptBase::RegistClassCallback( \
 		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_function_name ) ); } \
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
-		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
+		{ return ((SVirtualObj*)(_function_name##_Impl_Class*)( p ) )->m_pTable; } \
 	}; \
+	template<typename ClassType, typename RetType, typename... Param> \
+	_function_name##_Impl_ClassTemplate<_function##_Base_Class, RetType, Param...> \
+	_function_name##_Impl_ClassTemplateDecl( RetType ( ClassType::*pFun )( Param... ) );\
+	typedef decltype( _function_name##_Impl_ClassTemplateDecl( _function_name##_Type ) ) _function_name##_Impl_Class;\
 	static Gamma::CScriptRegisterNode _function_name##_register_node( listRegister, &_function_name##_Impl_Class::Register ); \
-	static Gamma::SGlobalExe _function_name##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable );\
+	static Gamma::SGlobalExe _function_name##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function_name##_Impl_Class::GetVirtualTable );\
 	typedef _function_name##_Impl_Class 
 
 
-#define REGIST_PUREVIRTUALFUNCTION_OVERLOAD( _function, _fun_type, _fun_name_cpp, _fun_name_lua ) \
+#define REGIST_CALLBACKFUNCTION_OVERLOAD( _function, _fun_type, _function_name ) \
 	_function##_Base_Class; \
-	auto _function_name##_Type = &org_class::_function;\
-	typedef decltype( GetFunTypeExplain( _function##_Type ) ) _function_name##_TypeExplain;\
-	struct _fun_name_lua##_Impl_Class : public _function##_Base_Class \
+	auto _function_name##_Type = (_fun_type)&org_class::_function;\
+	template<typename _BaseClass, typename _RetType, typename... Param> \
+	struct _function_name##_Impl_ClassTemplate : public _function##_Base_Class \
 	{	\
-		DEFINE_PUREVIRTUAL_IMPLEMENT( _function, _function##_Base_Class );\
-		struct __class : public org_class { typedef _function##_Impl_Class T; \
-		static void* GetVirtualTable( SGetVTable* p ){ return ((SVirtualObj*)(T*)( p ))->m_pTable; }\
-		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, true, static_cast<_fun_type>(&__class::_fun_name_cpp) ) ); }\
-		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( static_cast<_fun_type>(&__class::_fun_name_cpp) ); }\
-		static STypeInfoArray MakeFunArg() { return Gamma::MakeClassFunArg( static_cast<_fun_type>(&__class::_fun_name_cpp) ); } }; \
+		_RetType _function( Param ... p ) { throw; }\
+		struct __class : public org_class { \
+		static void Bind( ICallBackWrap& c ) { Gamma::BIND_CALLBACK( c, true, (_fun_type)&__class::_function ); }\
+		static IFunctionWrap* CreateFunWrap(){ return Gamma::CreateFunWrap( (_fun_type)&__class::_function ); }\
+		static STypeInfoArray MakeFunArg()	{ return Gamma::MakeClassFunArg( (_fun_type)&__class::_function ); } }; \
 		static void Register(){ __class::Bind( Gamma::CScriptBase::RegistClassCallback( \
-		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_fun_name_lua ) ); } \
+		__class::MakeFunArg(), __class::CreateFunWrap(), typeid( org_class ).name(), #_function_name ) ); } \
 		static Gamma::SFunctionTable* GetVirtualTable( SGetVTable* p )\
-		{ return ((SVirtualObj*)(_function##_Impl_Class*)( p ) )->m_pTable; } \
+		{ return ((SVirtualObj*)(_function_name##_Impl_Class*)( p ) )->m_pTable; } \
 	}; \
-	static Gamma::CScriptRegisterNode _fun_name_lua##_register_node( listRegister, &_fun_name_lua##_Impl_Class::Register ); \
-	static Gamma::SGlobalExe _fun_name_lua##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_fun_name_lua##_Impl_Class::GetVirtualTable );\
-	typedef _fun_name_lua##_Impl_Class 
+	template<typename ClassType, typename RetType, typename... Param> \
+	_function_name##_Impl_ClassTemplate<_function##_Base_Class, RetType, Param...> \
+	_function_name##_Impl_ClassTemplateDecl( RetType ( ClassType::*pFun )( Param... ) );\
+	typedef decltype( _function_name##_Impl_ClassTemplateDecl( _function_name##_Type ) ) _function_name##_Impl_Class;\
+	static Gamma::CScriptRegisterNode _function_name##_register_node( listRegister, &_function_name##_Impl_Class::Register ); \
+	static Gamma::SGlobalExe _function_name##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function_name##_Impl_Class::GetVirtualTable );\
+	typedef _function_name##_Impl_Class 
 
 
 #define REGIST_ENUMTYPE( EnumType ) \
