@@ -224,7 +224,7 @@ namespace Gamma
 	template<int32 nInstance>
 	class CCallBackBinder
 	{
-		template<class RetType, class ClassType, typename... Param >
+		template<typename RetType, typename ClassType, typename... Param >
 		class TCallBackWrap
 		{
 		public:
@@ -265,14 +265,14 @@ namespace Gamma
 			}
 		};
 	public:
-		template< class ClassType, class RetType, typename... Param >
+		template< typename ClassType, typename RetType, typename... Param >
 		static inline void BindWrap( ICallBackWrap& CallBackWrap,
 			bool bPureVirtual, RetType ( ClassType::*pFun )( Param... ) )
 		{
 			TCallBackWrap<RetType, ClassType, Param...>::SetCallBack( CallBackWrap, bPureVirtual ); 
 		}
 
-		template< class ClassType, class RetType, typename... Param >
+		template< typename ClassType, typename RetType, typename... Param >
 		static inline void BindWrap( ICallBackWrap& CallBackWrap,
 			bool bPureVirtual, RetType ( ClassType::*pFun )( Param... ) const )
 		{
@@ -391,13 +391,13 @@ namespace Gamma
 		}
 	};
 
-	template< class ClassType, class MemberType >
+	template< typename ClassType, typename MemberType >
 	inline IFunctionWrap* CreateMemberSetWrap( ClassType* pClass, MemberType* pMember )
 	{
 		return new TMemberSetWrap<ClassType, MemberType>( (char*)pMember - (char*)pClass );
 	}
 
-	template< class ClassType, class MemberType >
+	template< typename ClassType, typename MemberType >
 	inline STypeInfoArray MakeMemberArg( ClassType*, MemberType* )
 	{
 		static STypeInfo aryInfo[2];
