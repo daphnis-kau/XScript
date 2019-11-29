@@ -80,94 +80,45 @@ public:
 typedef Gamma::TList<CScriptRegisterNode> CScriptRegisterList;
 struct SGlobalExe { SGlobalExe( bool ) {} };
 
+template<typename _Derive, typename ... _Base>
+class TInheritInfo
+{
+public:
+	enum { size = sizeof...(_Base) + 1 };
+	template<typename...Param> struct TOffset {};
+	template<> struct TOffset<> { static void Get(ptrdiff_t* ary) {} };
+
+	template<typename First, typename...Param>
+	struct TOffset<First, Param...> { static void Get(ptrdiff_t* ary)
+	{ *ary = ((ptrdiff_t)(First*)(_Derive*)0x40000000) - 0x40000000;
+	  TOffset<Param...>::Get(++ary); } };
+
+	static const ptrdiff_t* Values()
+	{
+		static ptrdiff_t result[size] = { sizeof(_Derive) };
+		TOffset<_Base...>::Get(&result[1]);
+		return result;
+	}
+
+	static const char** Types()
+	{
+		static const char* result[size] = 
+		{ typeid(_Derive).name(), typeid(_Base...).name()... };
+		return result;
+	}
+};
+
+
 //====================================================================
 // 普通类注册
 //====================================================================
-#define DECLARE_CLASS( _class )    \
+#define REGIST_CLASS_FUNCTION_BEGIN( _class, ... ) \
+	namespace _class##_namespace { \
 	static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( 1, typeid( _class ).name(), #_class, NULL ) );
-
-#define REGIST_B_CLASS( _class )    \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_class, NULL ) );
-
-#define REGIST_D_CLASS( _class, _base_class )    \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_class, \
-    typeid( _base_class ).name(), Gamma::GetClassOffSet<_base_class, _class>(), NULL ) ); 
-
-#define REGIST_D_CLASS_2( _class, _base_class1, _base_class2 )    \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_class, \
-    typeid( _base_class1 ).name(), Gamma::GetClassOffSet<_base_class1, _class>(), \
-    typeid( _base_class2 ).name(), Gamma::GetClassOffSet<_base_class2, _class>(), NULL ) ); 
-
-#define REGIST_D_CLASS_3( _class, _base_class1, _base_class2, _base_class3 ) \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_class, \
-    typeid( _base_class1 ).name(), Gamma::GetClassOffSet<_base_class1, _class>(), \
-    typeid( _base_class2 ).name(), Gamma::GetClassOffSet<_base_class2, _class>(), \
-    typeid( _base_class3 ).name(), Gamma::GetClassOffSet<_base_class3, _class>(), NULL ) ); 
-
-#define REGIST_D_CLASS_4( _class, _base_class1, _base_class2, _base_class3, _base_class4 )    \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_class, \
-    typeid( _base_class1 ).name(), Gamma::GetClassOffSet<_base_class1, _class>(), \
-    typeid( _base_class2 ).name(), Gamma::GetClassOffSet<_base_class2, _class>(), \
-    typeid( _base_class3 ).name(), Gamma::GetClassOffSet<_base_class3, _class>(), \
-    typeid( _base_class4 ).name(), Gamma::GetClassOffSet<_base_class4, _class>(), NULL ) ); 
-
-#define REGIST_D_CLASS_5( _class, _base_class1, _base_class2, _base_class3, _base_class4, _base_class5 )    \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_class, \
-    typeid( _base_class1 ).name(), Gamma::GetClassOffSet<_base_class1, _class>(), \
-    typeid( _base_class2 ).name(), Gamma::GetClassOffSet<_base_class2, _class>(), \
-    typeid( _base_class3 ).name(), Gamma::GetClassOffSet<_base_class3, _class>(), \
-    typeid( _base_class4 ).name(), Gamma::GetClassOffSet<_base_class4, _class>(), \
-    typeid( _base_class5 ).name(), Gamma::GetClassOffSet<_base_class5, _class>(), NULL ) ); 
-
-#define REGIST_B_CLASS_WITHNAME( _class, _new_name )    \
-    static SGlobalExe _class##_register( \
-    CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_new_name, NULL ) );
-
-#define REGIST_D_CLASS_WITHNAME( _class, _new_name, _base_class )    \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_new_name, \
-    typeid( _base_class ).name(), Gamma::GetClassOffSet<_base_class, _class>(), NULL ) ); 
-
-#define REGIST_D_CLASS_2_WITHNAME( _class, _new_name, _base_class1, _base_class2 )    \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_new_name, \
-    typeid( _base_class1 ).name(), Gamma::GetClassOffSet<_base_class1, _class>(), \
-    typeid( _base_class2 ).name(), Gamma::GetClassOffSet<_base_class2, _class>(), NULL ) ); 
-
-#define REGIST_D_CLASS_3_WITHNAME( _class, _new_name, _base_class1, _base_class2, _base_class3 ) \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_new_name, \
-    typeid( _base_class1 ).name(), Gamma::GetClassOffSet<_base_class1, _class>(), \
-    typeid( _base_class2 ).name(), Gamma::GetClassOffSet<_base_class2, _class>(), \
-    typeid( _base_class3 ).name(), Gamma::GetClassOffSet<_base_class3, _class>(), NULL ) ); 
-
-#define REGIST_D_CLASS_4_WITHNAME( _class, _new_name, _base_class1, _base_class2, _base_class3, _base_class4 )    \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_new_name, \
-    typeid( _base_class1 ).name(), Gamma::GetClassOffSet<_base_class1, _class>(), \
-    typeid( _base_class2 ).name(), Gamma::GetClassOffSet<_base_class2, _class>(), \
-    typeid( _base_class3 ).name(), Gamma::GetClassOffSet<_base_class3, _class>(), \
-    typeid( _base_class4 ).name(), Gamma::GetClassOffSet<_base_class4, _class>(), NULL ) ); 
-
-#define REGIST_D_CLASS_5_WITHNAME( _class, _new_name, _base_class1, _base_class2, _base_class3, _base_class4, _base_class5 )    \
-    static SGlobalExe _class##_register( \
-	CScriptBase::RegistClass( sizeof(_class), typeid( _class ).name(), #_new_name, \
-    typeid( _base_class1 ).name(), Gamma::GetClassOffSet<_base_class1, _class>(), \
-    typeid( _base_class2 ).name(), Gamma::GetClassOffSet<_base_class2, _class>(), \
-    typeid( _base_class3 ).name(), Gamma::GetClassOffSet<_base_class3, _class>(), \
-    typeid( _base_class4 ).name(), Gamma::GetClassOffSet<_base_class4, _class>(), \
-    typeid( _base_class5 ).name(), Gamma::GetClassOffSet<_base_class5, _class>(), NULL ) ); 
-
-
-#define REGIST_CLASS_FUNCTION_BEGIN( _class ) \
-	namespace _class##_namespace { \
+	CScriptBase::RegistClass( #_class, \
+	TInheritInfo<_class, ##__VA_ARGS__>::size, \
+	TInheritInfo<_class, ##__VA_ARGS__>::Types(), \
+	TInheritInfo<_class, ##__VA_ARGS__>::Values() ) ); \
 	typedef _class org_class; CScriptRegisterList listRegister; \
 	typedef Gamma::SFunctionTable* (*GetVirtualTableFun)( void* ); \
 	static GetVirtualTableFun funGetVirtualTable = NULL; \
@@ -177,8 +128,13 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 	typedef _first 
 
 
-#define REGIST_CLASS_FUNCTION_BEGIN_UNDUPLICATION( _class ) \
+#define REGIST_CLASS_FUNCTION_BEGIN_UNDUPLICATION( _class, ... ) \
 	namespace _class##_namespace { \
+	static SGlobalExe _class##_register( \
+	CScriptBase::RegistClass( #_class, \
+	TInheritInfo<_class, ##__VA_ARGS__>::size, \
+	TInheritInfo<_class, ##__VA_ARGS__>::Types(), \
+	TInheritInfo<_class, ##__VA_ARGS__>::Values() ) ); \
 	typedef _class org_class; CScriptRegisterList listRegister; \
 	typedef Gamma::SFunctionTable* (*GetVirtualTableFun)( void* ); \
 	static GetVirtualTableFun funGetVirtualTable = NULL; \
@@ -188,8 +144,13 @@ struct SGlobalExe { SGlobalExe( bool ) {} };
 	typedef _first 
 
 
-#define REGIST_CLASS_FUNCTION_BEGIN_ABSTRACT( _class ) \
+#define REGIST_CLASS_FUNCTION_BEGIN_ABSTRACT( _class, ... ) \
 	namespace _class##_namespace { \
+	static SGlobalExe _class##_register( \
+	CScriptBase::RegistClass( #_class, \
+	TInheritInfo<_class, ##__VA_ARGS__>::size, \
+	TInheritInfo<_class, ##__VA_ARGS__>::Types(), \
+	TInheritInfo<_class, ##__VA_ARGS__>::Values() ) ); \
 	typedef _class org_class; CScriptRegisterList listRegister; \
 	typedef Gamma::SFunctionTable* (*GetVirtualTableFun)( void* ); \
 	static GetVirtualTableFun funGetVirtualTable = NULL; \

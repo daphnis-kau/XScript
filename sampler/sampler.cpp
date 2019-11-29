@@ -1,4 +1,4 @@
-#include "sampler.h"
+﻿#include "sampler.h"
 #include "core/GammaScriptX.h"
 #include "../src/luabinder/CScriptLua.h"
 #include <string>
@@ -97,8 +97,6 @@ enum ETestEnum
 	eTE_1,
 };
 
-REGIST_B_CLASS_WITHNAME( TestBase, Test_Base );
-REGIST_B_CLASS( CVector2f );
 REGIST_ENUMTYPE( ETestEnum );
 
 REGIST_CLASS_FUNCTION_BEGIN( CVector2f )

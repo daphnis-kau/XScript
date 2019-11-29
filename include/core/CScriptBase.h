@@ -48,7 +48,7 @@ namespace Gamma
 		static bool				RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
 		static ICallBackWrap&	RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
 		static bool				RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName );
-		static bool				RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... );
+		static bool				RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue);
 		static bool				RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
 		static ICallBackWrap&	RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap );
 		static bool				RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize );

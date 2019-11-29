@@ -21,9 +21,6 @@
     <ClInclude Include="..\..\include\core\GammaScriptDef.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\core\GammaScriptRunFun.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\core\GammaScriptWrap.h">
       <Filter>include</Filter>
     </ClInclude>

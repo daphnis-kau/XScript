@@ -132,19 +132,15 @@ namespace Gamma
 		return new CByScriptMember( aryTypeInfo, funGetSet, szTypeInfoName, szMemberName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... )
+	bool CScriptBase::RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue )
 	{
-		CClassRegistInfo* pClassInfo = CClassRegistInfo::Register( szClass, szTypeIDName, nSize, false );
-		va_list listBase;
-		va_start( listBase, szClass );
-		const char* szBaseClass = NULL;
-		while( ( szBaseClass = va_arg( listBase, const char* ) ) !=NULL )
+		CClassRegistInfo* pClassInfo = CClassRegistInfo::Register( szClass, aryType[0], (uint32)aryValue[0], false );
+		for( uint32 i = 1; i < nCount; i++ )
 		{
-			CClassRegistInfo* pBaseInfo = CClassRegistInfo::GetRegistInfo( szBaseClass );
+			CClassRegistInfo* pBaseInfo = CClassRegistInfo::GetRegistInfo(aryType[i]);
 			assert( pBaseInfo != NULL );
-			pClassInfo->AddBaseRegist( pBaseInfo, va_arg( listBase, int32 ) );
+			pClassInfo->AddBaseRegist( pBaseInfo, aryValue[i] );
 		}
-		va_end( listBase );
 		return pClassInfo != nullptr;
 	}
 
