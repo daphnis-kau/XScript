@@ -250,7 +250,7 @@
 
 #define REGIST_CALLBACKFUNCTION( _function ) \
 	_function##_Base_Class; \
-	auto _function##_Type = &org_class::_function;\
+	auto _function##_Pointer = &org_class::_function;\
 	template<typename _BaseClass, typename _RetType, typename... Param> \
 	struct _function##_Impl_ClassTemplate : public _BaseClass \
 	{ \
@@ -267,7 +267,7 @@
 	template<typename ClassType, typename RetType, typename... Param> \
 	_function##_Impl_ClassTemplate<_function##_Base_Class, RetType, Param...> \
 	_function##_Impl_ClassTemplateDecl( RetType ( ClassType::*pFun )( Param... ) );\
-	typedef decltype( _function##_Impl_ClassTemplateDecl( _function##_Type ) ) _function##_Impl_Class;\
+	typedef decltype( _function##_Impl_ClassTemplateDecl( _function##_Pointer ) ) _function##_Impl_Class;\
 	static Gamma::CScriptRegisterNode _function##_register_node( listRegister, &_function##_Impl_Class::Register ); \
 	static Gamma::SGlobalExe _function##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function##_Impl_Class::GetVirtualTable );\
 	typedef _function##_Impl_Class 
@@ -275,7 +275,7 @@
 
 #define REGIST_CALLBACKFUNCTION_WITHNAME( _function, _function_name ) \
 	_function##_Base_Class; \
-	auto _function_name##_Type = &org_class::_function;\
+	auto _function_name##_Pointer = &org_class::_function;\
 	template<typename _BaseClass, typename _RetType, typename... Param> \
 	struct _function_name##_Impl_ClassTemplate : public _function##_Base_Class \
 	{	\
@@ -292,7 +292,7 @@
 	template<typename ClassType, typename RetType, typename... Param> \
 	_function_name##_Impl_ClassTemplate<_function##_Base_Class, RetType, Param...> \
 	_function_name##_Impl_ClassTemplateDecl( RetType ( ClassType::*pFun )( Param... ) );\
-	typedef decltype( _function_name##_Impl_ClassTemplateDecl( _function_name##_Type ) ) _function_name##_Impl_Class;\
+	typedef decltype( _function_name##_Impl_ClassTemplateDecl( _function_name##_Pointer ) ) _function_name##_Impl_Class;\
 	static Gamma::CScriptRegisterNode _function_name##_register_node( listRegister, &_function_name##_Impl_Class::Register ); \
 	static Gamma::SGlobalExe _function_name##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function_name##_Impl_Class::GetVirtualTable );\
 	typedef _function_name##_Impl_Class 
@@ -300,7 +300,7 @@
 
 #define REGIST_CALLBACKFUNCTION_OVERLOAD( _function, _fun_type, _function_name ) \
 	_function##_Base_Class; \
-	auto _function_name##_Type = (_fun_type)&org_class::_function;\
+	auto _function_name##_Pointer = (_fun_type)&org_class::_function;\
 	template<typename _BaseClass, typename _RetType, typename... Param> \
 	struct _function_name##_Impl_ClassTemplate : public _function##_Base_Class \
 	{	\
@@ -317,7 +317,7 @@
 	template<typename ClassType, typename RetType, typename... Param> \
 	_function_name##_Impl_ClassTemplate<_function##_Base_Class, RetType, Param...> \
 	_function_name##_Impl_ClassTemplateDecl( RetType ( ClassType::*pFun )( Param... ) );\
-	typedef decltype( _function_name##_Impl_ClassTemplateDecl( _function_name##_Type ) ) _function_name##_Impl_Class;\
+	typedef decltype( _function_name##_Impl_ClassTemplateDecl( _function_name##_Pointer ) ) _function_name##_Impl_Class;\
 	static Gamma::CScriptRegisterNode _function_name##_register_node( listRegister, &_function_name##_Impl_Class::Register ); \
 	static Gamma::SGlobalExe _function_name##_get_table( funGetVirtualTable = (GetVirtualTableFun)&_function_name##_Impl_Class::GetVirtualTable );\
 	typedef _function_name##_Impl_Class 

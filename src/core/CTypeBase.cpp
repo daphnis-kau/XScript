@@ -93,7 +93,7 @@ namespace Gamma
 			return s_aryOrgSize[nType];
 		if( nType&1 )
 			return sizeof( void* );
-		return ( (CClassRegistInfo *)nType )->GetClassSize();
+		return ( (const CClassRegistInfo*)nType )->GetClassSize();
 	}
 
 	size_t GetAligenSizeOfType(DataType nType)
@@ -102,7 +102,7 @@ namespace Gamma
 			return s_aryAligenSize[nType];
 		if (nType & 1)
 			return sizeof(void*);
-		return ((CClassRegistInfo *)nType)->GetClassAligenSize();
+		return ((const CClassRegistInfo*)nType)->GetClassAligenSize();
 	}
 
 	size_t CalBufferSize(const std::vector<DataType>& aryParam, size_t arySize[])

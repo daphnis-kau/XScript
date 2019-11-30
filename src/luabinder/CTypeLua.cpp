@@ -54,7 +54,7 @@ namespace Gamma
 				return;
 			}
 			
-			CClassRegistInfo* pClassInfo = (CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+			auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
 			lua_getfield( pL, nStkId, pClassInfo->GetObjectIndex().c_str() );
 			if( lua_isnil( pL, -1 ) )
 			{
@@ -99,7 +99,7 @@ namespace Gamma
         lua_pushlightuserdata( pL, pObj );
         lua_gettable( pL, -2 );
 
-		CClassRegistInfo* pClassInfo = (CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+		auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
         if( !lua_isnil( pL, -1 ) )
 		{
             const gammacstring& sObjectIndex = pClassInfo->GetObjectIndex();
@@ -148,7 +148,7 @@ namespace Gamma
 	void CLuaValueObject::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId )
 	{
 		void* pObject = NULL;
-		CClassRegistInfo* pClassInfo = (CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+		auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
 		CLuaObject::GetFromVM( eType, pL, (char*)&pObject, nStkId );
 		pClassInfo->Assign( pDataBuf, pObject );
 		CScriptLua::GetScript( pL )->CheckUnlinkCppObj();
@@ -160,7 +160,7 @@ namespace Gamma
 		lua_newtable( pL );// Obj
 		int32 nStkId = AbsStackIdx( pL, -1 );
 
-		CClassRegistInfo* pClassInfo = (CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+		auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
 		lua_getglobal( pL, pClassInfo->GetClassName().c_str() );
 		lua_setmetatable( pL, nStkId );
 

@@ -70,8 +70,8 @@ namespace Gamma
         void					AddLoader();
 		void					IO_Replace();
 
-        static void             RegistToLua( lua_State* pL, CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
-        static void             RemoveFromLua( lua_State* pL, CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
+        static void             RegistToLua( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
+        static void             RemoveFromLua( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
 
 		virtual bool			CallVM( CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray );
 		virtual void			DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject );
@@ -93,8 +93,8 @@ namespace Gamma
         //==============================================================================
         // 通用函数
         //==============================================================================
-        static void				NewLuaObj( lua_State* pL, CClassRegistInfo* pInfo, void* pSrc );
-		static void				RegisterObject( lua_State* pL, CClassRegistInfo* pInfo, void* pObj, bool bGC );
+        static void				NewLuaObj( lua_State* pL, const CClassRegistInfo* pInfo, void* pSrc );
+		static void				RegisterObject( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, bool bGC );
 							    
 		lua_State*              GetLuaState();
 		void					PushLuaState( lua_State* pL );

@@ -57,6 +57,9 @@ public:
 		v.x = 456;
 		v.y = 789;
 		printf( "%d\n", GetThis( v ) );
+		if( NewThis() == this )
+			printf( "NewThis OK\n" );
+
 		return v;
 	};
 
@@ -111,7 +114,7 @@ DEFINE_CLASS_BEGIN( Test_Base )
 	REGIST_CLASSMEMBER( x )
 	REGIST_CLASSFUNCTION( GetNumber )
 	REGIST_CALLBACKFUNCTION( GetThis )
-	REGIST_CALLBACKFUNCTION( NewThis, TestBase*( TestBase::* )(), NewThisLua )
+	REGIST_CALLBACKFUNCTION_OVERLOAD( NewThis, TestBase*( TestBase::* )(), NewThisLua )
 	REGIST_STATICFUNCTION( GetCppName )
 	REGIST_CLASSFUNCTION( TestRet64 )
 DEFINE_CLASS_END();
@@ -132,6 +135,10 @@ void TestLua()
 		"function a:GetThis( v ) \n"
 		"	print( \"call GetThis\", v:x(), v:y() );\n"
 		"   return 3;\n"
+		"end\n"
+
+		"function a:NewThisLua() \n"
+		"   return self;\n"
 		"end\n"
 
 		"a:kkk():x(10)\n"

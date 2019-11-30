@@ -113,8 +113,8 @@ namespace Gamma
 		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
 		if( !pInfo )
 			return nullptr;
-		auto& strName = pCallBase->GetFunctionName();
-		assert( pInfo->m_mapRegistFunction.find( strName ) == pInfo->m_mapRegistFunction.end() );
+		assert( pInfo->m_mapRegistFunction.find( 
+			pCallBase->GetFunctionName() ) == pInfo->m_mapRegistFunction.end() );
 		pInfo->m_mapRegistFunction.Insert( *pCallBase );
 		return pCallBase;
 	}
@@ -234,7 +234,7 @@ namespace Gamma
 		return !m_vecNewFunction.empty();
     }
 
-    int32 CClassRegistInfo::GetBaseOffset( CClassRegistInfo* pRegist ) const
+    int32 CClassRegistInfo::GetBaseOffset( const CClassRegistInfo* pRegist ) const
     {
         if( pRegist == this )
             return 0;
@@ -295,7 +295,7 @@ namespace Gamma
             ( (SVirtualObj*)pObj )->m_pTable = pOrgTable;
     }
 
-    bool CClassRegistInfo::FindBase( CClassRegistInfo* pRegistBase ) const
+    bool CClassRegistInfo::FindBase( const CClassRegistInfo* pRegistBase ) const
     {
         if( pRegistBase == this )
             return true;

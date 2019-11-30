@@ -125,10 +125,9 @@ namespace Gamma
 	bool CScriptBase::RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName )
 	{
 		assert( funGetSet && ( funGetSet[0] || funGetSet[1] ) );
-		const CClassRegistInfo* pInfo = CClassRegistInfo::GetRegistInfo( szTypeInfoName );
-		const CCallBaseMap& mapRegisterFun = pInfo->GetRegistFunction();
 		gammacstring keyName( szMemberName, true );
-		assert( mapRegisterFun.Find( keyName ) == nullptr );
+		assert( CClassRegistInfo::GetRegistInfo( szTypeInfoName )->
+			GetRegistFunction().Find( keyName ) == nullptr );
 		return new CByScriptMember( aryTypeInfo, funGetSet, szTypeInfoName, szMemberName ) != nullptr;
 	}
 

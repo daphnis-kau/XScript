@@ -33,7 +33,7 @@ namespace Gamma
 	{
 		struct SBaseInfo
 		{
-			CClassRegistInfo*			m_pBaseInfo;        // 包含的基类
+			const CClassRegistInfo*		m_pBaseInfo;        // 包含的基类
 			int32						m_nBaseOff;         // 包含的基类相对于子类的偏移
 		};
 
@@ -75,9 +75,9 @@ namespace Gamma
         void                            ReplaceVirtualTable( CScriptBase* pScript, void* pObj, bool bNewByVM, uint32 nInheritDepth ) const;
 		void                            RecoverVirtualTable(CScriptBase* pScript, void* pObj) const;
 		bool                            IsCallBack() const;
-		int32                       	GetBaseOffset( CClassRegistInfo* pRegist ) const;
+		int32                       	GetBaseOffset( const CClassRegistInfo* pRegist ) const;
 		const CCallBase*				GetCallBase( const gammacstring& strFunName ) const;
-        bool                            FindBase( CClassRegistInfo* pRegistBase ) const;
+        bool                            FindBase( const CClassRegistInfo* pRegistBase ) const;
 		bool							IsBaseObject(ptrdiff_t nDiff) const;
 		bool							IsEnum() const { return m_bIsEnum; }
 		const vector<SBaseInfo>&    	BaseRegist() const { return m_vecBaseRegist; }
