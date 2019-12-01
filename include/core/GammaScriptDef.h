@@ -44,7 +44,6 @@ namespace Gamma
 	class IFunctionWrap
 	{
 	public:
-		virtual SFunction	GetOrgFun() = 0;
 		virtual void		Call( void* pObj, void* pRetBuf, void** pArgArray, SFunction funRaw ) = 0;
 	};
 

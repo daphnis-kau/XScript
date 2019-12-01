@@ -20,13 +20,13 @@ using namespace std;
 
 namespace Gamma
 {
-	class CCallBase;
 	class CTypeBase;
 	class CScriptBase;
+	class CByScriptBase;
 	class CCallScriptBase;
 	class CClassRegistInfo; 
 	class CGlobalClassRegist;
-	typedef TRBTree<CCallBase> CCallBaseMap;
+	typedef TRBTree<CByScriptBase> CCallBaseMap;
 	typedef TRBTree<CClassRegistInfo> CTypeIDNameMap;
 
     class CClassRegistInfo : public CTypeIDNameMap::CRBTreeNode
@@ -62,9 +62,8 @@ namespace Gamma
 		static const CClassRegistInfo*	GetRegistInfo( const char* szTypeInfoName );
 		static const CClassRegistInfo*	SetObjectConstruct( const char* szTypeInfoName, IObjectConstruct* pObjectConstruct );
 		static const CClassRegistInfo*	AddBaseRegist( const char* szTypeInfoName, const char* szBaseTypeInfoName, ptrdiff_t nOffset );
-		static const CCallBase*			RegisterFunction( const char* szTypeInfoName, CCallBase* pCallBase );
-		static const CCallBase*			RegisterCallBack( const char* szTypeInfoName, uint32 nIndex, CCallScriptBase* pCallScriptBase );
-		static const CCallBase*			GetGlobalCallBase( const STypeInfoArray& aryTypeInfo );
+		static const CByScriptBase*		RegisterFunction( const char* szTypeInfoName, CByScriptBase* pCallBase );
+		static const CByScriptBase*		RegisterCallBack( const char* szTypeInfoName, uint32 nIndex, CCallScriptBase* pCallScriptBase );
 		static const CTypeIDNameMap&	GetAllRegisterInfo();
 
 		void							Create( void * pObject ) const;
@@ -76,7 +75,7 @@ namespace Gamma
 		void                            RecoverVirtualTable(CScriptBase* pScript, void* pObj) const;
 		bool                            IsCallBack() const;
 		int32                       	GetBaseOffset( const CClassRegistInfo* pRegist ) const;
-		const CCallBase*				GetCallBase( const gammacstring& strFunName ) const;
+		const CByScriptBase*			GetCallBase( const gammacstring& strFunName ) const;
         bool                            FindBase( const CClassRegistInfo* pRegistBase ) const;
 		bool							IsBaseObject(ptrdiff_t nDiff) const;
 		bool							IsEnum() const { return m_bIsEnum; }

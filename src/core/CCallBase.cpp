@@ -9,12 +9,17 @@
 
 namespace Gamma
 {
-	CCallBase::CCallBase(const STypeInfoArray& aryTypeInfo, int32 nFunIndex,
-		const char* szTypeInfoName, gammacstring strFunName )
-		: m_nThis( eDT_void )
-        , m_nResult( eDT_void )
+	//=====================================================================
+	// 脚本调用C++的基本接口
+	//=====================================================================
+	CByScriptBase::CByScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo,
+		SFunction funOrg, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName )
+		: m_funWrap( funWrap )
+		, m_funOrg( funOrg )
+		, m_nThis( eDT_void )
+		, m_nResult( eDT_void )
 		, m_nFunIndex( nFunIndex )
-		, m_sFunName( strFunName.c_str(), strFunName.size() )
+		, m_sFunName( szFunName )
 	{
 		if( CClassRegistInfo::GetRegistInfo(szTypeInfoName) == NULL )
 			throw( "register function on a unregister class." );
@@ -32,32 +37,21 @@ namespace Gamma
 		}
 
 		m_nParamCount = (uint32)m_listParam.size();
-    }
-
-    CCallBase::~CCallBase(void)
-    {
 	}
-
-	//=====================================================================
-	// 脚本调用C++的基本接口
-	//=====================================================================
-	CByScriptBase::CByScriptBase(const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, 
-		const char* szTypeInfoName, int32 nFunIndex, const char* szFunName)
-		: CCallBase(aryTypeInfo, nFunIndex, szTypeInfoName, szFunName)
-		, m_funWrap(funWrap)
-	{}
 	
 	void CByScriptBase::Call(void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script)
 	{
-		m_funWrap->Call(pObject, pRetBuf, pArgArray, SFunction());
+		m_funWrap->Call( pObject, pRetBuf, pArgArray, m_funOrg );
 	}
 
 	//=====================================================================
 	// 脚本访问C++的成员接口
 	//=====================================================================
-	CByScriptMember::CByScriptMember( const STypeInfoArray& aryTypeInfo, 
-		IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szFunName ) 
-		: CByScriptBase( aryTypeInfo, funGetSet[0], szTypeInfoName, eCT_MemberFunction, szFunName )
+	CByScriptMember::CByScriptMember( IFunctionWrap* funGetSet[2], 
+		const STypeInfoArray& aryTypeInfo, SFunction funOrg, 
+		const char* szTypeInfoName, const char* szMemberName )
+		: CByScriptBase( funGetSet[0], aryTypeInfo, funOrg, 
+			szTypeInfoName, eCT_MemberFunction, szMemberName )
 		, m_funSet( funGetSet[1] )
 	{
 		DataType nType = ToDataType( aryTypeInfo.aryInfo[1] );
@@ -68,22 +62,22 @@ namespace Gamma
 	void CByScriptMember::Call( void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script)
 	{
 		if( !pRetBuf && m_funSet )
-			m_funSet->Call( pObject, &pRetBuf, pArgArray, SFunction() );
+			m_funSet->Call( pObject, &pRetBuf, pArgArray, m_funOrg );
 		else if( pRetBuf && m_funWrap )
-			m_funWrap->Call( pObject, pRetBuf, pArgArray, SFunction() );
+			m_funWrap->Call( pObject, pRetBuf, pArgArray, m_funOrg );
 	}
 
 	//=====================================================================
 	// C++调用脚本的基本接口
 	//=====================================================================
-    CCallScriptBase::CCallScriptBase( const STypeInfoArray& aryTypeInfo,
-		IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunName )
-		: CByScriptBase( aryTypeInfo, funWrap, szTypeInfoName, 0, szFunName )
+	CCallScriptBase::CCallScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo,
+		SFunction funOrg, const char* szTypeInfoName, const char* szFunName )
+		: CByScriptBase( funWrap, aryTypeInfo, funOrg, szTypeInfoName, 0, szFunName )
 		, m_pBootFun( NULL )
 		, m_bPureVirtual( false )
 	{
 		m_nFunIndex = szFunName && szFunName[0] ?
-			GetVirtualFunIndex( funWrap->GetOrgFun() ) : (uint32)funWrap->GetOrgFun().funPoint;
+			GetVirtualFunIndex( funOrg ) : (uint32)funOrg.funPoint;
 		CClassRegistInfo::RegisterCallBack( szTypeInfoName, m_nFunIndex, this );
 	}
 

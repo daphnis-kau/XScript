@@ -105,7 +105,7 @@ namespace Gamma
 	SFunctionTable::SFunctionTable()
 	{
 		for( int32 i = 0; i < MAX_VTABLE_SIZE; i++ )
-			m_pFun[i] = GetFunAdress( NullFunCall );
+			m_pFun[i] = (void*)&NullFunCall;
 	}
 
 	int32 SFunctionTable::GetFunctionCount()
@@ -146,9 +146,9 @@ namespace Gamma
 	public:
 		TSetFuntion( void** pChechFun, bool bSetIndex )
 		{ 
-			pChechFun[nStart] = bSetIndex 
-				? GetFunAdress( &TSetFuntion<nStart, 1>::SetIndex ) 
-				: GetFunAdress( &TSetFuntion<nStart, 1>::GetIndex );
+			auto funSet = &TSetFuntion<nStart, 1>::SetIndex;
+			auto funGet = &TSetFuntion<nStart, 1>::GetIndex;
+			pChechFun[nStart] = bSetIndex ? *( (void**)&funSet ) : *( (void**)&funGet );
 		}
 	};
 

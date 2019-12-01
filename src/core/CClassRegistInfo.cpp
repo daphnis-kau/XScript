@@ -105,8 +105,8 @@ namespace Gamma
 		return pInfo;
 	}
 
-	const Gamma::CCallBase* CClassRegistInfo::RegisterFunction( 
-		const char* szTypeInfoName, CCallBase* pCallBase )
+	const Gamma::CByScriptBase* CClassRegistInfo::RegisterFunction(
+		const char* szTypeInfoName, CByScriptBase* pCallBase )
 	{
 		gammacstring strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
@@ -119,7 +119,7 @@ namespace Gamma
 		return pCallBase;
 	}
 
-	const CCallBase* CClassRegistInfo::RegisterCallBack(
+	const CByScriptBase* CClassRegistInfo::RegisterCallBack(
 		const char* szTypeInfoName, uint32 nIndex, CCallScriptBase* pCallScriptBase )
 	{
 		gammacstring strKey( szTypeInfoName, true );
@@ -141,18 +141,6 @@ namespace Gamma
 			RegisterCallBack( strName.c_str(), nIndex, pCallScriptBase );
 		}
 		return pCallScriptBase;
-	}
-
-	const CCallBase* CClassRegistInfo::GetGlobalCallBase( const STypeInfoArray& aryTypeInfo )
-	{
-		static auto& Inst = CGlobalClassRegist::GetInst();
-		const char* szBuffer = (const char*)aryTypeInfo.aryInfo;
-		gammacstring key( szBuffer, (uint32)( sizeof( STypeInfo )*aryTypeInfo.nSize ), true );
-		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( gammacstring() );
-		const CCallBase* pCallBase = pInfo->GetCallBase( key );
-		if( pCallBase == NULL )
-			return new CCallBase( aryTypeInfo, eCT_TempFunction, "", key );
-		return pCallBase;
 	}
 
 	const Gamma::CTypeIDNameMap& CClassRegistInfo::GetAllRegisterInfo()
@@ -224,7 +212,7 @@ namespace Gamma
 		m_pObjectConstruct->Destruct( pObject );
 	}
 
-	const CCallBase* CClassRegistInfo::GetCallBase( const gammacstring& strFunName ) const
+	const CByScriptBase* CClassRegistInfo::GetCallBase( const gammacstring& strFunName ) const
 	{
 		return m_mapRegistFunction.Find( strFunName );
 	}

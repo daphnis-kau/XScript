@@ -18,7 +18,6 @@ namespace Gamma
 {
 	enum ECallingType
 	{
-		eCT_TempFunction		= -5,
 		eCT_GlobalFunction		= -4,
 		eCT_ClassStaticFunction	= -3,
 		eCT_ClassFunction		= -2,
@@ -26,56 +25,41 @@ namespace Gamma
 		eCT_ClassCallBack		= 0,
 	};
 
-	class CCallBase;
+	class CByScriptBase;
 	class CScriptBase;
-	typedef TRBTree<CCallBase> CCallBaseMap;
+	typedef TRBTree<CByScriptBase> CCallBaseMap;
 
-	//=====================================================================
-	// 函数调用的基本接口
-	//=====================================================================
-    class CCallBase : public CCallBaseMap::CRBTreeNode
-	{
-		const CCallBase& operator= (const CCallBase&);
-	protected:
-		gammacstring			m_sFunName;
-		DataType				m_nThis;
-		DataType				m_nResult;
-		vector<DataType>		m_listParam;
-		uint32					m_nParamCount;
-		int32					m_nFunIndex;
-
+    //=====================================================================
+    // 脚本调用C++的基本接口
+    //=====================================================================
+    class CByScriptBase 
+		: public CCallBaseMap::CRBTreeNode
+    {
+		const CByScriptBase& operator= ( const CByScriptBase& );
     public:
-        CCallBase( const STypeInfoArray& aryTypeInfo, int32 nFunIndex, 
-			const char* szTypeInfoName, gammacstring strFunName );
+		CByScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, 
+			SFunction funOrg, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName );
 		operator const gammacstring&( ) const { return m_sFunName; }
 		bool operator < ( const gammacstring& strKey ) { return (const gammacstring&)*this < strKey; }
 
-		virtual ~CCallBase(void);
-
+		virtual void			Call(void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script);
+		IFunctionWrap*			GetFunWrap()		const { return m_funWrap; }
 		const vector<DataType>&	GetParamList()		const { return m_listParam; }
 		DataType				GetResultType()		const { return m_nResult; }
 		DataType				GetThisType()		const { return m_nThis; }
 		uint32					GetParamCount()		const { return m_nParamCount; }
 		int32					GetFunctionIndex()	const { return m_nFunIndex; }
 		const gammacstring&		GetFunctionName()	const { return m_sFunName; }
-		bool					IsCallback()		const { return m_nFunIndex >= eCT_ClassCallBack; }
-    };
 
-    //=====================================================================
-    // 脚本调用C++的基本接口
-    //=====================================================================
-    class CByScriptBase 
-		: public CCallBase
-    {
-		const CByScriptBase& operator= ( const CByScriptBase& );
-    public:
-		CByScriptBase(const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap,
-			const char* szTypeInfoName, int32 nFunIndex, const char* szFunName);
-
-		virtual void	Call(void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script);
-		IFunctionWrap*	GetFunWrap() const { return m_funWrap; }
 	protected:
-		IFunctionWrap*	m_funWrap;
+		IFunctionWrap*			m_funWrap;
+		SFunction				m_funOrg;
+		gammacstring			m_sFunName;
+		DataType				m_nThis;
+		DataType				m_nResult;
+		vector<DataType>		m_listParam;
+		uint32					m_nParamCount;
+		int32					m_nFunIndex;
 	};
 
 	//=====================================================================
@@ -85,8 +69,8 @@ namespace Gamma
 	{
 		IFunctionWrap*	m_funSet;
 	public:
-		CByScriptMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], 
-			const char* szTypeInfoName, const char* szFunName );
+		CByScriptMember( IFunctionWrap* funGetSet[2], const STypeInfoArray& aryTypeInfo, 
+			SFunction funOrg, const char* szTypeInfoName, const char* szMemberName );
 		virtual void	Call( void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script);
 		IFunctionWrap*	GetFunSet() const { return m_funSet; }
 	};
@@ -100,8 +84,8 @@ namespace Gamma
 	{
 		const CCallScriptBase& operator= ( const CCallScriptBase& );
     public:
-        CCallScriptBase( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, 
-			const char* szTypeInfoName, const char* szFunName );
+		CCallScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, 
+			SFunction funOrg, const char* szTypeInfoName, const char* szFunName );
         ~CCallScriptBase();
 
 		void*			GetBootFun()				{ return m_pBootFun; }

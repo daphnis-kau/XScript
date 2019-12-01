@@ -21,8 +21,8 @@ using namespace std;
 namespace Gamma
 {
 	class CTypeBase;
-	class CCallBase;
 	class CDebugBase;
+	class CByScriptBase;
 	typedef pair<SFunctionTable*, uint32> CVMObjVTableInfo;
 	typedef map<const CClassRegistInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
 	typedef map<SFunctionTable*, SFunctionTable*> CFunctionTableMap;
@@ -43,14 +43,20 @@ namespace Gamma
         CScriptBase(void);
 		virtual ~CScriptBase( void );
 
-		static bool        		RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		static bool        		RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		static bool				RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		static ICallBackWrap&	RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName );
-		static bool				RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName );
-		static bool				RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue);
+		static bool        		RegistFunction( IFunctionWrap* funWrap, SFunction funOrg, 
+									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
+		static bool        		RegistClassStaticFunction( IFunctionWrap* funWrap, SFunction funOrg,
+									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
+		static bool				RegistClassFunction( IFunctionWrap* funWrap, SFunction funOrg,
+									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
+		static ICallBackWrap&	RegistClassCallback( IFunctionWrap* funWrap, SFunction funOrg,
+									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
+		static bool				RegistClassMember( IFunctionWrap* funGetSet[2], SFunction funOrg,
+									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szMemberName );
+		static ICallBackWrap&	RegistDestructor( IFunctionWrap* funWrap, SFunction funOrg, 
+									const char* szTypeInfoName );
 		static bool				RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
-		static ICallBackWrap&	RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap );
+		static bool				RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue);
 		static bool				RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize );
 
         static bool				IsAllocVirtualTable( void* pVirtualTable );

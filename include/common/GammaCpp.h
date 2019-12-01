@@ -53,13 +53,8 @@ namespace Gamma
 		const char*	m_szTypeName;
 	};
 
-	struct SFunction { uintptr_t funPoint; uintptr_t offset; };
+	struct SFunction { uintptr_t funPoint; ptrdiff_t offset; };
 	template< class _FunTy >    void* GetFunAdress( _FunTy fun )	{ return *((void**)&fun); }
 	template< class _FunTy >    SFunction GetFunction( _FunTy fun )	{ return *((SFunction*)&fun); }
-	template< class _FunTy >    _FunTy MakeFun( void* fun )			{ return *((_FunTy*)&fun); }
-	template< class _FunTy >    _FunTy MakeFun( SFunction fun )		{ return *((_FunTy*)&fun); }
-
-	#define GetClassMemberOffset( Class, Member )					( ( (char*)&( (Class*)0x4000000 )->Member ) - ( (char*)0x4000000 ) )
-	template<class B, class D>	ptrdiff_t GetClassOffset()			{ return ((char*)static_cast<B*>((D*)0x4000000)) - (char*)0x4000000; }
 }
 #endif

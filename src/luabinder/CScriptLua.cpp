@@ -1276,7 +1276,6 @@ namespace Gamma
 	{
 		CheckUnlinkCppObj();
 		lua_State* pL = GetLuaState();
-		const CCallBase* pCallBase = CClassRegistInfo::GetGlobalCallBase( aryTypeInfo );
 		lua_pushlightuserdata( pL, ms_pErrorHandlerKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		int32 nErrFunIndex = lua_gettop( pL );
@@ -1287,16 +1286,15 @@ namespace Gamma
 		if( GetGlobObject( pL, szFuncBuf ) || ( !luaL_loadstring( pL, szFuncBuf ) && SetGlobObject( pL, szFuncBuf ) ) )
 			lua_pcall( pL, 0, LUA_MULTRET, 0 );
 
-		uint32 nParamCount = (uint32)pCallBase->GetParamCount();
-		const vector<DataType>& listParam = pCallBase->GetParamList();
+		uint32 nParamCount = aryTypeInfo.nSize - 1;
 		for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 		{
-			DataType nType = listParam[nArgIndex];
-			CLuaTypeBase* pParamType = GetTypeBase(nType);
+			DataType nType = ToDataType( aryTypeInfo.aryInfo[nArgIndex] );
+			CLuaTypeBase* pParamType = GetTypeBase( nType );
 			pParamType->PushToVM(nType, pL, (char*)aryArg[nArgIndex]);
 		}
 
-		DataType nResultType = pCallBase->GetResultType();
+		DataType nResultType = ToDataType( aryTypeInfo.aryInfo[nParamCount] );;
 		lua_pcall( pL, nParamCount, nResultType && pResultBuf, nErrFunIndex );
 
 		if( nResultType && pResultBuf )

@@ -102,38 +102,50 @@ namespace Gamma
 		s_ScriptListLock.Unlock();
 	}
 
-	bool CScriptBase::RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
+	bool CScriptBase::RegistFunction( IFunctionWrap* funWrap, SFunction funOrg,
+		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		return new CByScriptBase( aryTypeInfo, funWrap, "", eCT_GlobalFunction, szFunctionName ) != nullptr;
+		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
+			"", eCT_GlobalFunction, szFunctionName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
+	bool CScriptBase::RegistClassStaticFunction( IFunctionWrap* funWrap, SFunction funOrg,
+		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		return new CByScriptBase( aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassStaticFunction, szFunctionName ) != nullptr;
+		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
+			szTypeInfoName, eCT_ClassStaticFunction, szFunctionName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
+	bool CScriptBase::RegistClassFunction( IFunctionWrap* funWrap, SFunction funOrg,
+		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		return new CByScriptBase( aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassFunction, szFunctionName ) != nullptr;
+		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
+			szTypeInfoName, eCT_ClassFunction, szFunctionName ) != nullptr;
 	}
 
-	ICallBackWrap& CScriptBase::RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
+	ICallBackWrap& CScriptBase::RegistClassCallback( IFunctionWrap* funWrap, SFunction funOrg,
+		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		return *new CCallScriptBase( aryTypeInfo, funWrap, szTypeInfoName, szFunctionName );
+		return *new CCallScriptBase( funWrap, aryTypeInfo, funOrg,
+			szTypeInfoName, szFunctionName );
 	}
 
-	bool CScriptBase::RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName )
+	bool CScriptBase::RegistClassMember( IFunctionWrap* funGetSet[2], SFunction funOrg,
+		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szMemberName )
 	{
 		assert( funGetSet && ( funGetSet[0] || funGetSet[1] ) );
 		gammacstring keyName( szMemberName, true );
 		assert( CClassRegistInfo::GetRegistInfo( szTypeInfoName )->
 			GetRegistFunction().Find( keyName ) == nullptr );
-		return new CByScriptMember( aryTypeInfo, funGetSet, szTypeInfoName, szMemberName ) != nullptr;
+		return new CByScriptMember( funGetSet, aryTypeInfo, funOrg, 
+			szTypeInfoName, szMemberName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue )
+	bool CScriptBase::RegistClass( const char* szClass, uint32 nCount, 
+		const char** aryType, const ptrdiff_t* aryValue )
 	{
-		auto pClassInfo = CClassRegistInfo::RegisterClass( szClass, aryType[0], (uint32)aryValue[0], false );
+		auto pClassInfo = CClassRegistInfo::RegisterClass( 
+			szClass, aryType[0], (uint32)aryValue[0], false );
 		for( uint32 i = 1; i < nCount; i++ )
 		{
 			assert( CClassRegistInfo::GetRegistInfo( aryType[i] ) != NULL );
@@ -149,7 +161,8 @@ namespace Gamma
 		return true;
 	}
 
-	ICallBackWrap& CScriptBase::RegistDestructor( const char* szTypeInfoName, IFunctionWrap* funWrap )
+	ICallBackWrap& CScriptBase::RegistDestructor( IFunctionWrap* funWrap, 
+		SFunction funOrg, const char* szTypeInfoName )
 	{
 		STypeInfo aryInfo[2];
 		aryInfo[0].m_nType = ( eDT_custom_type << 24 )|eDTE_Pointer;
@@ -157,7 +170,7 @@ namespace Gamma
 		aryInfo[1].m_nType = eDT_void;
 		aryInfo[1].m_szTypeName = typeid( void ).name();
 		STypeInfoArray aryTypeInfo = { aryInfo, 2 };
-		return *( new CCallScriptBase( aryTypeInfo, funWrap, szTypeInfoName, "" ) );
+		return *( new CCallScriptBase( funWrap, aryTypeInfo, funOrg, szTypeInfoName, "" ) );
 	}
 
 	bool CScriptBase::RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize )
