@@ -11,7 +11,7 @@
 namespace Gamma
 {
 	//=======================================================================
-	// 构造对象以及获取原始虚表
+	// 获取原始虚表
 	//=======================================================================
 	typedef SFunctionTable* ( *GetVirtualTableFun )( void* );
 	template<typename _T, bool bDuplicatable> struct TCopy 
@@ -20,7 +20,7 @@ namespace Gamma
 	{ TCopy( void* pDest, void* pSrc ) { throw( "Can not duplicate object" ); } };
 
 	template<typename ClassType>
-	struct TGetVTable
+	struct TGetVTable : public ClassType
 	{
 		static GetVirtualTableFun& GetFunInst()
 		{
@@ -40,29 +40,52 @@ namespace Gamma
 				return;
 			GetVTbInst() = GetFunInst()( this );
 		}
-
-		template<bool bDuplicatable>
-		struct TConstruct : public IObjectConstruct
-		{
-			virtual void Assign( void* pDest, void* pSrc )
-			{
-				TCopy<ClassType, bDuplicatable>( pDest, pSrc );
-			}
-
-			virtual void Construct( void* pObj )
-			{
-				ClassType* pNew = new( pObj )ClassType;
-				if( !GetFunInst() )
-					return;
-				( ( Gamma::SVirtualObj* )pNew )->m_pTable = GetVTbInst();
-			}
-
-			virtual void Destruct( void* pObj )
-			{
-				static_cast<ClassType*>( pObj )->~ClassType();
-			}
-		};
 	};
+
+	template<>
+	struct TGetVTable<void> 
+	{
+		static GetVirtualTableFun& GetFunInst()
+		{
+			static GetVirtualTableFun s_fun;
+			return s_fun;
+		}
+	};
+
+	//=======================================================================
+	// 构造对象
+	//=======================================================================
+	template<typename GetVTableType, typename ClassType, bool bDuplicatable>
+	struct TConstruct : public IObjectConstruct
+	{
+		virtual void Assign( void* pDest, void* pSrc )
+		{
+			TCopy<ClassType, bDuplicatable>( pDest, pSrc );
+		}
+
+		virtual void Construct( void* pObj )
+		{
+			ClassType* pNew = new( pObj )ClassType;
+			if( !GetVTableType::GetFunInst() )
+				return;
+			( ( Gamma::SVirtualObj* )pNew )->m_pTable = GetVTableType::GetVTbInst();
+		}
+
+		virtual void Destruct( void* pObj )
+		{
+			static_cast<ClassType*>( pObj )->~ClassType();
+		}
+
+		static IObjectConstruct* Inst()
+		{
+			static TConstruct<GetVTableType, ClassType, bDuplicatable> s_Instance;
+			return &s_Instance;
+		}
+	};
+
+	template<typename ClassType, bool bDuplicatable>
+	struct TConstruct<TGetVTable<void>, ClassType, bDuplicatable>
+	{ static IObjectConstruct* Inst() { return nullptr; } };
 
 	//=======================================================================
 	// 函数注册链
@@ -91,7 +114,7 @@ namespace Gamma
 	// 获取继承关系信息
 	//=======================================================================
 	typedef TList<CScriptRegisterNode> CScriptRegisterList;
-	struct SGlobalExe { SGlobalExe( bool ) {} };
+	struct SGlobalExe { SGlobalExe( bool b = false ) {} };
 
 	template<typename _Derive, typename ... _Base>
 	class TInheritInfo
@@ -327,8 +350,8 @@ namespace Gamma
 		}
 	};
 
-	template<int32 nInstance>
-	class CCallBackBinder
+	template<typename ClassFunType>
+	class TCallBackBinder
 	{
 		template<typename RetType, typename ClassType, typename... Param >
 		class TCallBackWrap
@@ -340,9 +363,10 @@ namespace Gamma
 				return s_nCallBackIndex;
 			}
 
-			static bool SetCallBack( ICallBackWrap& CallBackWrap, bool bPureVirtual )
+			static bool SetCallBack( ICallBackWrap& CallBackWrap, 
+				int32 nIndex, bool bPureVirtual )
 			{
-				int32 nIndex = CallBackWrap.BindFunction(
+				CallBackWrap.BindFunction(
 					GetFunAdress( &TCallBackWrap::Wrap ), bPureVirtual );
 				if( nIndex == GetCallBackIndex() )
 					return true;
@@ -371,23 +395,38 @@ namespace Gamma
 			}
 		};
 	public:
-		template< typename ClassType, typename RetType, typename... Param >
-		static inline void BindWrap( ICallBackWrap& CallBackWrap,
-			bool bPureVirtual, RetType ( ClassType::*pFun )( Param... ) )
+		static Gamma::SFunctionTable* GetVirtualTable( void* p )
+		{ 
+			return ( (SVirtualObj*)(ClassFunType*)p )->m_pTable; 
+		}
+
+		static bool InsallGetVirtualTable()
 		{
-			TCallBackWrap<RetType, ClassType, Param...>::SetCallBack( CallBackWrap, bPureVirtual ); 
+			ClassFunType::GetFunInst() = (GetVirtualTableFun)&GetVirtualTable;
+			return false;
 		}
 
 		template< typename ClassType, typename RetType, typename... Param >
-		static inline void BindWrap( ICallBackWrap& CallBackWrap,
-			bool bPureVirtual, RetType ( ClassType::*pFun )( Param... ) const )
+		static void Bind( const char* szFunName, RetType ( ClassType::*pFun )( Param... ) )
+		{ 
+			IFunctionWrap* pWrap = CreateFunWrap( pFun );
+			SFunction funOrg = GetFunction( pFun );
+			STypeInfoArray InfoArray = MakeClassFunArg( pFun );
+			const char* szClassType = typeid( ClassType ).name();
+			int32 nIndex = GetVirtualFunIndex( funOrg );
+			ICallBackWrap& CBWrap = CScriptBase::RegistClassCallback( 
+				pWrap, funOrg, InfoArray, szClassType, szFunName );
+			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;
+			CallBackWrap::SetCallBack( CBWrap, nIndex, true );
+		}
+
+		template< typename ClassType, typename RetType, typename... Param >
+		static inline void Bind( const char* szFunName, RetType ( ClassType::*pFun )( Param... ) const )
 		{
-			TCallBackWrap<RetType, ClassType, Param...>::SetCallBack( CallBackWrap, bPureVirtual );
+			typedef RetType ( ClassType::*FunctionType )( Param... );
+			Bind( szFunName, (FunctionType)pFun );
 		}
 	};
-
-	#define BIND_CALLBACK( wrap, pureVirtual, fun ) \
-		CCallBackBinder<__LINE__>::BindWrap( wrap, pureVirtual, fun ) 
 
 	//=======================================================================
 	// 析构函数调用包装
@@ -413,9 +452,9 @@ namespace Gamma
 	// 析构函数调用包装绑定
 	//=======================================================================
 	template<typename ClassType>
-	static inline void BindDestructorWrap( ICallBackWrap& CallBackWrap )
+	static inline void BindDestructorWrap( ICallBackWrap& CallBackWrap, int32 nIndex )
 	{
-		static int32 s_nIndex = -1;
+		static int32 s_nIndex = nIndex;
 		class _FunWrap
 		{
 		public:
@@ -426,7 +465,7 @@ namespace Gamma
 			}
 		};
 
-		s_nIndex = CallBackWrap.BindFunction( GetFunAdress( &_FunWrap::Wrap ), false );
+		CallBackWrap.BindFunction( GetFunAdress( &_FunWrap::Wrap ), false );
 	}
 
 	//=======================================================================

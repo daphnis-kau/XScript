@@ -204,6 +204,5 @@ namespace Gamma
 	void CCallBackLua::DestrucVM( CScriptLua* pScript,
 		CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
-
 	}
 };

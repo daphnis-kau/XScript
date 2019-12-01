@@ -85,11 +85,10 @@ namespace Gamma
     {
 	}
 
-	int32 CCallScriptBase::BindFunction( void* pFun, bool bPureVirtual )
+	void CCallScriptBase::BindFunction( void* pFun, bool bPureVirtual )
 	{
 		m_pBootFun = pFun; 
 		m_bPureVirtual = bPureVirtual;
-		return m_nFunIndex;
 	}
 
 	int32 CCallScriptBase::CallOrg( SVirtualObj* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script)

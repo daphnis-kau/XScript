@@ -50,7 +50,7 @@ namespace Gamma
 	class ICallBackWrap
 	{
 	public:
-		virtual int32		BindFunction( void* pFun, bool bPureVirtual ) = 0;
+		virtual void		BindFunction( void* pFun, bool bPureVirtual ) = 0;
 	};
 }
 

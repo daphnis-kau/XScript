@@ -91,7 +91,7 @@ namespace Gamma
 		void*			GetBootFun()				{ return m_pBootFun; }
 		uint32			GetFunIndex()				{ return m_nFunIndex; }
 
-		virtual int32	BindFunction( void* pFun, bool bPureVirtual );
+		virtual void	BindFunction( void* pFun, bool bPureVirtual );
 		virtual void	Call( void* pObject, void* pRetBuf, void** pArgArray, CScriptBase& Script );
 
 		int32			Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script );

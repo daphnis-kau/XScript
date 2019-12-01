@@ -1,5 +1,5 @@
 ﻿#include "sampler.h"
-#include "core/GammaScriptX.h"
+#include "core/GammaScript.h"
 #include "../src/luabinder/CScriptLua.h"
 #include <string>
 
@@ -39,6 +39,20 @@ struct CVector2f
 	float x, y;
 };
 
+class CUnDuplicatableObject
+{
+	CUnDuplicatableObject& operator=( const CUnDuplicatableObject & );
+public:
+	double TestRetDouble() { return 123456.0; }
+};
+
+class CAbstractObject
+{
+	CAbstractObject();
+public:
+	double TestRetFloat() { return 123456.0f; }
+};
+
 class TestBase
 {
 public:
@@ -63,21 +77,28 @@ public:
 		return v;
 	};
 
-	virtual uint32 GetThis( CVector2f v )
+	virtual uint32 GetThis( CVector2f v ) const
 	{
 		return 0;
 	};
 
 	virtual TestBase* NewThis() = 0;
 
+	virtual TestBase* TestThis() = 0;
+
 	static const char* GetCppName( CVector2f v )
 	{
 		return "TestBase";
 	}
 
-	uint64 TestRet64( const char* p1, uint16 p2 )
+	uint64 TestRet( const char* p1, uint16 p2 ) const
 	{
 		printf( "%f,%s,%d\n", x, p1, p2 );
+		return 9876543210;
+	}
+
+	uint64 TestRet2()
+	{
 		return 9876543210;
 	}
 };
@@ -107,16 +128,26 @@ DEFINE_CLASS_BEGIN( CVector2f )
 	REGIST_CLASSMEMBER( y )
 DEFINE_CLASS_END();
 
+DEFINE_UNDUPLICATABLE_CLASS_BEGIN( CUnDuplicatableObject )
+	REGIST_CLASSFUNCTION( TestRetDouble )
+DEFINE_UNDUPLICATABLE_CLASS_END();
+
+DEFINE_ABSTRACT_CLASS_BEGIN( CAbstractObject )
+	REGIST_CLASSFUNCTION( TestRetFloat )
+DEFINE_ABSTRACT_CLASS_END();
+
 typedef TestBase Test_Base;
 DEFINE_CLASS_BEGIN( Test_Base )
 	REGIST_DESTRUCTOR()
 	REGIST_CLASSMEMBER( kkk )
 	REGIST_CLASSMEMBER( x )
 	REGIST_CLASSFUNCTION( GetNumber )
+	REGIST_CLASSFUNCTION_WITHNAME( TestRet, TestRet64 )
+	REGIST_CLASSFUNCTION_OVERLOAD( uint64( TestBase::* )(), TestRet2, TestRet2 )
 	REGIST_CALLBACKFUNCTION( GetThis )
-	REGIST_CALLBACKFUNCTION_OVERLOAD( NewThis, TestBase*( TestBase::* )(), NewThisLua )
+	REGIST_CALLBACKFUNCTION_WITHNAME( NewThis, NewThisLua )
+	REGIST_CALLBACKFUNCTION_OVERLOAD( TestBase*(TestBase::*)(), TestThis, TestThisLua )
 	REGIST_STATICFUNCTION( GetCppName )
-	REGIST_CLASSFUNCTION( TestRet64 )
 DEFINE_CLASS_END();
 
 REGIST_GLOBALFUNCTION( run_cpp_lua );
@@ -124,6 +155,11 @@ REGIST_GLOBALFUNCTION( run_cpp_lua );
 void TestLua()
 {
 	g_ScriptLua = new CScriptLua;
+
+	;
+
+	typedef decltype ( ( TestBase*( TestBase::* )( ) )nullptr ) aaa;
+	typedef decltype ( ( decltype ( &TestBase::NewThis ) )nullptr ) bbbb;
 
 	int32 a[2];
 	g_ScriptLua->RunString( szLua );
