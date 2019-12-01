@@ -51,7 +51,7 @@
 #define DEFINE_CLASS_END() _last;\
 	struct _class : public _last {}; \
 	static Gamma::SGlobalExe _class_fun_register( listRegister.GetFirst()->Register() ); \
-	static TConstructNormal<TGetVTable<_class>> s_Instance; \
+	static TGetVTable<_class>::TConstruct<true> s_Instance; \
 	static Gamma::SGlobalExe _class_construct_register( \
 	Gamma::CScriptBase::RegistConstruct( &s_Instance, typeid( org_class ).name() ) ); }
 
@@ -59,7 +59,7 @@
 #define DEFINE_UNDUPLICATION_CLASS_END() _last;\
 	struct _class : public _last {}; \
 	static Gamma::SGlobalExe _class_fun_register( listRegister.GetFirst()->Register() ); \
-	static TConstructUnduplicatable<TGetVTable<_class>> s_Instance(); \
+	static TGetVTable<_class>::TConstruct<false> s_Instance; \
 	static Gamma::SGlobalExe _class_construct_register( \
 	Gamma::CScriptBase::RegistConstruct( &s_Instance, typeid( org_class ).name() ) ); }
 

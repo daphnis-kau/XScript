@@ -149,14 +149,18 @@ namespace Gamma
 		}; \
 	};
 	
+	SIMPLE_TYPE_INFO( char )
 	SIMPLE_TYPE_INFO( int8 )
 	SIMPLE_TYPE_INFO( int16 )
 	SIMPLE_TYPE_INFO( int32 )
 	SIMPLE_TYPE_INFO( int64 )
+	SIMPLE_TYPE_INFO( long )
+	SIMPLE_TYPE_INFO( wchar_t )
 	SIMPLE_TYPE_INFO( uint8 )
 	SIMPLE_TYPE_INFO( uint16 )
 	SIMPLE_TYPE_INFO( uint32 )
 	SIMPLE_TYPE_INFO( uint64 )
+	SIMPLE_TYPE_INFO( ulong )
 	SIMPLE_TYPE_INFO( float )
 	SIMPLE_TYPE_INFO( double )
 	#undef SIMPLE_TYPE_INFO

@@ -11,14 +11,17 @@
 namespace Gamma
 {
 	//=======================================================================
-	// 获取原始虚表
+	// 构造对象以及获取原始虚表
 	//=======================================================================
 	typedef SFunctionTable* ( *GetVirtualTableFun )( void* );
-	template<typename _ClassType>
+	template<typename _T, bool bDuplicatable> struct TCopy 
+	{ TCopy( void* pDest, void* pSrc ) { *(_T*)pDest = *(_T*)pSrc; } };
+	template<typename _T> struct TCopy<_T, false> 
+	{ TCopy( void* pDest, void* pSrc ) { throw( "Can not duplicate object" ); } };
+
+	template<typename ClassType>
 	struct TGetVTable
 	{
-		typedef _ClassType ClassType;
-
 		static GetVirtualTableFun& GetFunInst()
 		{
 			static GetVirtualTableFun s_fun;
@@ -37,51 +40,39 @@ namespace Gamma
 				return;
 			GetVTbInst() = GetFunInst()( this );
 		}
+
+		template<bool bDuplicatable>
+		struct TConstruct : public IObjectConstruct
+		{
+			virtual void Assign( void* pDest, void* pSrc )
+			{
+				TCopy<ClassType, bDuplicatable>( pDest, pSrc );
+			}
+
+			virtual void Construct( void* pObj )
+			{
+				ClassType* pNew = new( pObj )ClassType;
+				if( !GetFunInst() )
+					return;
+				( ( Gamma::SVirtualObj* )pNew )->m_pTable = GetVTbInst();
+			}
+
+			virtual void Destruct( void* pObj )
+			{
+				static_cast<ClassType*>( pObj )->~ClassType();
+			}
+		};
 	};
 
-	template<typename GetVTableType>
-	struct TConstruct : public IObjectConstruct
-	{
-		typedef typename GetVTableType::ClassType ClassType;
-
-		virtual void Construct( void* pObj )
-		{
-			ClassType* pNew = new( pObj )ClassType;
-			if( !GetVTableType::GetFunInst() )
-				return;
-			( ( Gamma::SVirtualObj* )pNew )->m_pTable = GetVTableType::GetVTbInst();
-		}
-
-		virtual void Destruct( void* pObj )
-		{
-			static_cast<ClassType*>( pObj )->~ClassType();
-		}
-	};
-
-	template<typename GetVTableType>
-	struct TConstructNormal : public TConstruct<GetVTableType>
-	{
-		virtual void Assign( void* pDest, void* pSrc )
-		{
-			*(ClassType*)pDest = *(ClassType*)pSrc;
-		}
-	};
-
-	template<typename GetVTableType>
-	struct TConstructUnduplicatable : public TConstruct<GetVTableType>
-	{
-		virtual void Assign( void* pDest, void* pSrc )
-		{
-			throw( "Can not call construct on unduplication object" )
-		}
-	};
-
+	//=======================================================================
+	// 函数注册链
+	//=======================================================================
 	class CScriptRegisterNode : public TList<CScriptRegisterNode>::CListNode
 	{
 		void( *m_funRegister )( );
 		typedef typename TList<CScriptRegisterNode>::CListNode ParentType;
 	public:
-		CScriptRegisterNode( TList<CScriptRegisterNode>& list, void( *fun )( ) )
+		CScriptRegisterNode( TList<CScriptRegisterNode>& list, void( *fun )() )
 			: m_funRegister( fun )
 		{
 			list.PushBack( *this );
