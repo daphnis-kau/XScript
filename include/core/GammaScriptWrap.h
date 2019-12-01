@@ -170,30 +170,21 @@ namespace Gamma
 		static inline T&	CallWrapArg( void* pArgArray )	{ return **(T**)pArgArray; }
 		static inline void* CallBackArg( T*& pArgArray )	{ return &pArgArray; }
 	};
-
-#define SIMPLE_TYPE_ARG_FETCHER( T ) \
-	template<> \
-	struct ArgFetcher<const T&> \
-	{ \
-		static inline const T&	CallWrapArg( void* pArgArray )	{ return *(const T*)pArgArray; } \
-		static inline void* CallBackArg( const T*& pArgArray )	{ return (void*)pArgArray; } \
-	}; \
-
-	SIMPLE_TYPE_ARG_FETCHER( char )
-	SIMPLE_TYPE_ARG_FETCHER( int8 )
-	SIMPLE_TYPE_ARG_FETCHER( int16 )
-	SIMPLE_TYPE_ARG_FETCHER( int32 )
-	SIMPLE_TYPE_ARG_FETCHER( int64 )
-	SIMPLE_TYPE_ARG_FETCHER( long )
-	SIMPLE_TYPE_ARG_FETCHER( wchar_t )
-	SIMPLE_TYPE_ARG_FETCHER( uint8 )
-	SIMPLE_TYPE_ARG_FETCHER( uint16 )
-	SIMPLE_TYPE_ARG_FETCHER( uint32 )
-	SIMPLE_TYPE_ARG_FETCHER( uint64 )
-	SIMPLE_TYPE_ARG_FETCHER( ulong )
-	SIMPLE_TYPE_ARG_FETCHER( float )
-	SIMPLE_TYPE_ARG_FETCHER( double )
-#undef SIMPLE_TYPE_ARG_FETCHER
+	
+	template<> struct ArgFetcher<const char		&> : public ArgFetcher<char		> {};
+	template<> struct ArgFetcher<const int8		&> : public ArgFetcher<int8		> {};
+	template<> struct ArgFetcher<const int16	&> : public ArgFetcher<int16	> {};
+	template<> struct ArgFetcher<const int32	&> : public ArgFetcher<int32	> {};
+	template<> struct ArgFetcher<const int64	&> : public ArgFetcher<int64	> {};
+	template<> struct ArgFetcher<const long		&> : public ArgFetcher<long		> {};
+	template<> struct ArgFetcher<const wchar_t	&> : public ArgFetcher<wchar_t	> {};
+	template<> struct ArgFetcher<const uint8	&> : public ArgFetcher<uint8	> {};
+	template<> struct ArgFetcher<const uint16	&> : public ArgFetcher<uint16	> {};
+	template<> struct ArgFetcher<const uint32	&> : public ArgFetcher<uint32	> {};
+	template<> struct ArgFetcher<const uint64	&> : public ArgFetcher<uint64	> {};
+	template<> struct ArgFetcher<const ulong	&> : public ArgFetcher<ulong	> {};
+	template<> struct ArgFetcher<const float	&> : public ArgFetcher<float	> {};
+	template<> struct ArgFetcher<const double	&> : public ArgFetcher<double	> {};
 
 	enum ECallType
 	{

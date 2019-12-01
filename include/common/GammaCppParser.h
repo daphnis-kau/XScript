@@ -131,40 +131,6 @@ namespace Gamma
 		};
 	};
 
-#define SIMPLE_TYPE_INFO( T ) \
-	template<> \
-	struct TTypeInfo<const T&> \
-	{ \
-		typedef TTypeInfo<T>::Type Type; \
-		enum \
-		{ \
-			m_eType = STypeID<T>::eTypeID, \
-			m_eTypeEx0 = eDTE_Value, \
-			m_eTypeEx1 = 0, \
-			m_eTypeEx2 = 0, \
-			m_eTypeEx3 = 0, \
-			m_eTypeEx4 = 0, \
-			m_eTypeEx5 = 0, \
-			m_eTotalType = ( m_eType << 24 )|( m_eTypeEx0 << 0 )|( m_eTypeEx1 << 4 )|( m_eTypeEx2 << 8 )|( m_eTypeEx3 << 12 )|( m_eTypeEx4 << 16 )|( m_eTypeEx5 << 20 ), \
-		}; \
-	};
-	
-	SIMPLE_TYPE_INFO( char )
-	SIMPLE_TYPE_INFO( int8 )
-	SIMPLE_TYPE_INFO( int16 )
-	SIMPLE_TYPE_INFO( int32 )
-	SIMPLE_TYPE_INFO( int64 )
-	SIMPLE_TYPE_INFO( long )
-	SIMPLE_TYPE_INFO( wchar_t )
-	SIMPLE_TYPE_INFO( uint8 )
-	SIMPLE_TYPE_INFO( uint16 )
-	SIMPLE_TYPE_INFO( uint32 )
-	SIMPLE_TYPE_INFO( uint64 )
-	SIMPLE_TYPE_INFO( ulong )
-	SIMPLE_TYPE_INFO( float )
-	SIMPLE_TYPE_INFO( double )
-	#undef SIMPLE_TYPE_INFO
-
 	///< 特化字符串的类型
 	template<>
 	struct TTypeInfo<const wchar_t*>
@@ -221,6 +187,24 @@ namespace Gamma
 			m_eTotalType = ( m_eType << 24 )|( m_eTypeEx0 << 0 ),
 		};
 	};
+
+	//=======================================================================
+	// 特化简单类型的常量引用
+	//=======================================================================
+	template<> struct TTypeInfo<const char		&> : public TTypeInfo<char		> {};
+	template<> struct TTypeInfo<const int8		&> : public TTypeInfo<int8		> {};
+	template<> struct TTypeInfo<const int16		&> : public TTypeInfo<int16		> {};
+	template<> struct TTypeInfo<const int32		&> : public TTypeInfo<int32		> {};
+	template<> struct TTypeInfo<const int64		&> : public TTypeInfo<int64		> {};
+	template<> struct TTypeInfo<const long		&> : public TTypeInfo<long		> {};
+	template<> struct TTypeInfo<const wchar_t	&> : public TTypeInfo<wchar_t	> {};
+	template<> struct TTypeInfo<const uint8		&> : public TTypeInfo<uint8		> {};
+	template<> struct TTypeInfo<const uint16	&> : public TTypeInfo<uint16	> {};
+	template<> struct TTypeInfo<const uint32	&> : public TTypeInfo<uint32	> {};
+	template<> struct TTypeInfo<const uint64	&> : public TTypeInfo<uint64	> {};
+	template<> struct TTypeInfo<const ulong		&> : public TTypeInfo<ulong		> {};
+	template<> struct TTypeInfo<const float		&> : public TTypeInfo<float		> {};
+	template<> struct TTypeInfo<const double	&> : public TTypeInfo<double	> {};
 
 	template<typename T>
 	void GetTypeInfo( STypeInfo& Info )
