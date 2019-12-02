@@ -17,102 +17,99 @@ namespace Gamma
 	//=====================================================================
 	// JS脚本调用C++的接口
 	//=====================================================================
-	void CByScriptJS::CallByJS(CScriptJS* pScript, CByScriptBase* pByScript, 
+	void CByScriptJS::CallByJS(CScriptJS& Script, CByScriptBase* pCallBase, 
 		const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		try
 		{
-			const list<CTypeBase*>& listParam = pByScript->GetParamList();
-			CJSTypeBase* pResultType = static_cast<CJSTypeBase*>(pByScript->GetResultType());
-			uint32 nParamSize = AligenUp(pByScript->GetParamSize(), sizeof(void*));
-			uint32 nReturnSize = AligenUp(pResultType ? pResultType->GetLen() : sizeof(int64), sizeof(void*));
-			uint32 nArgSize = AligenUp(pByScript->GetParamCount() * sizeof(void*), sizeof(void*));
-			char* pDataBuf = (char*)alloca(nParamSize + nReturnSize + nArgSize);
+			const vector<DataType>& listParam = pCallBase->GetParamList();
+			size_t nParamCount = listParam.size();
+			size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
+			size_t nParamSize = CalBufferSize( listParam, aryParamSize );
+			DataType nResultType = pCallBase->GetResultType();
+			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
+			size_t nArgSize = pCallBase->GetParamCount()*sizeof( void* );
+			char* pDataBuf = (char*)alloca( nParamSize + nReturnSize + nArgSize );
 			char* pResultBuf = pDataBuf + nParamSize;
-			void** pArgArray = (void**)(pResultBuf + nReturnSize);
+			void** pArgArray = (void**)( pResultBuf + nReturnSize );
 			void* pObject = NULL;
 
-			memset(pDataBuf, 0, pByScript->GetParamSize());
-			uint32 nArgIndex = 0;
+			DataType nThisType = pCallBase->GetThisType();
+			if( nThisType )
+			{
+				CJSObject::GetInst().FromVMValue( nThisType, Script, (char*)&pObject, args.This() );
+				assert( pObject );
+			}
+
 			uint32 nArgCount = args.Length();
-			LocalValue undefined = Undefined(Script.GetIsolate());
-			for(list<CTypeBase*>::const_iterator it = listParam.begin(); 
-				it != listParam.end(); ++it, ++nArgIndex)
+			LocalValue undefined = Undefined( Script.GetIsolate() );
+			for( uint32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++ )
 			{
-				CJSTypeBase* pParamType = static_cast<CJSTypeBase*>(*it);
+				DataType nType = listParam[nArgIndex];
+				CJSTypeBase* pParamType = GetTypeBase( nType );
 				LocalValue arg = nArgIndex >= nArgCount ? undefined : args[nArgIndex];
-				pParamType->FromVMValue(Script, pDataBuf, arg);
+				pParamType->FromVMValue( nType, Script, pDataBuf, arg );
 				pArgArray[nArgIndex] = pDataBuf;
-				pDataBuf += AligenUp(pParamType->GetLen(), sizeof(void*));
+				pDataBuf += aryParamSize[nArgIndex];
 			}
 
-			if (pByScript->GetThisType())
-			{
-				CJSTypeBase* pThis = static_cast<CJSTypeBase*>(pByScript->GetThisType());
-				pThis->FromVMValue(Script, (char*)&pObject, args.This());
-				if (pObject == NULL)
-					return;
-			}
-
-			pByScript->Call(pObject, pResultBuf, pArgArray);
+			pCallBase->Call(pObject, pResultBuf, pArgArray, Script);
 			Script.CheckUnlinkCppObj();
-			if (!pResultType)
+			if (!nResultType )
 				return;
-			args.GetReturnValue().Set( pResultType->ToVMValue( Script, pResultBuf ) );
+			CJSTypeBase* pReturnType = GetTypeBase( nResultType );
+			args.GetReturnValue().Set( pReturnType->ToVMValue( nResultType, Script, pResultBuf ) );
 		}
 		catch (...)
 		{
 		}
 	}
 
-	void CByScriptJS::GetByJS(CScriptJS* pScript, CByScriptBase* pByScript,
-		v8::Local<v8::Value> This, v8::ReturnValue<v8::Value> ret)
+	void CByScriptJS::GetByJS(CScriptJS& Script, CByScriptBase* pByScript,
+		LocalValue This, v8::ReturnValue<v8::Value> ret)
 	{
-		CScriptJS& Script = *(CScriptJS*)pByScript->GetScript();
 		try
 		{
 			void* pObject = NULL;
-			CJSTypeBase* pThis = static_cast<CJSTypeBase*>(pByScript->GetThisType());
-			pThis->FromVMValue(Script, (char*)&pObject, This);
+			DataType nThisType = pByScript->GetThisType();
+			CJSObject::GetInst().FromVMValue( nThisType, Script, (char*)&pObject, This);
 			if (pObject == NULL)
 				return;
 
-			CJSTypeBase* pResultType = static_cast<CJSTypeBase*>(pByScript->GetResultType());
-			uint32 nReturnSize = AligenUp(pResultType ? pResultType->GetLen() : sizeof(int64), sizeof(void*));
+			DataType nResultType = pByScript->GetResultType();
+			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
 			char* pResultBuf = (char*)alloca( nReturnSize);
-			pByScript->Call(pObject, pResultBuf, NULL);
+			pByScript->Call(pObject, pResultBuf, NULL, Script);
 			Script.CheckUnlinkCppObj();
-			if (!pResultType)
+			if (!nResultType )
 				return;
-			ret.Set( pResultType->ToVMValue( Script, pResultBuf ) );
+			CJSTypeBase* pReturnType = GetTypeBase( nResultType );
+			ret.Set( pReturnType->ToVMValue( nResultType, Script, pResultBuf ) );
 		}
 		catch (...)
 		{
 		}
 	}
 
-	void CByScriptJS::SetByJS(CByScriptBase* pByScript, 
-		v8::Local<v8::Value> This, v8::Local<v8::Value> arg)
+	void CByScriptJS::SetByJS( CScriptJS& Script, CByScriptBase* pByScript,
+		LocalValue This, LocalValue arg)
 	{
-		CScriptJS& Script = *(CScriptJS*)pByScript->GetScript();
 		try
 		{
 			void* pObject = NULL;
-			CJSTypeBase* pThis = static_cast<CJSTypeBase*>(pByScript->GetThisType());
-			pThis->FromVMValue(Script, (char*)&pObject, This);
+			DataType nThisType = pByScript->GetThisType();
+			CJSObject::GetInst().FromVMValue( nThisType, Script, (char*)&pObject, This );
 			if (pObject == NULL)
 				return;
 
-			const list<CTypeBase*>& listParam = pByScript->GetParamList();
-			uint32 nParamSize = AligenUp(pByScript->GetParamSize(), sizeof(void*));
+			DataType nType = pByScript->GetParamList()[0];
+			size_t nParamSize = GetAligenSizeOfType( nType );
 			char* pDataBuf = (char*)alloca( nParamSize );
-
-			memset(pDataBuf, 0, pByScript->GetParamSize());
-			LocalValue undefined = Undefined(Script.GetIsolate());
-			CJSTypeBase* pParamType = static_cast<CJSTypeBase*>(*listParam.begin());
-			pParamType->FromVMValue(Script, pDataBuf, arg);
+			LocalValue undefined = Undefined( Script.GetIsolate() );
+			CJSTypeBase* pParamType = GetTypeBase( nType );
+			pParamType->FromVMValue(nType, Script, pDataBuf, arg);
 			void* aryArg[] = { pDataBuf };
-			pByScript->Call(pObject, NULL, aryArg);
+			pByScript->Call(pObject, NULL, aryArg, Script);
 			Script.CheckUnlinkCppObj();
 		}
 		catch (...)
@@ -123,94 +120,97 @@ namespace Gamma
 	//=====================================================================
 	// C++调用JS脚本的接口
 	//=====================================================================
-	CCallBackJS::CCallBackJS(CScriptJS& Script, const STypeInfoArray& aryTypeInfo,
-		IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunName)
-		: CCallScriptBase(Script, aryTypeInfo, funWrap, szTypeInfoName, szFunName)
+	bool CCallBackJS::CallVM( CScriptJS& Script, v8::Persistent<v8::String>& strName,
+		CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
 	{
+		Script.CallJSStatck(true);
+
 		v8::Isolate* isolate = Script.GetIsolate();
-		v8::HandleScope handle_scope(isolate);
-		szFunName = szFunName && szFunName[0] ? szFunName : "Deconstruction";
-		m_strName.Reset(isolate, v8::String::NewFromUtf8(isolate, szFunName));
-	}
-
-	bool CCallBackJS::CallVM(SVirtualObj* pObject, void* pRetBuf, void** pArgArray)
-	{
-		CScriptJS* pScript = static_cast<CScriptJS*>(m_pScript);
-		pScript->CallJSStatck(true);
-
-		v8::Isolate* isolate = pScript->GetIsolate();
 		v8::HandleScope handle_scope(isolate);
 		v8::TryCatch try_catch(isolate);
 
 		// Enter the context for compiling and running the hello world script.
-		v8::Local<v8::Context> context = pScript->GetContext().Get(isolate);
+		v8::Local<v8::Context> context = Script.GetContext().Get(isolate);
 		v8::Context::Scope context_scope(context);
 
-		CJSTypeBase* pThisType = static_cast<CJSTypeBase*>(m_pThis);
-		LocalValue pThis = pThisType->ToVMValue(*pScript, (char*)&pObject);
+		DataType nThisType = pCallBase->GetThisType();
+		LocalValue pThis = CJSObject::GetInst().ToVMValue( nThisType, Script, (char*)&pObject);
 		v8::Local<v8::Object> object = pThis->ToObject(isolate);
 
- 		v8::Local<v8::Value> args[256];
- 		int32 nArg = 0;
- 		for (list<CTypeBase*>::iterator it = m_listParam.begin(); it != m_listParam.end(); ++it, ++nArg)
- 			args[nArg] = static_cast<CJSTypeBase*>(*it)->ToVMValue(*pScript, (char*)pArgArray[nArg]);
+		const vector<DataType>& listParam = pCallBase->GetParamList();
+		int32 nParamCount = (int32)listParam.size();
+		size_t nTotalSize = sizeof( LocalValue )*nParamCount;
+		LocalValue* args = ( LocalValue* )alloca( sizeof( nTotalSize ) );
+		for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+		{
+			new ( args + nArgIndex ) LocalValue;
+			DataType nType = listParam[nArgIndex];
+			CJSTypeBase* pParamType = GetTypeBase( nType );
+			args[nArgIndex] = pParamType->ToVMValue( nType, Script, (char*)pArgArray[nArgIndex] );
+		}
  
- 		v8::MaybeLocal<v8::Value> fun = object->Get(context, m_strName.Get(isolate));
+ 		v8::MaybeLocal<v8::Value> fun = object->Get(context, strName.Get(isolate));
 		if (fun.IsEmpty())
 		{
-			pScript->CallJSStatck(false);
+			for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+				args[nArgIndex].~LocalValue();				
+			Script.CallJSStatck(false);
 			return false;
 		}
 
-		v8::Local<v8::Value> funField = fun.ToLocalChecked();
+		LocalValue funField = fun.ToLocalChecked();
 		if (!funField->IsFunction())
 		{
-			pScript->CallJSStatck(false);
+			for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+				args[nArgIndex].~LocalValue();
+			Script.CallJSStatck(false);
 			return false;
 		}
 
 		v8::Local<v8::Function> funCallback = v8::Local<v8::Function>::Cast(funField);
-		LocalValue result = funCallback->Call(object, nArg, args);
-		pScript->CallJSStatck(false);
+		LocalValue result = funCallback->Call( object, nParamCount, args );
+		for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+			args[nArgIndex].~LocalValue();
+
+		Script.CallJSStatck(false);
 		if (result.IsEmpty())
 		{
-			pScript->ReportException(&try_catch, context);
+			Script.ReportException(&try_catch, context);
 			return false;
 		}
- 
- 		if (m_pResult)
- 			static_cast<CJSTypeBase*>(m_pResult)->FromVMValue(*pScript, (char*)pRetBuf, result);
+
+		DataType nResultType = pCallBase->GetResultType();
+ 		if ( nResultType )
+			GetTypeBase( nResultType )->FromVMValue( nResultType, Script, (char*)pRetBuf, result);
 		return true;
 	}
 
-	void CCallBackJS::DestrucVM(SVirtualObj* pObject)
+	void CCallBackJS::DestrucVM( CScriptJS& Script, v8::Persistent<v8::String>& strName,
+		CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
-		CScriptJS* pScript = static_cast<CScriptJS*>(m_pScript);
-		pScript->CallJSStatck(true);
-
-		v8::Isolate* isolate = pScript->GetIsolate();
+		Script.CallJSStatck(true);
+		v8::Isolate* isolate = Script.GetIsolate();
 		v8::HandleScope handle_scope(isolate);
 		v8::TryCatch try_catch(isolate);
 
 		// Enter the context for compiling and running the hello world script.
-		v8::Local<v8::Context> context = pScript->GetContext().Get(isolate);
+		v8::Local<v8::Context> context = Script.GetContext().Get(isolate);
 		v8::Context::Scope context_scope(context);
 
-		CJSTypeBase* pThisType = static_cast<CJSTypeBase*>(m_pThis);
-		LocalValue pThis = pThisType->ToVMValue(*pScript, (char*)&pObject);
-		v8::Local<v8::Object> object = pThis->ToObject(isolate);
-
-		v8::MaybeLocal<v8::Value> fun = object->Get(context, m_strName.Get(isolate));
+		DataType nThisType = pCallBase->GetThisType();
+		LocalValue pThis = CJSObject::GetInst().ToVMValue( nThisType, Script, (char*)&pObject );
+		v8::Local<v8::Object> object = pThis->ToObject( isolate );
+		v8::MaybeLocal<v8::Value> fun = object->Get(context, strName.Get(isolate));
 		if (fun.IsEmpty())
-			return pScript->CallJSStatck(true);
-		v8::Local<v8::Value> funField = fun.ToLocalChecked();
+			return Script.CallJSStatck(true);
+		LocalValue funField = fun.ToLocalChecked();
 		if (!funField->IsFunction())
-			return pScript->CallJSStatck(true);
+			return Script.CallJSStatck(true);
 		v8::Local<v8::Function> funCallback = v8::Local<v8::Function>::Cast(funField);
 		LocalValue result = funCallback->Call(object, 0, &result);
-		pScript->CallJSStatck(false);
+		Script.CallJSStatck(false);
 		if (!result.IsEmpty())
 			return;
-		pScript->ReportException(&try_catch, context);
+		Script.ReportException(&try_catch, context);
 	}
 };

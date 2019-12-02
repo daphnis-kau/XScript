@@ -110,9 +110,9 @@ namespace Gamma
 		consoleObj->Set( context, v8::String::NewFromUtf8( m_pIsolate, "gsd" ), funDebug );
 		m_pDebugger = new CDebugJS( this, nDebugPort );
 
-		m_CppField.Reset(m_pIsolate, v8::String::NewFromUtf8(m_pIsolate, "__cpp_obj_info__"));
-		m_Prototype.Reset(m_pIsolate, String::NewFromUtf8(m_pIsolate, "prototype"));
-		m___proto__.Reset(m_pIsolate, v8::String::NewFromUtf8(m_pIsolate, "__proto__"));
+		m_CppField.Reset( m_pIsolate, v8::String::NewFromUtf8( m_pIsolate, "__cpp_obj_info__" ) );
+		m_Prototype.Reset( m_pIsolate, String::NewFromUtf8( m_pIsolate, "prototype" ) );
+		m___proto__.Reset( m_pIsolate, v8::String::NewFromUtf8( m_pIsolate, "__proto__" ) );
 
 		RunString(	
 			"var Gamma = {};\n"
@@ -233,9 +233,11 @@ namespace Gamma
 		m_pIsolate = NULL;
 	}
 
-	PersistentFunTemplate& CScriptJS::GetPersistentFunTemplate( CClassRegistInfo* pInfo )
+	PersistentFunTmplt& CScriptJS::GetPersistentFunTemplate( const CClassRegistInfo* pInfo )
 	{
-		return m_mapPersistentFunTemplate[pInfo];
+		SClassInfo* pClassInfo = m_mapClassInfo.Find(pInfo);
+		static PersistentFunTmplt s_Instance;
+		return pClassInfo ? pClassInfo->m_FunctionTemplate : s_Instance;
 	}
 
 	void CScriptJS::ClearCppString( void* pStack )
@@ -467,21 +469,21 @@ namespace Gamma
 	void CScriptJS::Callback(const FunctionCallbackInfo<Value>& args)
 	{
 		Local<External> wrap = Local<External>::Cast(args.Data());
-		CByScriptBase* pCallBase = (CByScriptBase*)wrap->Value();
-		if (!pCallBase)
+		SCallInfo* pCallInfo = (SCallInfo*)wrap->Value();
+		if (!pCallInfo )
 			return;
 		Isolate* isolate = args.GetIsolate();
 		HandleScope scope(isolate);
-		CByScriptJS::CallByJS(pCallBase, args);
+		CByScriptJS::CallByJS(*pCallInfo->m_pScript, pCallInfo->m_pCallBase, args);
 	}
 
 	void CScriptJS::NewObject(const FunctionCallbackInfo<Value>& args)
 	{
-		CClassRegistInfo* pInfo = (CClassRegistInfo*)External::Cast(*args.Data())->Value();
+		SClassInfo* pInfo = (SClassInfo*)External::Cast(*args.Data())->Value();
 		if (pInfo == NULL)
 			return;
 
-		CScriptJS& Script = *static_cast<CScriptJS*>(pInfo->GetScript());
+		CScriptJS& Script = *static_cast<CScriptJS*>(pInfo->m_pScript);
 		Local<Object> ScriptObj = args.This();
 		v8::External* pCppBind = NULL;
 		if (ScriptObj->InternalFieldCount())
@@ -499,14 +501,14 @@ namespace Gamma
 			return;
 		}
 
-		Script.BindObj(NULL, args.This(), pInfo);
+		Script.BindObj( NULL, args.This(), pInfo->m_pClassInfo );
 	}
 
 	void CScriptJS::Destruction(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		Local<External> wrap = Local<External>::Cast(args.Data());
-		CClassRegistInfo* pClassInfo = (CClassRegistInfo*)wrap->Value();
-		CScriptJS& Script = *(CScriptJS*)pClassInfo->GetScript();
+		SClassInfo* pClassInfo = (SClassInfo*)wrap->Value();
+		CScriptJS& Script = *(CScriptJS*)pClassInfo->m_pScript;
 		v8::Object* pScriptObject = v8::Object::Cast(*args.This());
 		v8::External* pCppBind = NULL;
 		if (pScriptObject->InternalFieldCount())
@@ -528,33 +530,35 @@ namespace Gamma
 	void CScriptJS::GCCallback(const v8::WeakCallbackInfo<SObjInfo>& data)
 	{
 		SObjInfo* pObjectInfo = data.GetParameter();
-		CClassRegistInfo* pInfo = pObjectInfo->m_pClassInfo;
-		((CScriptJS*)pInfo->GetScript())->UnbindObj(pObjectInfo, true);
+		SClassInfo* pInfo = pObjectInfo->m_pClassInfo;
+		pInfo->m_pScript->UnbindObj(pObjectInfo, true);
 	}
 
 	void CScriptJS::GetterCallback(Local<Name> property, const PropertyCallbackInfo<Value>& info)
 	{
 		Local<External> wrap = Local<External>::Cast(info.Data());
-		CByScriptBase* pCallBase = (CByScriptBase*)wrap->Value();
-		if (!pCallBase)
+		SCallInfo* pCallInfo = (SCallInfo*)wrap->Value();
+		if (!pCallInfo )
 			return;
 		Isolate* isolate = info.GetIsolate();
 		HandleScope scope(isolate);
-		CByScriptJS::GetByJS(pCallBase, info.This(), info.GetReturnValue());
+		CByScriptJS::GetByJS( *pCallInfo->m_pScript, 
+			pCallInfo->m_pCallBase, info.This(), info.GetReturnValue());
 	}
 
 	void CScriptJS::SetterCallback(Local<Name> property, LocalValue value, const PropertyCallbackInfo<void>& info)
 	{
 		Local<External> wrap = Local<External>::Cast(info.Data());
-		CByScriptBase* pCallBase = (CByScriptBase*)wrap->Value();
-		if (!pCallBase)
+		SCallInfo* pCallInfo = (SCallInfo*)wrap->Value();
+		if (!pCallInfo )
 			return;
 		Isolate* isolate = info.GetIsolate();
 		HandleScope scope(isolate);
-		CByScriptJS::SetByJS(pCallBase, info.This(), value);
+		CByScriptJS::SetByJS( *pCallInfo->m_pScript,
+			pCallInfo->m_pCallBase, info.This(), value );
 	}
 
-	void CScriptJS::BindObj(void* pObject, Local<Object> ScriptObj, CClassRegistInfo* pInfo, void* pSrc)
+	void CScriptJS::BindObj(void* pObject, Local<Object> ScriptObj, const CClassRegistInfo* pInfo, void* pSrc)
 	{
 		SObjInfo& ObjectInfo = *AllocObjectInfo();
 		ObjectInfo.m_bRecycle = false;
@@ -572,15 +576,13 @@ namespace Gamma
 		}
 
 		ObjectInfo.m_Object.Reset(m_pIsolate, ScriptObj);
-		ObjectInfo.m_pClassInfo = pInfo;
+		ObjectInfo.m_pClassInfo = m_mapClassInfo.Find(pInfo);
 		ObjectInfo.m_pObject = pObject;
 		m_mapObjInfo.Insert(ObjectInfo);
 
 		// 注册回调函数
 		if (pInfo->IsCallBack())
-			pInfo->ReplaceVirtualTable(pObject, ObjectInfo.m_bRecycle, 0);
-
-		pInfo->IncInstanceCount();
+			pInfo->ReplaceVirtualTable(this, pObject, ObjectInfo.m_bRecycle, 0);
 
 		Local<External> cppInfo = External::New(m_pIsolate, &ObjectInfo);
 		if (ScriptObj->InternalFieldCount())
@@ -594,8 +596,8 @@ namespace Gamma
 	{
 		void* pObject = pObjectInfo->m_pObject;
 		bool bRecycle = pObjectInfo->m_bRecycle;
-		CClassRegistInfo* pInfo = pObjectInfo->m_pClassInfo;
-		CScriptJS* pScript = (CScriptJS*)pInfo->GetScript();
+		CClassRegistInfo* pInfo = pObjectInfo->m_pClassInfo->m_pClassInfo;
+		CScriptJS* pScript = pObjectInfo->m_pClassInfo->m_pScript;
 		Isolate* isolate = pScript->GetIsolate();
 		v8::HandleScope handle_scope(isolate);
 		v8::TryCatch try_catch(isolate);
@@ -615,10 +617,9 @@ namespace Gamma
 		pObjectInfo->m_Object.Reset();
 
 		pScript->FreeObjectInfo(pObjectInfo);
-		pInfo->DecInstanceCount();
 		if (!pObject)
 			return;
-		pInfo->RecoverVirtualTable(pObject);
+		pInfo->RecoverVirtualTable(pScript, pObject);
 		if (!bRecycle)
 			return;
 		pInfo->Release( pObject );
@@ -626,6 +627,17 @@ namespace Gamma
 		delete[](tbyte*)pObject;
 	}
 	
+	bool CScriptJS::CallVM( CCallScriptBase* pCallBase, 
+		SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
+	{
+		return false;
+	}
+
+	void CScriptJS::DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject )
+	{
+
+	}
+
 	Gamma::CScriptJS::SObjInfo* CScriptJS::FindExistObjInfo( void* pObj )
 	{
 		if( pObj == NULL )
@@ -639,7 +651,7 @@ namespace Gamma
 		if( !pLeft )
 			return NULL;
 		ptrdiff_t nDiff = ( (const char*)pObj ) - ( (const char*)pLeft->m_pObject );
-		if( nDiff >= (ptrdiff_t)( pLeft->m_pClassInfo->GetClassSize() ) )
+		if( nDiff >= (ptrdiff_t)( pLeft->m_pClassInfo->m_pClassInfo->GetClassSize() ) )
 			return NULL;
 		return pLeft;
 	}
@@ -647,106 +659,7 @@ namespace Gamma
 	//==================================================================================================================================//
     //                                                        对内部提供的功能性函数                                                    //
 	//==================================================================================================================================//
-    CTypeBase* CScriptJS::MakeParamType( const STypeInfo& argTypeInfo )
-	{
-		uint32 n = 5;
-		STypeInfo argInfo = argTypeInfo;
-		while( n && !( ( argInfo.m_nType >> ( n*4 ) )&0xf ) )
-			n--;
-
-		uint32 nPointCount = 0;
-		for( uint32 i = 0; i <= n; i++ )
-			nPointCount += ( ( argInfo.m_nType >> ( i*4 ) )&0xf ) >= eDTE_Pointer;
-		uint32 nType = argInfo.m_nType >> 24;
-
-		if( nPointCount == 0 )
-		{
-			switch( nType )
-			{
-			case eDT_char:
-				return new CJSInt8;
-			case eDT_wchar:
-				return sizeof(wchar_t) == sizeof(uint16) ? (CTypeBase*)new CJSUint16 : (CTypeBase*)new CJSUint32;
-			case eDT_float:
-				return new CJSFloat;
-			case eDT_double:
-				return new CJSDouble;
-			case eDT_int64:
-				return new CJSInt64;
-			case eDT_uint64:
-				return new CJSUint64;
-			case eDT_long:
-				return new CJSLong;
-			case eDT_ulong:
-				return new CJSUlong;
-			case eDT_int32:
-				return new CJSInt32;
-			case eDT_uint32:
-				return new CJSUint32;
-			case eDT_int16:
-				return new CJSInt16;
-			case eDT_uint16:
-				return new CJSUint16;
-			case eDT_int8:
-				return new CJSInt8;
-			case eDT_uint8:
-				return new CJSUint8;
-			case eDT_const_char_str:
-				return new CJSString;
-			case eDT_const_wchar_t_str:
-				return new CJSWString;
-			case eDT_bool:
-				return new CJSBool;
-			case eDT_void:
-				return NULL;
-			case eDT_custom_type:
-				return MakeObject( argInfo, true );
-			default:
-				throw( "Invalid format!");
-			}
-		}
-		else
-		{
-			if( nPointCount > 1 || nType != eDT_custom_type )
-				return new CJSPointer;
-
-			CTypeBase* pType = MakeObject( argInfo, false );
-			if( pType->GetType() == eDT_custom_type )
-				return pType;
-			delete pType;
-			return new CJSPointer;
-		}
-	}
-
-	CTypeBase* CScriptJS::MakeType( CClassRegistInfo* pInfo, bool bValue )
-	{
-		return bValue ? new CJSValueObject( pInfo ) : new CJSObject( pInfo );
-	}
-
-    CTypeBase* CScriptJS::MakeObject( const STypeInfo& argInfo, bool bValue )
-	{
-		//如果不是枚举   
-		map<string,int32>::iterator itEnum = m_mapSizeOfEnum.find( argInfo.m_szTypeName );
-		if( itEnum == m_mapSizeOfEnum.end() )
-		{
-			gammacstring strKey( argInfo.m_szTypeName, true );
-			CTypeIDName* pTypeIDName = m_mapTypeID2ClassInfo.Find( strKey );
-			assert( pTypeIDName != NULL );
-			return static_cast<CClassRegistInfo*>( pTypeIDName )->MakeType( bValue );
-		}
-		else
-		{
-			if( itEnum->second == 4 )
-				return new CJSUint32();
-			if( itEnum->second == 2 )
-				return new CJSUint16();
-			return new CJSUint8();
-		}
-	}
-	
-	//-------------------------------------------------------------------------------
-	// 通用函数
-	//--------------------------------------------------------------------------------
+   
 
 	//==================================================================================================================================//
 	//                                                        字符串函数																//
@@ -872,22 +785,21 @@ namespace Gamma
 	bool CScriptJS::RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg )
 	{
 		CheckUnlinkCppObj();
-		CCallBase* pCallBase = GetGlobalCallBase( aryTypeInfo );
-
 		HandleScope handle_scope(m_pIsolate);
 		// Enter the context for compiling and running the hello world script.
 		Local<Context> context = m_Context.Get(m_pIsolate);
 		Context::Scope context_scope(context);
 
 		LocalValue args[256];
-		uint32 nParamIndex = 0;
-		const list<CTypeBase*>& listParam = pCallBase->GetParamList();
-		for( list<CTypeBase*>::const_iterator it = listParam.begin(); 
-			it != listParam.end(); ++it, ++nParamIndex )
-			args[nParamIndex] = static_cast<CJSTypeBase*>(*it)->ToVMValue( *this, (char*)aryArg[nParamIndex] );
+		uint32 nParamCount = aryTypeInfo.nSize - 1;
+		for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+		{
+			DataType nType = ToDataType( aryTypeInfo.aryInfo[nArgIndex] );
+			CJSTypeBase* pParamType = GetTypeBase( nType );
+			args[nArgIndex] = pParamType->ToVMValue( nType, *this, (char*)aryArg[nArgIndex] );
+		}
 
 		Local<Object> classObject = context->Global();
-		CTypeBase* pResultType = pCallBase->GetResultType();
 		const char* szFunName = strrchr( szFunction, '.' );
 		if (szFunName)
 		{
@@ -902,12 +814,13 @@ namespace Gamma
 
 		Local<Value> value = classObject->Get(String::NewFromUtf8(m_pIsolate, szFunction));
 		Local<Function> func = Local<Function>::Cast(value);
-		MaybeLocal<Value> result = !nParamIndex ? func->Call(classObject, 0, args) :
-			func->Call(args[0], nParamIndex - 1, args + 1);
+		MaybeLocal<Value> result = !nParamCount ? func->Call(classObject, 0, args) :
+			func->Call(args[0], nParamCount - 1, args + 1);
 		if(result.IsEmpty())
 			return false;
-		if( pResultType && pResultBuf )
-			static_cast<CJSTypeBase*>( pResultType )->FromVMValue( *this, (char*)pResultBuf, result.ToLocalChecked() );
+		DataType nResultType = ToDataType( aryTypeInfo.aryInfo[nParamCount] );
+		if( nResultType && pResultBuf )
+			GetTypeBase( nResultType )->FromVMValue( nResultType, *this, (char*)pResultBuf, result.ToLocalChecked() );
 		return true;
 	}
 
@@ -978,14 +891,14 @@ namespace Gamma
 		NewTemplate->SetClassName(strClassName);
 		NewTemplate->InstanceTemplate()->SetInternalFieldCount(1);
 		Local<Function> NewClass = NewTemplate->GetFunction( context ).ToLocalChecked();
-		PersistentFunTemplate& persistentTemplate = GetPersistentFunTemplate( pInfo );
+		PersistentFunTmplt& persistentTemplate = GetPersistentFunTemplate( pInfo );
 		persistentTemplate.Reset(m_pIsolate, NewTemplate);
 
 		LocalValue Base = Undefined(m_pIsolate);
 		if (pInfo->BaseRegist().size())
 		{
-			CClassRegistInfo* pBaseInfo = pInfo->BaseRegist()[0].m_pBaseInfo;
-			PersistentFunTemplate& persistentTemplate = GetPersistentFunTemplate( pBaseInfo );
+			const CClassRegistInfo* pBaseInfo = pInfo->BaseRegist()[0].m_pBaseInfo;
+			PersistentFunTmplt& persistentTemplate = GetPersistentFunTemplate( pBaseInfo );
 			Local<FunctionTemplate> BaseTemplate = persistentTemplate.Get(m_pIsolate);
 			Base = BaseTemplate->GetFunction(context).ToLocalChecked();
 		}
@@ -1099,57 +1012,6 @@ namespace Gamma
 		LocalValue key = String::NewFromUtf8(m_pIsolate, szTableName);
 		globalObj->Set(context, key, v8::Object::New(m_pIsolate) );
     }
-
-    void CScriptJS::RegistConstant( const char* szTableName, const char* szFeild, int32 nValue )
-	{
-		HandleScope handle_scope(m_pIsolate);
-		Local<Context> context = m_Context.Get(m_pIsolate);
-		Context::Scope context_scope(context);
-		Local<Object> tableObject = context->Global();
-		if (szTableName && szTableName[0])
-		{
-			LocalValue key = String::NewFromUtf8(m_pIsolate, szTableName);
-			MaybeLocal<Value> tableValue = tableObject->Get(context, key);
-			assert(!tableObject.IsEmpty());
-			tableObject = tableValue.ToLocalChecked()->ToObject(m_pIsolate);
-		}
-		LocalValue key = String::NewFromUtf8(m_pIsolate, szFeild);
-		tableObject->Set(context, key, v8::Int32::New(m_pIsolate, nValue));
-    }
-
-	void CScriptJS::RegistConstant( const char* szTableName, const char* szFeild, double dValue )
-	{
-		HandleScope handle_scope(m_pIsolate);
-		Local<Context> context = m_Context.Get(m_pIsolate);
-		Context::Scope context_scope(context);
-		Local<Object> tableObject = context->Global();
-		if (szTableName && szTableName[0])
-		{
-			LocalValue key = String::NewFromUtf8(m_pIsolate, szTableName);
-			MaybeLocal<Value> tableValue = tableObject->Get(context, key);
-			assert(!tableObject.IsEmpty());
-			tableObject = tableValue.ToLocalChecked()->ToObject(m_pIsolate);
-		}
-		LocalValue key = String::NewFromUtf8(m_pIsolate, szFeild);
-		tableObject->Set(context, key, v8::Number::New(m_pIsolate, dValue));
-	}
-
-	void CScriptJS::RegistConstant( const char* szTableName, const char* szFeild, const char* szValue )
-	{
-		HandleScope handle_scope(m_pIsolate);
-		Local<Context> context = m_Context.Get(m_pIsolate);
-		Context::Scope context_scope(context);
-		Local<Object> tableObject = context->Global();
-		if (szTableName && szTableName[0])
-		{
-			LocalValue key = String::NewFromUtf8(m_pIsolate, szTableName);
-			MaybeLocal<Value> tableValue = tableObject->Get(context, key);
-			assert(!tableObject.IsEmpty());
-			tableObject = tableValue.ToLocalChecked()->ToObject(m_pIsolate);
-		}
-		LocalValue key = String::NewFromUtf8(m_pIsolate, szFeild);
-		tableObject->Set(context, key, v8::String::NewFromUtf8(m_pIsolate, szValue));
-	}
 
     int32 CScriptJS::Compiler( int32 nArgc, char** szArgv )
     {

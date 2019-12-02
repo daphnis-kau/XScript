@@ -49,21 +49,6 @@ namespace Gamma
     //=====================================================================
     // Lua脚本调用C++的接口
     //=====================================================================
-    void CByScriptLua::GetParam( lua_State* pL, int32 nStartIndex, size_t arySize[],
-		const vector<DataType>& listParam, char* pDataBuf, void** pArgArray )
-    {
-		//Lua函数最右边的参数，在Lua stack的栈顶,         
-        //放在m_listParam的第一个成员中
-        for( int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++ )
-		{
-			DataType nType = listParam[nArgIndex];
-			CLuaTypeBase* pParamType = GetTypeBase(nType);
-            pParamType->GetFromVM(nType, pL, pDataBuf, nStartIndex++ );
-			pArgArray[nArgIndex] = pDataBuf;
-			pDataBuf += arySize[nArgIndex];
-		}
-	}
-
     int32 CByScriptLua::CallByLua( lua_State* pL )
 	{
 		CByScriptBase* pCallBase = (CByScriptBase*)lua_touserdata( pL, lua_upvalueindex(1) );
@@ -80,8 +65,8 @@ namespace Gamma
 			size_t* aryParamSize = (size_t*)alloca(sizeof(size_t)*nParamCount);
 			size_t nParamSize = CalBufferSize(listParam, aryParamSize);
 			DataType nResultType = pCallBase->GetResultType();
-			uint32 nReturnSize = nResultType ? GetAligenSizeOfType(nResultType) : sizeof(int64);
-			uint32 nArgSize = pCallBase->GetParamCount()*sizeof(void*);
+			size_t nReturnSize = nResultType ? GetAligenSizeOfType(nResultType) : sizeof(int64);
+			size_t nArgSize = pCallBase->GetParamCount()*sizeof(void*);
 			char* pDataBuf = (char*)alloca( nParamSize + nReturnSize + nArgSize );
 			char* pResultBuf = pDataBuf + nParamSize;
 			void** pArgArray = (void**)( pResultBuf + nReturnSize );
@@ -98,7 +83,12 @@ namespace Gamma
 			if( pCallBase->GetFunctionIndex() == eCT_MemberFunction )
 			{
 				if( nTop > 1 )
-					GetParam( pL, nStkId, aryParamSize, listParam, pDataBuf, pArgArray );
+				{
+					DataType nType = listParam[0];
+					GetTypeBase( nType )->GetFromVM( nType, pL, pDataBuf, nStkId );
+					pArgArray[0] = pDataBuf;
+				}
+
 				lua_settop( pL, 0 );
 				pCallBase->Call(pObject, nTop > 1 ? NULL : pResultBuf, pArgArray, *pScript);
 				pScript->CheckUnlinkCppObj();
@@ -107,7 +97,17 @@ namespace Gamma
 			}
 			else
 			{
-				GetParam( pL, nStkId, aryParamSize, listParam, pDataBuf, pArgArray );
+				//Lua函数最右边的参数，在Lua stack的栈顶,         
+				//放在m_listParam的第一个成员中
+				for( int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++ )
+				{
+					DataType nType = listParam[nArgIndex];
+					CLuaTypeBase* pParamType = GetTypeBase( nType );
+					pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
+					pArgArray[nArgIndex] = pDataBuf;
+					pDataBuf += aryParamSize[nArgIndex];
+				}
+
 				lua_settop( pL, 0 );
 				pCallBase->Call(pObject, pResultBuf, pArgArray, *pScript);
 				pScript->CheckUnlinkCppObj();
@@ -138,17 +138,6 @@ namespace Gamma
     //=====================================================================
     // C++调用Lua脚本的接口
 	//=====================================================================
-	void CCallBackLua::PushParam2VM( CScriptLua* pScript,
-		const vector<DataType>& listParam, lua_State* pL, void** pArgArray )
-	{
-		for (int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++)
-		{
-			DataType nType = listParam[nArgIndex];
-			CLuaTypeBase* pParamType = GetTypeBase(nType);
-			pParamType->PushToVM( nType, pL, (char*)pArgArray[nArgIndex] );
-		}
-	}
-
 	bool CCallBackLua::CallVM( CScriptLua* pScript,	CCallScriptBase* pCallBase,
 		SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
 	{	
@@ -192,7 +181,13 @@ namespace Gamma
 		lua_insert(pL, -2);
 		const vector<DataType>& listParam = pCallBase->GetParamList();
 		DataType nResultType = pCallBase->GetResultType();
-		PushParam2VM( pScript, listParam, pL, pArgArray );
+		for( int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++ )
+		{
+			DataType nType = listParam[nArgIndex];
+			CLuaTypeBase* pParamType = GetTypeBase( nType );
+			pParamType->PushToVM( nType, pL, (char*)pArgArray[nArgIndex] );
+		}
+
 		int32 nArg = (int32)( listParam.size() + 1 );
 		lua_pcall( pL, nArg, nResultType ? 1 : 0, nErrFunIndex );
 		if(nResultType)

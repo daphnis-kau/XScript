@@ -13,14 +13,13 @@
 namespace Gamma
 {
 	typedef v8::Persistent<v8::Context>						PersistentContext;
-	typedef v8::Persistent<v8::ObjectTemplate>				PersistentObjTemplate;
-	typedef v8::Persistent<v8::FunctionTemplate>			PersistentFunTemplate;
+	typedef v8::Persistent<v8::ObjectTemplate>				PersistentObjTmplt;
+	typedef v8::Persistent<v8::FunctionTemplate>			PersistentFunTmplt;
 	typedef v8::Persistent<v8::Object>						PersistentObject;
 	typedef v8::Persistent<v8::String>						PersistentString;
 	typedef v8::Persistent<v8::Function>					PersistentFunction;
 	typedef v8::Local<v8::Value>							LocalValue;
 	typedef v8::ReturnValue<v8::Value>						ReturnValue;
-	typedef map<CClassRegistInfo*, PersistentFunTemplate>	PersistentFunTemplates;
 
     class CScriptJS : public CScriptBase
 	{
@@ -36,15 +35,31 @@ namespace Gamma
 			void*				m_pStack;
 		};
 
+		struct SClassInfo : public TRBTree<SClassInfo>::CRBTreeNode
+		{
+			CClassRegistInfo*	m_pClassInfo;
+			CScriptJS*			m_pScript;
+			PersistentFunTmplt	m_FunctionTemplate;
+			operator void*( ) { return m_pClassInfo; }
+		};
+
 		struct SObjInfo : public TRBTree<SObjInfo>::CRBTreeNode
 		{
 			void*				m_pObject;
 			PersistentObject	m_Object;
-			CClassRegistInfo*	m_pClassInfo;
+			SClassInfo*			m_pClassInfo;
 			bool				m_bRecycle;
 			bool				m_bFirstAddress;
 			operator void*() { return m_pObject; }
 			bool operator< (void* r) { return m_pObject < r; }
+		};
+
+		struct SCallInfo : public TRBTree<SCallInfo>::CRBTreeNode
+		{
+			CByScriptBase*		m_pCallBase;
+			CScriptJS*			m_pScript;
+			PersistentString	m_strName;
+			operator void*( ) { return m_pCallBase; }
 		};
 
 		uint32					m_nStringID;
@@ -65,7 +80,8 @@ namespace Gamma
 
 		SObjInfo*				m_pFreeObjectInfo;
 		TRBTree<SObjInfo>		m_mapObjInfo;
-		PersistentFunTemplates	m_mapPersistentFunTemplate;
+		TRBTree<SClassInfo>		m_mapClassInfo;
+		TRBTree<SCallInfo>		m_mapCallBase;
 
 		static void				Log(const v8::FunctionCallbackInfo<v8::Value>& args);
 		static void				Break(const v8::FunctionCallbackInfo<v8::Value>& args);
@@ -76,14 +92,15 @@ namespace Gamma
 		static void				GetterCallback(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value>& info);
 		static void				SetterCallback(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<void>& info);
 
-		static CTypeBase*		MakeType(CClassRegistInfo* pInfo, bool bValue);
-		CTypeBase*				MakeObject(const STypeInfo& argInfo, bool bValue);
 		void					MakeMeberFunction(CClassRegistInfo* pInfo, v8::Local<v8::Function> NewClass, v8::Local<v8::Object> Prototype, bool bBase);
 		
 		SObjInfo*				AllocObjectInfo();
 		void					FreeObjectInfo(SObjInfo* pObjectInfo);
 		void					BindObj(void* pObject, v8::Local<v8::Object> ScriptObj, const CClassRegistInfo* pInfo, void* pSrc = NULL);
 		void					UnbindObj( SObjInfo* pObjectInfo, bool bFromGC );
+
+		virtual bool			CallVM( CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray );
+		virtual void			DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject );
 
 		friend class CJSObject;
     public:
@@ -96,7 +113,7 @@ namespace Gamma
 		PersistentString&		GetProto() { return m___proto__; }
 		PersistentString&		GetPrototype() { return m_Prototype; }
 		PersistentObject&		GetGammaNameSpace() { return m_GammaNameSpace; }
-		PersistentFunTemplate&	GetPersistentFunTemplate( const CClassRegistInfo* pInfo );
+		PersistentFunTmplt&		GetPersistentFunTemplate( const CClassRegistInfo* pInfo );
 
 		void					ClearCppString(void* pStack);
 		void					CallJSStatck(bool bAdd);
@@ -106,8 +123,7 @@ namespace Gamma
 		const wchar_t*			StringToUcs(v8::Local<v8::Value> obj);
 		void					ReportException( v8::TryCatch* try_catch, v8::Local<v8::Context> context );
 		SObjInfo*				FindExistObjInfo( void* pObj );
-
-		CTypeBase*              MakeParamType(const STypeInfo& argTypeInfo);							
+							
 		virtual bool            RunFile( const char* szFileName, bool bReload );
 		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize );
 		virtual bool        	RunString( const char* szString );
@@ -120,12 +136,8 @@ namespace Gamma
         virtual void            RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName );
         virtual void            RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... );
 		virtual void			RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
-
-
 		virtual void            RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize );
-        virtual void            RegistConstant( const char* szTableName, const char* szFeild, int32 nValue );
-		virtual	void			RegistConstant( const char* szTableName, const char* szFeild, double dValue );
-		virtual	void			RegistConstant( const char* szTableName, const char* szFeild, const char* szValue );
+
         virtual int32           Compiler( int32 nArgc, char** szArgv );
         virtual void            RefScriptObj( void* pObj );
         virtual void            UnrefScriptObj( void* pObj );

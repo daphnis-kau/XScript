@@ -31,9 +31,7 @@ namespace Gamma
     //=====================================================================
     class CByScriptLua
 	{
-		static void GetParam( lua_State* pL, int32 nStartIndex, size_t arySize[],
-			const vector<DataType>& listParam, char* pDataBuf, void** pArgArray );
-    public:
+	public:
         static int32 CallByLua( lua_State* pL );
 	};
 
@@ -42,8 +40,6 @@ namespace Gamma
     //=====================================================================
     class CCallBackLua : public CCallScriptBase
 	{
-		static void	PushParam2VM( CScriptLua* pScript,
-			const vector<DataType>& listParam, lua_State* pL, void** pArgArray );
 	public:
 		static bool	CallVM( CScriptLua* pScript, 
 			CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray );

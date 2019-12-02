@@ -32,12 +32,12 @@ namespace Gamma
 	class CByScriptJS
 	{
 	public:
-		static void CallByJS(CScriptJS* pScript, CByScriptBase* pByScript,
+		static void CallByJS(CScriptJS& Script, CByScriptBase* pByScript,
 			const v8::FunctionCallbackInfo<v8::Value>& args);
-		static void GetByJS(CScriptJS* pScript, CByScriptBase* pByScript,
-			v8::Local<v8::Value> This, v8::ReturnValue<v8::Value> ret );
-		static void SetByJS(CScriptJS* pScript, CByScriptBase* pByScript,
-			v8::Local<v8::Value> This, v8::Local<v8::Value> arg );
+		static void GetByJS(CScriptJS& Script, CByScriptBase* pByScript,
+			LocalValue This, v8::ReturnValue<v8::Value> ret );
+		static void SetByJS(CScriptJS& Script, CByScriptBase* pByScript,
+			LocalValue This, LocalValue arg );
 	};
 
 	//=====================================================================
@@ -46,10 +46,10 @@ namespace Gamma
 	class CCallBackJS : public CCallScriptBase
 	{
 	protected:
-		static bool CallVM(CScriptJS* pScript,
-			CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray);
-		static void DestrucVM(CScriptJS* pScript,
-			CCallScriptBase* pCallBase, SVirtualObj* pObject);;
+		static bool CallVM( CScriptJS& Script, v8::Persistent<v8::String>& strName,
+			CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray );
+		static void DestrucVM( CScriptJS& Script, v8::Persistent<v8::String>& strName,
+			CCallScriptBase* pCallBase, SVirtualObj* pObject );
 	};
 };
 
