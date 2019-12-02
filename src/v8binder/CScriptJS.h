@@ -78,13 +78,11 @@ namespace Gamma
 
 		static CTypeBase*		MakeType(CClassRegistInfo* pInfo, bool bValue);
 		CTypeBase*				MakeObject(const STypeInfo& argInfo, bool bValue);
-		void					RegistClass( MakeTypeFunction funMakeType, uint32 nSize, 
-									const char* szTypeIDName, const char* szClass, va_list listBase );
 		void					MakeMeberFunction(CClassRegistInfo* pInfo, v8::Local<v8::Function> NewClass, v8::Local<v8::Object> Prototype, bool bBase);
 		
 		SObjInfo*				AllocObjectInfo();
 		void					FreeObjectInfo(SObjInfo* pObjectInfo);
-		void					BindObj(void* pObject, v8::Local<v8::Object> ScriptObj, CClassRegistInfo* pInfo, void* pSrc = NULL);
+		void					BindObj(void* pObject, v8::Local<v8::Object> ScriptObj, const CClassRegistInfo* pInfo, void* pSrc = NULL);
 		void					UnbindObj( SObjInfo* pObjectInfo, bool bFromGC );
 
 		friend class CJSObject;
@@ -98,7 +96,7 @@ namespace Gamma
 		PersistentString&		GetProto() { return m___proto__; }
 		PersistentString&		GetPrototype() { return m_Prototype; }
 		PersistentObject&		GetGammaNameSpace() { return m_GammaNameSpace; }
-		PersistentFunTemplate&	GetPersistentFunTemplate( CClassRegistInfo* pInfo );
+		PersistentFunTemplate&	GetPersistentFunTemplate( const CClassRegistInfo* pInfo );
 
 		void					ClearCppString(void* pStack);
 		void					CallJSStatck(bool bAdd);

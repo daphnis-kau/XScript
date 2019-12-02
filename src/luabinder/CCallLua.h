@@ -8,6 +8,7 @@
 //=====================================================================
 
 #include "core/CCallBase.h"
+#include "CTypeLua.h"
 
 using namespace std;
 
@@ -15,11 +16,11 @@ namespace Gamma
 {
 	class CScriptLua;
 
-	extern CLuaTypeBase* s_aryType[eDT_count];
+	extern CLuaTypeBase* s_aryLuaType[eDT_count];
 	inline CLuaTypeBase* GetTypeBase(DataType eType)
 	{
 		if (eType < eDT_count)
-			return s_aryType[eType];
+			return s_aryLuaType[eType];
 		if (eType & 1)
 			return &CLuaObject::GetInst();
 		return &CLuaValueObject::GetInst();

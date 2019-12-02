@@ -1,6 +1,6 @@
 ﻿#include "CCallJS.h"
 #include "CTypeJS.h"
-
+#include "CScriptJS.h"
 #include "common/Help.h"
 
 #include <sstream>
@@ -17,9 +17,9 @@ namespace Gamma
 	//=====================================================================
 	// JS脚本调用C++的接口
 	//=====================================================================
-	void CByScriptJS::CallByJS(CByScriptBase* pByScript, const v8::FunctionCallbackInfo<v8::Value>& args)
+	void CByScriptJS::CallByJS(CScriptJS* pScript, CByScriptBase* pByScript, 
+		const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
-		CScriptJS& Script = *(CScriptJS*)pByScript->GetScript();
 		try
 		{
 			const list<CTypeBase*>& listParam = pByScript->GetParamList();
@@ -65,7 +65,7 @@ namespace Gamma
 		}
 	}
 
-	void CByScriptJS::GetByJS(CByScriptBase* pByScript, 
+	void CByScriptJS::GetByJS(CScriptJS* pScript, CByScriptBase* pByScript,
 		v8::Local<v8::Value> This, v8::ReturnValue<v8::Value> ret)
 	{
 		CScriptJS& Script = *(CScriptJS*)pByScript->GetScript();

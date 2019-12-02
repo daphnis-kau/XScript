@@ -8,21 +8,36 @@
 //=====================================================================
 
 #include "core/CCallBase.h"
-#include "CScriptJS.h"
+#include "CTypeJS.h"
 
 using namespace std;
 
 namespace Gamma
 {
+	class CScriptJS;
+
+	extern CJSTypeBase* s_aryJSType[eDT_count];
+	inline CJSTypeBase* GetTypeBase(DataType eType)
+	{
+		if (eType < eDT_count)
+			return s_aryJSType[eType];
+		if (eType & 1)
+			return &CJSObject::GetInst();
+		return &CJSValueObject::GetInst();
+	}
+
 	//=====================================================================
 	// JS脚本调用C++的接口
 	//=====================================================================
 	class CByScriptJS
 	{
 	public:
-		static void CallByJS(CByScriptBase* pByScript, const v8::FunctionCallbackInfo<v8::Value>& args);
-		static void GetByJS(CByScriptBase* pByScript, v8::Local<v8::Value> This, v8::ReturnValue<v8::Value> ret );
-		static void SetByJS(CByScriptBase* pByScript, v8::Local<v8::Value> This, v8::Local<v8::Value> arg );
+		static void CallByJS(CScriptJS* pScript, CByScriptBase* pByScript,
+			const v8::FunctionCallbackInfo<v8::Value>& args);
+		static void GetByJS(CScriptJS* pScript, CByScriptBase* pByScript,
+			v8::Local<v8::Value> This, v8::ReturnValue<v8::Value> ret );
+		static void SetByJS(CScriptJS* pScript, CByScriptBase* pByScript,
+			v8::Local<v8::Value> This, v8::Local<v8::Value> arg );
 	};
 
 	//=====================================================================
@@ -30,12 +45,11 @@ namespace Gamma
 	//=====================================================================
 	class CCallBackJS : public CCallScriptBase
 	{
-		v8::Persistent<v8::String> m_strName;
-	public:
-		CCallBackJS(CScriptJS& Script, const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunName);
 	protected:
-		virtual bool    CallVM(SVirtualObj* pObject, void* pRetBuf, void** pArgArray);
-		virtual void	DestrucVM(SVirtualObj* pObject);;
+		static bool CallVM(CScriptJS* pScript,
+			CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray);
+		static void DestrucVM(CScriptJS* pScript,
+			CCallScriptBase* pCallBase, SVirtualObj* pObject);;
 	};
 };
 

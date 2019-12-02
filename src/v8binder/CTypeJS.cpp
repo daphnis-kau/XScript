@@ -11,16 +11,20 @@ namespace Gamma
 	//=====================================================================
 	/// CJSObject
 	//=====================================================================
-	CJSObject::CJSObject(CClassRegistInfo* pClassInfo, uint32 nSize /*= sizeof(void*)*/)
-		: CJSPointer(nSize)
-		, m_pClassInfo(pClassInfo)
+	CJSObject::CJSObject()
 	{
-		m_nType = eDT_custom_type;
 	}
 
-	inline CClassRegistInfo* CJSObject::_FromVMValue(
+	CJSObject& CJSObject::GetInst()
+	{
+		static CJSObject s_Instance;
+		return s_Instance;
+	}
+
+	inline CClassRegistInfo* CJSObject::_FromVMValue(DataType eType,
 		CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj )
 	{
+		auto pClassInfo = (const CClassRegistInfo*)((eType >> 1) << 1);
 		if( obj == v8::Null( Script.GetIsolate() ) ||	!obj->IsObject() )
 		{
 			*(void**)( pDataBuf ) = NULL;
@@ -52,24 +56,26 @@ namespace Gamma
 		}
 
 		CClassRegistInfo* pObjInfo = pInfo->m_pClassInfo;
-		if( pObjInfo == m_pClassInfo )
+		if( pObjInfo == pClassInfo)
 		{
 			*(void**)( pDataBuf ) = pInfo->m_pObject;
 			return pObjInfo;
 		}
 
-		int32 nOffset = pObjInfo->GetBaseOffset( m_pClassInfo );
+		int32 nOffset = pObjInfo->GetBaseOffset(pClassInfo);
 		if( nOffset >= 0 )
 			*(void**)( pDataBuf ) = ( (char*)pInfo->m_pObject ) + nOffset;
-		else if( ( nOffset = m_pClassInfo->GetBaseOffset( pObjInfo ) ) >= 0 )
+		else if( ( nOffset = pClassInfo->GetBaseOffset( pObjInfo ) ) >= 0 )
 			*(void**)( pDataBuf ) = ( (char*)pInfo->m_pObject ) - nOffset;
 		else
 			*(void**)( pDataBuf ) = pInfo->m_pObject;
 		return pObjInfo;
 	}
 
-	inline Gamma::LocalValue CJSObject::_ToVMValue( CScriptJS& Script, void* pObj, bool bCopy )
+	inline Gamma::LocalValue CJSObject::_ToVMValue(DataType eType, 
+		CScriptJS& Script, void* pObj, bool bCopy )
 	{
+		auto pClassInfo = (const CClassRegistInfo*)((eType >> 1) << 1);
 		v8::Isolate* isolate = Script.GetIsolate();
 		if( pObj == NULL )
 			return v8::Null( isolate );
@@ -78,7 +84,7 @@ namespace Gamma
 		if( !bCopy && ( pObjInfo = Script.FindExistObjInfo( pObj ) ) != NULL )
 			return pObjInfo->m_Object.Get( Script.GetIsolate() );
 
-		PersistentFunTemplate& persistentTemplate = Script.GetPersistentFunTemplate(m_pClassInfo);
+		PersistentFunTemplate& persistentTemplate = Script.GetPersistentFunTemplate(pClassInfo);
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 		v8::Local<v8::FunctionTemplate> funTemplate = persistentTemplate.Get(isolate);
 		v8::Local<v8::Function> JSClass = funTemplate->GetFunction(context).ToLocalChecked();
@@ -90,56 +96,67 @@ namespace Gamma
 
 		if (bCopy)
 		{
-			Script.BindObj(NULL, NewObj, m_pClassInfo, pObj);
-			m_pClassInfo->Release( pObj );
+			Script.BindObj(NULL, NewObj, pClassInfo, pObj);
+			pClassInfo->Release( pObj );
 			Script.CheckUnlinkCppObj();
 		}
 		else
-			Script.BindObj(pObj, NewObj, m_pClassInfo);
+			Script.BindObj(pObj, NewObj, pClassInfo);
 		return NewObj;
 	}
 
-	void CJSObject::FromVMValue(CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj)
+	void CJSObject::FromVMValue(DataType eType, 
+		CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj)
 	{
-		_FromVMValue(Script, pDataBuf, obj);
+		_FromVMValue(eType, Script, pDataBuf, obj);
 	}
 
-	Gamma::LocalValue CJSObject::ToVMValue(CScriptJS& Script, char* pDataBuf)
+	Gamma::LocalValue CJSObject::ToVMValue(DataType eType, 
+		CScriptJS& Script, char* pDataBuf)
 	{
 		void* pObj = *(void**)(pDataBuf);
 		if (!pObj)
 			return v8::Null(Script.GetIsolate());
-		return _ToVMValue(Script, pObj, false);
+		return _ToVMValue(eType, Script, pObj, false);
 	}
 
 	//=====================================================================
 	/// CJSValueObject
 	//=====================================================================
-	CJSValueObject::CJSValueObject(CClassRegistInfo* pClassInfo, uint32 nSize /*= 0*/)
-		: CJSObject(pClassInfo, nSize ? nSize : (uint32)pClassInfo->GetClassSize())
+	CJSValueObject::CJSValueObject()
 	{
 	}
 
-	void CJSValueObject::FromVMValue(CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj)
+	CJSValueObject& CJSValueObject::GetInst()
+	{
+		static CJSValueObject s_Instance;
+		return s_Instance;
+	}
+
+	void CJSValueObject::FromVMValue(DataType eType,
+		CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj)
 	{
 		void* pObject = NULL;
-		CClassRegistInfo* pClassInfo = _FromVMValue(Script, (char*)&pObject, obj);
-		CJSObject::FromVMValue(Script, (char*)&pObject, obj);
+		CClassRegistInfo* pClassInfo = 
+			_FromVMValue(eType, Script, (char*)&pObject, obj);
+		CJSObject::FromVMValue(eType, Script, (char*)&pObject, obj);
 		assert(pClassInfo);
-		int32 nOffset = pClassInfo->GetBaseOffset(m_pClassInfo);
+		auto pCurClassInfo = (const CClassRegistInfo*)((eType >> 1) << 1);
+		int32 nOffset = pClassInfo->GetBaseOffset(pCurClassInfo);
 		assert(nOffset >= 0);
 
 		pObject = ((char*)pObject) + nOffset;
-		m_pClassInfo->Assign( pDataBuf, pObject );
-		CheckUnlinkCppObj();
+		pCurClassInfo->Assign( pDataBuf, pObject );
+		Script.CheckUnlinkCppObj();
 	}
 
-	Gamma::LocalValue CJSValueObject::ToVMValue(CScriptJS& Script, char* pDataBuf)
+	Gamma::LocalValue CJSValueObject::ToVMValue(DataType eType, 
+		CScriptJS& Script, char* pDataBuf)
 	{
 		void* pObj = *(void**)(pDataBuf);
 		if (!pObj)
 			return v8::Null(Script.GetIsolate());
-		return _ToVMValue(Script, pObj, true);
+		return _ToVMValue(eType, Script, pObj, true);
 	}
 }
 
