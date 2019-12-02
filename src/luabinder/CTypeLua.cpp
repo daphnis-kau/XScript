@@ -40,7 +40,13 @@ namespace Gamma
     { 
     }
 
-    void CLuaObject::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId )
+	CLuaObject& CLuaObject::GetInst()
+	{
+		static CLuaObject s_Instance;
+		return s_Instance;
+	}
+
+	void CLuaObject::GetFromVM(DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId)
     {
         nStkId = AbsStackIdx( pL, nStkId );
 		int32 nType = lua_type( pL, nStkId );
@@ -145,7 +151,14 @@ namespace Gamma
 	{
 	}
 
-	void CLuaValueObject::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId )
+	CLuaValueObject& CLuaValueObject::GetInst()
+	{
+
+		static CLuaValueObject s_Instance;
+		return s_Instance;
+	}
+
+	void CLuaValueObject::GetFromVM(DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId)
 	{
 		void* pObject = NULL;
 		auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
@@ -177,7 +190,13 @@ namespace Gamma
     {
     }
 
-    void CLuaBuffer::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
+	CLuaBuffer& CLuaBuffer::GetInst()
+	{
+		static CLuaBuffer s_Instance;
+		return s_Instance;
+	}
+
+	void CLuaBuffer::PushToVM(DataType eType, lua_State* pL, char* pDataBuf)
 	{
 		void* pBuffer = *(void**)( pDataBuf );
 		if( pBuffer == NULL )
@@ -1011,5 +1030,4 @@ namespace Gamma
 
         lua_pop( pL, 1 );
     }
-
 }

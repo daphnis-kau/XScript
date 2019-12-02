@@ -23,7 +23,7 @@ extern "C"
 
 namespace Gamma
 {
-	CLuaTypeBase* s_aryType[eDT_count] =
+	CLuaTypeBase* s_aryLuaType[eDT_count] =
 	{
 		0,
 		&CLuaChar::GetInst(),

@@ -29,6 +29,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "v8binder", "v8binder.vcxpro
 		{52F209E8-3601-4F74-82CF-538DD46BB353} = {52F209E8-3601-4F74-82CF-538DD46BB353}
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "binder", "binder", "{6BDB7794-B77E-407F-A508-528EC2EE24D1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "base", "base", "{BC9CE4D9-EB59-410F-AA77-16B0D2D4EFC2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -124,6 +128,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1E7BFE73-F568-497B-AD01-D7E81A9FAB5B} = {BC9CE4D9-EB59-410F-AA77-16B0D2D4EFC2}
+		{52F209E8-3601-4F74-82CF-538DD46BB353} = {BC9CE4D9-EB59-410F-AA77-16B0D2D4EFC2}
+		{7679734E-42AB-4435-8CF1-D85FC534CC62} = {6BDB7794-B77E-407F-A508-528EC2EE24D1}
+		{79313C4F-AEA7-4058-A86C-44F13063CBDC} = {6BDB7794-B77E-407F-A508-528EC2EE24D1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7E1AE806-D79C-4D72-8D59-CB9F73DF76C4}
