@@ -75,6 +75,9 @@
     <ClInclude Include="..\..\include\common\TCircelBuffer.h">
       <Filter>inlude</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\common\CVirtualFun.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="inlude">

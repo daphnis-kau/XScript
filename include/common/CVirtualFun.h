@@ -33,29 +33,28 @@ namespace Gamma
 		SFunctionTable* m_pTable;
 	};
 
-	struct SDestructorFinder
-	{ 
-		ptrdiff_t nIndex;
-	};
+	typedef void( *GetVirtualFunIndexCallback )( void*, void* );
+	GAMMA_COMMON_API uint32 GetVirtualFunIndex( uint32 nSize,
+		GetVirtualFunIndexCallback funCallback, void* pContext );
 
-	GAMMA_COMMON_API uint32 GetVirtualFunIndex( SFunction fun );
-	GAMMA_COMMON_API void* CreateDestructorFinder( SDestructorFinder* pBuf, size_t nSize );
+	template< typename ClassType, typename RetType, typename... Param >
+	static uint32 GetVirtualFunIndex( RetType ( ClassType::*pFun )( Param... ) )
+	{
+		typedef void ( ClassType::*FunctionType )();
+		FunctionType funCall = (FunctionType)pFun;
+		struct SFun { static void Call( ClassType* pObj, void* pContext )
+		{ FunctionType funCall = *(FunctionType*)pContext; ( pObj->*funCall )();	} };
+		GetVirtualFunIndexCallback funCallback = (GetVirtualFunIndexCallback)&SFun::Call;
+		return GetVirtualFunIndex( sizeof( ClassType ), funCallback, &funCall );
+	}
 
-	template<typename _Ty>
+	template<typename ClassType>
 	uint32 GetDestructorFunIndex()
 	{
-		tbyte aryBuffer[TMax2< sizeof(_Ty), sizeof(SDestructorFinder) >::eValue];
-		SDestructorFinder* pFinder = (SDestructorFinder*)aryBuffer;
-		_Ty* pObject = (_Ty*)CreateDestructorFinder( pFinder, sizeof(_Ty) );
-		pObject->~_Ty();
-		void** pValue = (void**)aryBuffer;
-		for( size_t i = 0, j = 0; i < sizeof(_Ty); i += sizeof(void*), j++ )
-		{
-			if( pValue[j] < (void*)MAX_VTABLE_SIZE )
-				return (uint32)(ptrdiff_t)pValue[j];
-		}
-
-		return INVALID_32BITID;
+		struct SFun { static void Call( ClassType* pObj, void* ) { pObj->~ClassType(); } };
+		GetVirtualFunIndexCallback funCallback = (GetVirtualFunIndexCallback)&SFun::Call;
+		return GetVirtualFunIndex( sizeof( ClassType ), funCallback, nullptr );
 	}
+
 #endif	//end as3_alchemy_swig Gambey 2012-8-2
 }

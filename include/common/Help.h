@@ -147,75 +147,17 @@ namespace Gamma
 	} 
 
 	// 常量求最大值  
-	template<size_t n1, size_t n2>
-	class TMax2
-	{
-	public:
-		enum { eValue = n1 > n2 ? n1 : n2 };
-	};
+	template<size_t ...nn> struct TMax {};
+	template<size_t n1> struct TMax<n1> { enum { eValue = n1 }; };
+	template<size_t n1, size_t... nn> struct TMax<n1, nn...>
+	{ enum { eValue = n1 > TMax<nn...>::eValue ? n1 : TMax<nn...>::eValue }; };
 
-	template<size_t n1, size_t n2, size_t n3>
-	class TMax3
-	{
-	public:
-		enum { eValue = TMax2<n1,n2>::eValue > n3 ? TMax2<n1,n2>::eValue : n3 };
-	};
+	// 常量求最小值  
+	template<size_t ...nn> struct TMin {};
+	template<size_t n1> struct TMin<n1> { enum { eValue = n1 }; };
+	template<size_t n1, size_t ...nn> struct TMin<n1, nn...>
+	{ enum { eValue = n1 > TMin<nn...>::eValue ? n1 : TMin<nn...>::eValue }; };
 
-	template<size_t n1, size_t n2, size_t n3, size_t n4>
-	class TMax4
-	{
-	public:
-		enum { eValue = TMax3<n1,n2,n3>::eValue > n4 ? TMax3<n1,n2,n3>::eValue : n4 };
-	};
-
-	template<size_t n1, size_t n2, size_t n3, size_t n4, size_t n5>
-	class TMax5
-	{
-	public:
-		enum { eValue = TMax4<n1,n2,n3,n4>::eValue > n5 ? TMax4<n1,n2,n3,n4>::eValue : n5 };
-	};
-
-	template<size_t n1, size_t n2, size_t n3, size_t n4, size_t n5, size_t n6>
-	class TMax6
-	{
-	public:
-		enum { eValue = TMax5<n1,n2,n3,n4,n5>::eValue > n6 ? TMax5<n1,n2,n3,n4,n5>::eValue : n6 };
-	};
-
-	template<size_t n1, size_t n2, size_t n3, size_t n4, size_t n5, size_t n6, size_t n7>
-	class TMax7
-	{
-	public:
-		enum { eValue = TMax6<n1,n2,n3,n4,n5,n6>::eValue > n7 ? TMax6<n1,n2,n3,n4,n5,n6>::eValue : n7 };
-	};
-
-	template<size_t n1, size_t n2, size_t n3, size_t n4, size_t n5, size_t n6, size_t n7, size_t n8>
-	class TMax8
-	{
-	public:
-		enum { eValue = TMax7<n1,n2,n3,n4,n5,n6,n7>::eValue > n8 ? TMax7<n1,n2,n3,n4,n5,n6,n7>::eValue : n8 };
-	};
-
-	template<size_t n1, size_t n2, size_t n3, size_t n4, size_t n5, size_t n6, size_t n7, size_t n8, size_t n9>
-	class TMax9
-	{
-	public:
-		enum { eValue = TMax8<n1,n2,n3,n4,n5,n6,n7,n8>::eValue > n9 ? TMax8<n1,n2,n3,n4,n5,n6,n7,n8>::eValue : n9 };
-	};
-
-	template<size_t n1, size_t n2, size_t n3, size_t n4, size_t n5, size_t n6, size_t n7, size_t n8, size_t n9, size_t n10>
-	class TMax10
-	{
-	public:
-		enum { eValue = TMax9<n1,n2,n3,n4,n5,n6,n7,n8,n9>::eValue > n10 ? TMax9<n1,n2,n3,n4,n5,n6,n7,n8,n9>::eValue : n10 };
-	};
-
-	template<size_t n1, size_t n2, size_t n3, size_t n4, size_t n5, size_t n6, size_t n7, size_t n8, size_t n9, size_t n10, size_t n11>
-	class TMax11
-	{
-	public:
-		enum { eValue = TMax10<n1,n2,n3,n4,n5,n6,n7,n8,n9,n10>::eValue > n11 ? TMax10<n1,n2,n3,n4,n5,n6,n7,n8,n9,n10>::eValue : n11 };
-	};
 	//========================================================================
 	// 求常数的2的幂对齐
 	//========================================================================

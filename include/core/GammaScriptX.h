@@ -120,7 +120,7 @@
 		<false, false, _BaseClass, _RetType, Param...> MyType; \
 		struct __class : public org_class, public TCallBackBinder<MyType> { \
 		static _function_name##_Type GetFun() { return (_function_name##_Type)&__class::_function; }\
-		static void Register(){ Bind( false, #_function_name, GetFun(), &static_Org ); } }; \
+		static void Register(){ Bind( false, #_function_name, GetFun(), (void*)&static_Org ); } }; \
 	}; \
 	template<typename _BaseClass, typename _RetType, typename... Param> \
 	struct _function_name##_Impl_ClassTemplate<true, false, _BaseClass, _RetType, Param...> \
@@ -133,7 +133,7 @@
 		<true, false, _BaseClass, _RetType, Param...> MyType; \
 		struct __class : public org_class, public TCallBackBinder<MyType> { \
 		static _function_name##_Type GetFun() { return (_function_name##_Type)&__class::_function; }\
-		static void Register(){ Bind( false, #_function_name, GetFun(), &static_Org ); } }; \
+		static void Register(){ Bind( false, #_function_name, GetFun(), (void*)&static_Org ); } }; \
 	}; \
 	template<typename _BaseClass, typename _RetType, typename... Param> \
 	struct _function_name##_Impl_ClassTemplate<false, true, _BaseClass, _RetType, Param...> \

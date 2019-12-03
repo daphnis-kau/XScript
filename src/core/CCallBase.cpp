@@ -76,8 +76,8 @@ namespace Gamma
 		, m_pBootFun( NULL )
 		, m_bPureVirtual( false )
 	{
-		m_nFunIndex = szFunName && szFunName[0] ?
-			GetVirtualFunIndex( funOrg ) : (uint32)funOrg.funPoint;
+		m_nFunIndex = /*szFunName && szFunName[0] ?
+			GetVirtualFunIndex( funOrg ) :*/ (uint32)funOrg.funPoint;
 		CClassRegistInfo::RegisterCallBack( szTypeInfoName, m_nFunIndex, this );
 	}
 

@@ -1,5 +1,7 @@
 ﻿#include "common/CVirtualFun.h"
+#include "common/CThread.h"
 #include <stdlib.h>
+#include <setjmp.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -102,6 +104,18 @@ namespace Gamma
 	//=====================================================================
 	void NullFunCall(){ throw( "Can not call a invalid function!"); }
 
+	struct SGlobalContext
+	{
+		jmp_buf m_JumpFlag;
+		CLock	m_Lock;
+	};
+
+	static SGlobalContext& GetGlobalContext()
+	{
+		static SGlobalContext s_Instance;
+		return s_Instance;
+	}
+
 	SFunctionTable::SFunctionTable()
 	{
 		for( int32 i = 0; i < MAX_VTABLE_SIZE; i++ )
@@ -130,52 +144,40 @@ namespace Gamma
 		};
 
 	public:
-		TSetFuntion( void** pChechFun, bool bSetIndex )
+		TSetFuntion( void** pChechFun )
 		{ 
-			TSetFuntion<nLStart, nLCount> Left( pChechFun, bSetIndex );
-			TSetFuntion<nRStart, nRCount> Right( pChechFun, bSetIndex );
+			TSetFuntion<nLStart, nLCount> Left( pChechFun );
+			TSetFuntion<nRStart, nRCount> Right( pChechFun );
 		}
 	};
 
 	template<uint32 nStart>
 	class TSetFuntion<nStart, 1>
 	{	
-		uint32	GetIndex()			{ return nStart; }
-		void	SetIndex( uint32 )	{ *(ptrdiff_t*)this = nStart; }
-
+		static void GetIndex() { longjmp(GetGlobalContext().m_JumpFlag, nStart + 1); }
 	public:
-		TSetFuntion( void** pChechFun, bool bSetIndex )
+		TSetFuntion( void** pChechFun )
 		{ 
-			auto funSet = &TSetFuntion<nStart, 1>::SetIndex;
-			auto funGet = &TSetFuntion<nStart, 1>::GetIndex;
-			pChechFun[nStart] = bSetIndex ? *( (void**)&funSet ) : *( (void**)&funGet );
+			pChechFun[nStart] = (void*)&TSetFuntion<nStart, 1>::GetIndex;
 		}
 	};
 
-	
-	uint32 GetVirtualFunIndex( SFunction fun )
-	{
-		class CFunIndexClass { public: virtual ~CFunIndexClass() {} };
-		static SFunctionTable FunctionTable;
-		static TSetFuntion<0, MAX_VTABLE_SIZE> s_FunIndex( FunctionTable.m_pFun, false );
-		static SVirtualObj Obj = { &FunctionTable };
-
-		CFunIndexClass* pObj = (CFunIndexClass*)&Obj;
-		uint32 ( CFunIndexClass::*pCurFun )();
-		memcpy( &pCurFun, &fun, sizeof(pCurFun) );
-		uint32 nIndex = ( pObj->*pCurFun )();
-
-		assert( nIndex < MAX_VTABLE_SIZE );		
-		return nIndex;
-	}
-
-	GAMMA_COMMON_API void* CreateDestructorFinder( SDestructorFinder* pBuf, size_t nSize )
+	GAMMA_COMMON_API uint32 GetVirtualFunIndex( uint32 nSize,
+		GetVirtualFunIndexCallback funCallback, void* pContext )
 	{
 		static SFunctionTable FunctionTable;
-		static TSetFuntion<0, MAX_VTABLE_SIZE> s_FunIndex( FunctionTable.m_pFun, true );
-		void** pObj = (void**)pBuf;
-		for( size_t i = 0, j = 0; i < nSize; i += sizeof(void*) )
+		static TSetFuntion<0, MAX_VTABLE_SIZE> s_FunIndex( FunctionTable.m_pFun );
+		static SGlobalContext& Context = GetGlobalContext();
+		uint32 nAllocSize, nIndex, i, j;
+		Context.m_Lock.Lock();
+		nAllocSize = AligenUp( (uint32)nSize, sizeof( void* ) );
+		void** pObj = (void**)alloca( nAllocSize );
+		for( i = 0, j = 0; i < nSize; i += sizeof( void* ) )
 			pObj[j++] = &FunctionTable;
-		return pObj;
+		nIndex = setjmp( Context.m_JumpFlag );
+		if( nIndex == 0 )
+			funCallback( pObj, pContext );
+		Context.m_Lock.Unlock();
+		return nIndex - 1;
 	}
 }

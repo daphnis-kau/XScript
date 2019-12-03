@@ -348,6 +348,7 @@
     <ClInclude Include="..\..\include\common\CommonType.h" />
     <ClInclude Include="..\..\include\common\CodeCvs.h" />
     <ClInclude Include="..\..\include\common\CThread.h" />
+    <ClInclude Include="..\..\include\common\CVirtualFun.h" />
     <ClInclude Include="..\..\include\common\GammaCpp.h" />
     <ClInclude Include="..\..\include\common\GammaCppFunArg.h" />
     <ClInclude Include="..\..\include\common\GammaCppParser.h" />
