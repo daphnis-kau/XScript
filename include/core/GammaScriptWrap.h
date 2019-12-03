@@ -299,19 +299,25 @@ namespace Gamma
 			funCall.funOrg = funRaw;
 			TFetchParam<Param...>::CallFun( 0, pObj, funCall, pRetBuf, pArgArray );
 		}
+
+		static TFunctionWrap* GetInst()
+		{ 
+			static TFunctionWrap s_Inst; 
+			return &s_Inst;
+		}
 	};
 
 	template< typename ClassType, typename RetType, typename... Param >
 	inline IFunctionWrap* CreateFunWrap( RetType ( ClassType::*pFun )( Param... ) )
-	{ return new TFunctionWrap<eCT_ThisCall, ClassType, RetType, Param...>(); }
+	{ return TFunctionWrap<eCT_ThisCall, ClassType, RetType, Param...>::GetInst(); }
 
 	template< typename ClassType, typename RetType, typename... Param >
 	inline IFunctionWrap* CreateFunWrap( RetType ( ClassType::*pFun )( Param... ) const )
-	{ return new TFunctionWrap<eCT_ThisCall, ClassType, RetType, Param...>(); }
+	{ return TFunctionWrap<eCT_ThisCall, ClassType, RetType, Param...>::GetInst(); }
 
 	template< typename RetType, typename... Param >
 	inline IFunctionWrap* CreateFunWrap( RetType ( *pFun )( Param... ) )
-	{ return new TFunctionWrap<eCT_CDecl, IFunctionWrap, RetType, Param...>(); }
+	{ return TFunctionWrap<eCT_CDecl, IFunctionWrap, RetType, Param...>::GetInst(); }
 
 	//=======================================================================
 	// 类非常量成员函数回调包装
@@ -407,7 +413,9 @@ namespace Gamma
 		}
 
 		template< typename ClassType, typename RetType, typename... Param >
-		static void Bind( const char* szFunName, RetType ( ClassType::*pFun )( Param... ) )
+		static void Bind( bool bPureVirtual, const char* szFunName,
+			RetType ( ClassType::*pFun )( Param... ),
+			RetType (*pFunStatic)(ClassType* pThis, Param...))
 		{ 
 			IFunctionWrap* pWrap = CreateFunWrap( pFun );
 			SFunction funOrg = GetFunction( pFun );
@@ -417,14 +425,17 @@ namespace Gamma
 			ICallBackWrap& CBWrap = CScriptBase::RegistClassCallback( 
 				pWrap, funOrg, InfoArray, szClassType, szFunName );
 			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;
-			CallBackWrap::SetCallBack( CBWrap, nIndex, true );
+			CallBackWrap::SetCallBack( CBWrap, nIndex, bPureVirtual);
 		}
 
 		template< typename ClassType, typename RetType, typename... Param >
-		static inline void Bind( const char* szFunName, RetType ( ClassType::*pFun )( Param... ) const )
+		static inline void Bind(bool bPureVirtual, const char* szFunName, 
+			RetType(ClassType::*pFun)(Param...) const,
+			RetType(*pFunStatic)(const ClassType* pThis, Param...))
 		{
-			typedef RetType ( ClassType::*FunctionType )( Param... );
-			Bind( szFunName, (FunctionType)pFun );
+			typedef RetType(ClassType::*FunctionType)(Param...);
+			RetType(*StaticFunctionType)(ClassType*, Param...)
+			Bind( bPureVirtual, szFunName, (FunctionType)pFun, (StaticFunctionType)pFunStatic );
 		}
 	};
 
