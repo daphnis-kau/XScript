@@ -11,6 +11,8 @@
 #include <sys/mman.h>
 #endif
 
+#pragma warning( disable: 4611 )
+
 namespace Gamma
 {
 	class CCheckMemoryExecutable
@@ -104,18 +106,6 @@ namespace Gamma
 	//=====================================================================
 	void NullFunCall(){ throw( "Can not call a invalid function!"); }
 
-	struct SGlobalContext
-	{
-		jmp_buf m_JumpFlag;
-		CLock	m_Lock;
-	};
-
-	static SGlobalContext& GetGlobalContext()
-	{
-		static SGlobalContext s_Instance;
-		return s_Instance;
-	}
-
 	SFunctionTable::SFunctionTable()
 	{
 		for( int32 i = 0; i < MAX_VTABLE_SIZE; i++ )
@@ -129,6 +119,21 @@ namespace Gamma
 			if( !Checker.IsExecutable( m_pFun[n] ) )
 				return n;
 		return MAX_VTABLE_SIZE;
+	}
+
+	//=====================================================================
+	// 获取虚表索引
+	//=====================================================================
+	struct SGlobalContext
+	{
+		jmp_buf m_JumpFlag;
+		CLock	m_Lock;
+	};
+
+	static SGlobalContext& GetGlobalContext()
+	{
+		static SGlobalContext s_Instance;
+		return s_Instance;
 	}
 
 	// 将得到索引的函数赋值到虚函数表
@@ -157,13 +162,11 @@ namespace Gamma
 		static void GetIndex() { longjmp(GetGlobalContext().m_JumpFlag, nStart + 1); }
 	public:
 		TSetFuntion( void** pChechFun )
-		{ 
-			pChechFun[nStart] = (void*)&TSetFuntion<nStart, 1>::GetIndex;
-		}
+		{ pChechFun[nStart] = (void*)&TSetFuntion<nStart, 1>::GetIndex; }
 	};
 
-	GAMMA_COMMON_API uint32 GetVirtualFunIndex( uint32 nSize,
-		GetVirtualFunIndexCallback funCallback, void* pContext )
+	GAMMA_COMMON_API uint32 FindVirtualFunction( uint32 nSize,
+		VirtualFunCallback funCallback, void* pContext )
 	{
 		static SFunctionTable FunctionTable;
 		static TSetFuntion<0, MAX_VTABLE_SIZE> s_FunIndex( FunctionTable.m_pFun );

@@ -37,23 +37,23 @@ namespace Gamma
 		CNewFunctionTableMap	m_mapNewVirtualTable;
         list<string>			m_listSearchPath;
 
-		virtual bool			CallVM( CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray ) = 0;
+		virtual bool			CallVM( CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray ) = 0;
 		virtual void			DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject ) = 0;
     public:
         CScriptBase(void);
 		virtual ~CScriptBase( void );
 
-		static bool        		RegistFunction( IFunctionWrap* funWrap, SFunction funOrg, 
+		static bool        		RegistFunction( IFunctionWrap* funWrap, uintptr_t warpContext,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static bool        		RegistClassStaticFunction( IFunctionWrap* funWrap, SFunction funOrg,
+		static bool        		RegistClassStaticFunction( IFunctionWrap* funWrap, uintptr_t warpContext,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static bool				RegistClassFunction( IFunctionWrap* funWrap, SFunction funOrg,
+		static bool				RegistClassFunction( IFunctionWrap* funWrap, uintptr_t warpContext,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static ICallBackWrap&	RegistClassCallback( IFunctionWrap* funWrap, SFunction funOrg,
+		static bool				RegistClassCallback( IFunctionWrap* funWrap, uintptr_t warpContext, uintptr_t funBoot, uint32 nFunIndex,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static bool				RegistClassMember( IFunctionWrap* funGetSet[2], SFunction funOrg,
+		static bool				RegistClassMember( IFunctionWrap* funGetSet[2], uintptr_t warpContext,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szMemberName );
-		static ICallBackWrap&	RegistDestructor( IFunctionWrap* funWrap, SFunction funOrg, 
+		static bool				RegistDestructor( IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex,
 									const char* szTypeInfoName );
 		static bool				RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
 		static bool				RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue);
@@ -61,7 +61,7 @@ namespace Gamma
 
         static bool				IsAllocVirtualTable( void* pVirtualTable );
 		static void				UnlinkCppObj( void* pObj );
-		static int32			CallBack( int32 nIndex, void* pObject, void* pRetBuf, void** pArgArray );
+		static void				CallBack( int32 nIndex, void* pRetBuf, void** pArgArray );
 
 		CDebugBase*				GetDebugger() const { return m_pDebugger; }
 		void					CheckUnlinkCppObj();

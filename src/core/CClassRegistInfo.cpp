@@ -99,7 +99,7 @@ namespace Gamma
 		{
 			if( !vecNewFunction[i] )
 				continue;
-			assert( vecNewFunction[i]->GetFunIndex() == i );
+			assert( vecNewFunction[i]->GetFunctionIndex() == i );
 			RegisterCallBack( szTypeInfoName, i, vecNewFunction[i] );
 		}
 		return pInfo;
@@ -175,7 +175,7 @@ namespace Gamma
 			if( !m_vecNewFunction[i] )
 				continue;
 			CCallScriptBase* pCallInfo = m_vecNewFunction[i];
-			assert( pCallInfo->GetFunIndex() == i );
+			assert( pCallInfo->GetFunctionIndex() == i );
 			pNewTable->m_pFun[i] = pCallInfo->GetBootFun();
 		}
     }

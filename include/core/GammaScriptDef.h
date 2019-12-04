@@ -44,13 +44,7 @@ namespace Gamma
 	class IFunctionWrap
 	{
 	public:
-		virtual void		Call( void* pObj, void* pRetBuf, void** pArgArray, SFunction funRaw ) = 0;
-	};
-
-	class ICallBackWrap
-	{
-	public:
-		virtual void		BindFunction( void* pFun, bool bPureVirtual ) = 0;
+		virtual void		Call( void* pRetBuf, void** pArgArray, uintptr_t funRaw ) = 0;
 	};
 }
 
