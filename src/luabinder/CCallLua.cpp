@@ -70,46 +70,30 @@ namespace Gamma
 			char* pDataBuf = (char*)alloca( nParamSize + nReturnSize + nArgSize );
 			char* pResultBuf = pDataBuf + nParamSize;
 			void** pArgArray = (void**)( pResultBuf + nReturnSize );
-			void* pObject = NULL;
 
 			int32 nStkId = 1;
-			DataType nThisType = pCallBase->GetThisType();
-			if(nThisType)
+			//Lua函数最右边的参数，在Lua stack的栈顶,         
+			//放在m_listParam的第一个成员中
+			for( int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++ )
 			{
-				CLuaObject::GetInst().GetFromVM( nThisType, pL, (char*)&pObject, nStkId++ ); 
-				assert( pObject );
+				DataType nType = listParam[nArgIndex];
+				CLuaTypeBase* pParamType = GetTypeBase( nType );
+				pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
+				pArgArray[nArgIndex] = pDataBuf;
+				pDataBuf += aryParamSize[nArgIndex];
 			}
+			lua_settop( pL, 0 );
 
 			if( pCallBase->GetFunctionIndex() == eCT_MemberFunction )
 			{
-				if( nTop > 1 )
-				{
-					DataType nType = listParam[0];
-					GetTypeBase( nType )->GetFromVM( nType, pL, pDataBuf, nStkId );
-					pArgArray[0] = pDataBuf;
-				}
-
-				lua_settop( pL, 0 );
-				pCallBase->Call(pObject, nTop > 1 ? NULL : pResultBuf, pArgArray, *pScript);
+				pCallBase->Call( nTop > 1 ? NULL : pResultBuf, pArgArray, *pScript );
 				pScript->CheckUnlinkCppObj();
 				if( nResultType && nTop <= 1 )
 					GetTypeBase(nResultType)->PushToVM( nResultType, pL, pResultBuf );
 			}
 			else
 			{
-				//Lua函数最右边的参数，在Lua stack的栈顶,         
-				//放在m_listParam的第一个成员中
-				for( int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++ )
-				{
-					DataType nType = listParam[nArgIndex];
-					CLuaTypeBase* pParamType = GetTypeBase( nType );
-					pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
-					pArgArray[nArgIndex] = pDataBuf;
-					pDataBuf += aryParamSize[nArgIndex];
-				}
-
-				lua_settop( pL, 0 );
-				pCallBase->Call(pObject, pResultBuf, pArgArray, *pScript);
+				pCallBase->Call( pResultBuf, pArgArray, *pScript );
 				pScript->CheckUnlinkCppObj();
 				if(nResultType)
 					GetTypeBase(nResultType)->PushToVM( nResultType, pL, pResultBuf );

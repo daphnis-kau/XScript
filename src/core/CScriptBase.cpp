@@ -126,7 +126,7 @@ namespace Gamma
 	bool CScriptBase::RegistClassCallback( IFunctionWrap* funWrap, uintptr_t funContext, uint32 nFunIndex,
 		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		return new CCallScriptBase( funWrap, aryTypeInfo, funContext, 
+		return new CCallScriptBase( funWrap, aryTypeInfo, funContext,
 			nFunIndex, szTypeInfoName, szFunctionName ) != nullptr;
 	}
 
@@ -170,8 +170,8 @@ namespace Gamma
 		aryInfo[1].m_nType = eDT_void;
 		aryInfo[1].m_szTypeName = typeid( void ).name();
 		STypeInfoArray aryTypeInfo = { aryInfo, 2 };
-		return new CCallScriptBase( funWrap, aryTypeInfo, funContext,
-			nFunIndex, szTypeInfoName, "" ) != nullptr;
+		return new CCallScriptBase( funWrap, aryTypeInfo,
+			funContext, nFunIndex, szTypeInfoName, "" ) != nullptr;
 	}
 
 	bool CScriptBase::RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize )

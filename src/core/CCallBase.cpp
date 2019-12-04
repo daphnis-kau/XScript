@@ -16,7 +16,6 @@ namespace Gamma
 		uintptr_t funContext, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName )
 		: m_funWrap( funWrap )
 		, m_funContext(funContext)
-		, m_nThis( eDT_void )
 		, m_nResult( eDT_void )
 		, m_nFunIndex( nFunIndex )
 		, m_sFunName( szFunName )
@@ -25,17 +24,9 @@ namespace Gamma
 			throw( "register function on a unregister class." );
 		CClassRegistInfo::RegisterFunction( szTypeInfoName, this );
 
-		for( uint32 i = 0; i < aryTypeInfo.nSize; i++ )
-		{
-			DataType nType = ToDataType( aryTypeInfo.aryInfo[i] );
-			if( i == aryTypeInfo.nSize - 1 )
-				m_nResult = nType;
-			else if( m_nFunIndex >= eCT_ClassFunction && i == 0 )
-				m_nThis = nType;
-			else
-				m_listParam.push_back( nType );
-		}
-
+		for( uint32 i = 0; i < aryTypeInfo.nSize - 1; i++ )
+			m_listParam.push_back( ToDataType( aryTypeInfo.aryInfo[i] ) );
+		m_nResult = ToDataType( aryTypeInfo.aryInfo[aryTypeInfo.nSize - 1] );
 		m_nParamCount = (uint32)m_listParam.size();
 	}
 	
@@ -71,8 +62,8 @@ namespace Gamma
 	// C++调用脚本的基本接口
 	//=====================================================================
 	CCallScriptBase::CCallScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo,
-		uintptr_t funOrg, int32 nFunIndex, const char* szTypeInfoName, const char* szFunName )
-		: CByScriptBase( funWrap, aryTypeInfo, funOrg, szTypeInfoName, 0, szFunName )
+		uintptr_t funContext, int32 nFunIndex, const char* szTypeInfoName, const char* szFunName )
+		: CByScriptBase( funWrap, aryTypeInfo, funContext, szTypeInfoName, 0, szFunName )
 	{
 		m_nFunIndex = nFunIndex;
 		CClassRegistInfo::RegisterCallBack( szTypeInfoName, m_nFunIndex, this );
@@ -80,6 +71,17 @@ namespace Gamma
 
     CCallScriptBase::~CCallScriptBase()
     {
+	}
+
+	void CCallScriptBase::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script )
+	{
+		if( m_bPureVirtual )
+			return;
+		SFunctionTable* pTable = Script.GetOrgVirtualTable( pArgArray[0] );
+		if( !pTable || !pTable->m_pFun[m_nFunIndex] || 
+			pTable->m_pFun[m_nFunIndex] == GetBootFun() )
+			return;
+		m_funWrap->Call( pRetBuf, pArgArray, (uintptr_t)pTable->m_pFun[m_nFunIndex] );
 	}
 
 	int32 CCallScriptBase::Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script )

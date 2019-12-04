@@ -46,7 +46,6 @@ namespace Gamma
 		IFunctionWrap*			GetFunWrap()		const { return m_funWrap; }
 		const vector<DataType>&	GetParamList()		const { return m_listParam; }
 		DataType				GetResultType()		const { return m_nResult; }
-		DataType				GetThisType()		const { return m_nThis; }
 		uint32					GetParamCount()		const { return m_nParamCount; }
 		int32					GetFunctionIndex()	const { return m_nFunIndex; }
 		const gammacstring&		GetFunctionName()	const { return m_sFunName; }
@@ -55,7 +54,6 @@ namespace Gamma
 		IFunctionWrap*			m_funWrap;
 		uintptr_t				m_funContext;
 		gammacstring			m_sFunName;
-		DataType				m_nThis;
 		DataType				m_nResult;
 		vector<DataType>		m_listParam;
 		uint32					m_nParamCount;
@@ -83,9 +81,12 @@ namespace Gamma
 		const CCallScriptBase& operator= ( const CCallScriptBase& );
     public:
 		CCallScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, 
-			uintptr_t funContext, int32 nFunIndex, const char* szTypeInfoName, const char* szFunName );
+			uintptr_t funContext, int32 nFunIndex, 
+			const char* szTypeInfoName, const char* szFunName );
         ~CCallScriptBase();
 
+		virtual void	Call( void* pRetBuf, void** pArgArray, CScriptBase& Script );
+		void*			GetBootFun() const { return (void*)m_funContext; }
 		int32			Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script );
 	};
 }

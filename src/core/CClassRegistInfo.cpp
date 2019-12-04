@@ -95,7 +95,7 @@ namespace Gamma
 
 		// 自然继承，虚表要延续
 		vector<CCallScriptBase*>& vecNewFunction = pBaseInfo->m_vecNewFunction;
-		for( uint32 i = 0; i < vecNewFunction.size(); i++ )
+		for( int32 i = 0; i < (int32)vecNewFunction.size(); i++ )
 		{
 			if( !vecNewFunction[i] )
 				continue;
@@ -170,7 +170,7 @@ namespace Gamma
 
     void CClassRegistInfo::InitVirtualTable( SFunctionTable* pNewTable ) const
 	{
-		for( uint32 i = 0; i < m_vecNewFunction.size(); i++ )
+		for( int32 i = 0; i < (int32)m_vecNewFunction.size(); i++ )
 		{
 			if( !m_vecNewFunction[i] )
 				continue;

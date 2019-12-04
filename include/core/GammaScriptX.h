@@ -73,9 +73,9 @@
 			org_class* c = (org_class*)0x4000000; IFunctionWrap* funGetSet[2];\
 			funGetSet[0] = get ? Gamma::CreateMemberGetWrap( c, &c->_member ) : NULL;\
 			funGetSet[1] = set ? Gamma::CreateMemberSetWrap( c, &c->_member ) : NULL;\
-			SFunction offset = { 0, ((ptrdiff_t)&c->_member) - (ptrdiff_t)c };\
+			ptrdiff_t offset = ((ptrdiff_t)&c->_member) - (ptrdiff_t)c;\
 			Gamma::CScriptBase::RegistClassMember( funGetSet, offset,\
-			Gamma::MakeMemberArg( c, &c->_member ), typeid( org_class ).name(), #_new_name );\
+				Gamma::MakeMemberArg( c, &c->_member ), typeid( org_class ).name(), #_new_name );\
 		} \
 	};  \
 	static Gamma::CScriptRegisterNode _new_name##_get_RegisterNode( listRegister, &_new_name##_Impl_Class::Register ); \
@@ -88,9 +88,9 @@
 		static void Register()\
 		{ \
 			uint32 nIndex = Gamma::GetDestructorFunIndex<org_class>(); \
-			SFunction orgFun = { nIndex, 0 };\
-			Gamma::BindDestructorWrap<org_class>( Gamma::CScriptBase::RegistDestructor( \
-			Gamma::CreateDestructorWrap<org_class>(), orgFun, typeid( org_class ).name() ), nIndex );\
+			void* funBoot = GetDestructorBootFun( nIndex );\
+			Gamma::CScriptBase::RegistDestructor( Gamma::CreateDestructorWrap<org_class>(), \
+				funBoot, nIndex, typeid( org_class ).name() );\
 		} \
 	};  \
 	static Gamma::CScriptRegisterNode destructor##_register_node( listRegister, &destructor_Impl_Class::Register ); \
@@ -114,26 +114,22 @@
 	: public _BaseClass \
 	{	\
 		_RetType _function( Param ... p ) { return org_class::_function(p...); }\
-		static _RetType static_Org( org_class* pThis, Param ... p ) \
-		{ return pThis->_BaseClass::_function(p...); }\
 		typedef _function_name##_Impl_ClassTemplate\
 		<false, false, _BaseClass, _RetType, Param...> MyType; \
 		struct __class : public org_class, public TCallBackBinder<MyType> { \
 		static _function_name##_Type GetFun() { return (_function_name##_Type)&__class::_function; }\
-		static void Register(){ Bind( false, #_function_name, GetFun(), (void*)&static_Org ); } }; \
+		static void Register(){ Bind( false, #_function_name, GetFun(); } }; \
 	}; \
 	template<typename _BaseClass, typename _RetType, typename... Param> \
 	struct _function_name##_Impl_ClassTemplate<true, false, _BaseClass, _RetType, Param...> \
 	: public _BaseClass \
 	{	\
 		_RetType _function( Param ... p ) const { return org_class::_function(p...); }\
-		static _RetType static_Org( const org_class* pThis, Param ... p ) \
-		{ return pThis->org_class::_function(p...); }\
 		typedef _function_name##_Impl_ClassTemplate\
 		<true, false, _BaseClass, _RetType, Param...> MyType; \
 		struct __class : public org_class, public TCallBackBinder<MyType> { \
 		static _function_name##_Type GetFun() { return (_function_name##_Type)&__class::_function; }\
-		static void Register(){ Bind( false, #_function_name, GetFun(), (void*)&static_Org ); } }; \
+		static void Register(){ Bind( false, #_function_name, GetFun() ); } }; \
 	}; \
 	template<typename _BaseClass, typename _RetType, typename... Param> \
 	struct _function_name##_Impl_ClassTemplate<false, true, _BaseClass, _RetType, Param...> \
@@ -144,7 +140,7 @@
 		<false, true, _BaseClass, _RetType, Param...> MyType; \
 		struct __class : public org_class, public TCallBackBinder<MyType> { \
 		static _function_name##_Type GetFun() { return (_function_name##_Type)&__class::_function; }\
-		static void Register(){ Bind( true, #_function_name, GetFun(), nullptr ); } }; \
+		static void Register(){ Bind( true, #_function_name, GetFun() ); } }; \
 	}; \
 	template<typename _BaseClass, typename _RetType, typename... Param> \
 	struct _function_name##_Impl_ClassTemplate<true, true, _BaseClass, _RetType, Param...> \
@@ -155,7 +151,7 @@
 		<true, true, _BaseClass, _RetType, Param...> MyType; \
 		struct __class : public org_class, public TCallBackBinder<MyType> { \
 		static _function_name##_Type GetFun() { return (_function_name##_Type)&__class::_function; }\
-		static void Register(){ Bind( true, #_function_name, GetFun(), nullptr ); } }; \
+		static void Register(){ Bind( true, #_function_name, GetFun() ); } }; \
 	}; \
 	template<typename ClassType, typename RetType, typename... Param> \
 	_function_name##_Impl_ClassTemplate<false, _is_pure, _function##_Base_Class, RetType, Param...> \
