@@ -52,9 +52,5 @@ namespace Gamma
         uint32		m_nType;
 		const char*	m_szTypeName;
 	};
-
-	struct SFunction { uintptr_t funPoint; ptrdiff_t offset; };
-	template< class _FunTy >    void* GetFunAdress( _FunTy fun )	{ return *((void**)&fun); }
-	template< class _FunTy >    SFunction GetFunction( _FunTy fun )	{ return *((SFunction*)&fun); }
 }
 #endif
