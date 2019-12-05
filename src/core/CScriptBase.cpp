@@ -102,42 +102,43 @@ namespace Gamma
 		s_ScriptListLock.Unlock();
 	}
 
-	bool CScriptBase::RegistFunction( IFunctionWrap* funWrap, uintptr_t funContext,
+	bool CScriptBase::RegistFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		return new CByScriptBase( funWrap, aryTypeInfo, funContext,
+		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
 			"", eCT_GlobalFunction, szFunctionName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClassStaticFunction( IFunctionWrap* funWrap, uintptr_t funContext,
+	bool CScriptBase::RegistClassStaticFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		return new CByScriptBase( funWrap, aryTypeInfo, funContext,
+		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
 			szTypeInfoName, eCT_ClassStaticFunction, szFunctionName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funContext,
+	bool CScriptBase::RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		return new CByScriptBase( funWrap, aryTypeInfo, funContext,
+		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
 			szTypeInfoName, eCT_ClassFunction, szFunctionName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClassCallback( IFunctionWrap* funWrap, uintptr_t funContext, uint32 nFunIndex,
+	bool CScriptBase::RegistClassCallback( 
+		IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex, bool bPureVirtual,
 		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		return new CCallScriptBase( funWrap, aryTypeInfo, funContext,
-			nFunIndex, szTypeInfoName, szFunctionName ) != nullptr;
+		return new CCallScriptBase( funWrap, aryTypeInfo, funBoot,
+			nFunIndex, bPureVirtual, szTypeInfoName, szFunctionName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClassMember( IFunctionWrap* funGetSet[2], uintptr_t funContext,
+	bool CScriptBase::RegistClassMember( IFunctionWrap* funGetSet[2], uintptr_t nOffset,
 		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szMemberName )
 	{
 		assert( funGetSet && ( funGetSet[0] || funGetSet[1] ) );
 		gammacstring keyName( szMemberName, true );
 		assert( CClassRegistInfo::GetRegistInfo( szTypeInfoName )->
 			GetRegistFunction().Find( keyName ) == nullptr );
-		return new CByScriptMember( funGetSet, aryTypeInfo, funContext,
+		return new CByScriptMember( funGetSet, aryTypeInfo, nOffset,
 			szTypeInfoName, szMemberName ) != nullptr;
 	}
 
@@ -162,7 +163,7 @@ namespace Gamma
 	}
 
 	bool CScriptBase::RegistDestructor( IFunctionWrap* funWrap,
-		uintptr_t funContext, uint32 nFunIndex, const char* szTypeInfoName )
+		uintptr_t funBoot, uint32 nFunIndex, const char* szTypeInfoName )
 	{
 		STypeInfo aryInfo[2];
 		aryInfo[0].m_nType = ( eDT_custom_type << 24 )|eDTE_Pointer;
@@ -171,7 +172,7 @@ namespace Gamma
 		aryInfo[1].m_szTypeName = typeid( void ).name();
 		STypeInfoArray aryTypeInfo = { aryInfo, 2 };
 		return new CCallScriptBase( funWrap, aryTypeInfo,
-			funContext, nFunIndex, szTypeInfoName, "" ) != nullptr;
+			funBoot, nFunIndex, false, szTypeInfoName, "" ) != nullptr;
 	}
 
 	bool CScriptBase::RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize )

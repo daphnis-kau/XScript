@@ -151,7 +151,7 @@ namespace Gamma
 	// 获取函数类型
 	//=======================================================================
 	template<typename RetType, typename... Param>
-	inline STypeInfoArray MakeFunArg( RetType ( *pFun )( Param... ) )
+	inline STypeInfoArray MakeFunArg()
 	{
 		static STypeInfo aryInfo[] =
 		{ GetTypeInfo<Param>()..., GetTypeInfo<RetType>() };
@@ -190,96 +190,71 @@ namespace Gamma
 	template<> struct ArgFetcher<const ulong	&> : public ArgFetcher<ulong	> {};
 	template<> struct ArgFetcher<const float	&> : public ArgFetcher<float	> {};
 	template<> struct ArgFetcher<const double	&> : public ArgFetcher<double	> {};
-
-	enum ECallType
-	{
-		eCT_CDecl,
-		eCT_ThisCall,
-	};	
-
-	template<typename ClassType, typename RetType, typename... Param>
-	struct TCallFunctionTrait
+	
+	template<typename RetType, typename... Param>
+	struct TCallFunction
 	{
 	public:
-		typedef RetType ( *CDeclType )( Param... );
-		typedef RetType ( ClassType::*ThisCallType )( Param... );
-		typedef RetType ( ClassType::*ThisCallConstType )( Param... ) const;
-		union UFunction { CDeclType funDecl; ThisCallType funThisCall; SFunction funOrg; };
+		typedef RetType(*FunctionType)(Param...);
+		static RetType Call( FunctionType funCall, Param...p )
+		{ return funCall( p... ); }
 	};
 
-	template<ECallType eType, typename ClassType, typename RetType, typename... Param>
-	struct TCallFunction 
+	template<typename RetType, typename ClassType, typename... Param>
+	struct TCallClassFunction
 	{
 	public:
-		typedef TCallFunctionTrait<ClassType, RetType, Param...> CallFunctionTrait;
-		typedef typename CallFunctionTrait::UFunction UFunction;
-		static RetType CallOrg( void* pObj, UFunction funCall, void* pRetBuf, Param...p )
-		{ return ( ( (ClassType*)pObj )->*( funCall.funThisCall ) )( p... ); }
+		typedef RetType(ClassType::*FunctionType)(Param...);
+		static RetType Call(FunctionType funCall, ClassType* pObj, Param...p)
+		{ return (pObj->*(funCall))(p...); }
 	};
 
-	template<typename ClassType, typename RetType, typename... Param>
-	struct TCallFunction<eCT_CDecl, ClassType, RetType, Param...>
-	{
-	public:
-		typedef TCallFunctionTrait<ClassType, RetType, Param...> CallFunctionTrait;
-		typedef typename CallFunctionTrait::UFunction UFunction;
-		static RetType CallOrg( void* pObj, UFunction funCall, void* pRetBuf, Param...p )
-		{ return ( funCall.funDecl )( p... ); }
-	};
-
-	template< ECallType eType, typename ClassType, typename RetType, typename... Param >
+	template<typename CallFunctionType, typename RetType, typename... Param >
 	class TFunctionWrap : public IFunctionWrap
 	{
-		typedef TCallFunction<eType, ClassType, RetType, Param...> CallFunctionType;
-		typedef TCallFunctionTrait<ClassType, RetType, Param...> CallFunctionTrait;
-		typedef typename CallFunctionTrait::UFunction UFunction;
-		typedef typename CallFunctionTrait::CDeclType CDeclType;
-		typedef typename CallFunctionTrait::ThisCallType ThisCallType;
-		typedef typename CallFunctionTrait::ThisCallConstType ThisCallConstType;
+		typedef typename CallFunctionType::FunctionType FunctionType;
 
-		template< typename Type > struct TCallFunction
+		template< typename Type > struct TFetchResult
 		{
-			TCallFunction( void* pObj, UFunction funCall, void* pRetBuf, Param...p )
-			{ new( pRetBuf ) Type( CallFunctionType::CallOrg(pObj, funCall, pRetBuf, p...) ); }
+			TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
+			{ new( pRetBuf ) Type( CallFunctionType::Call( funCall, p... ) ); }
 		};
 
-		template< typename Type > struct TCallFunction<Type&>
+		template< typename Type > struct TFetchResult<Type&>
 		{
-			TCallFunction( void* pObj, UFunction funCall, void* pRetBuf, Param...p )
-			{ *(Type**)pRetBuf = &( CallFunctionType::CallOrg( pObj, funCall, pRetBuf, p... ) ); }
+			TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
+			{ *(Type**)pRetBuf = &( CallFunctionType::Call( funCall, p... ) ); }
 		};
 
-		template<> struct TCallFunction<void>
+		template<> struct TFetchResult<void>
 		{
-			TCallFunction( void* pObj, UFunction funCall, void* pRetBuf, Param...p )
-			{ CallFunctionType::CallOrg( pObj, funCall, pRetBuf, p... ); }
+			TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
+			{ CallFunctionType::Call( funCall, p... ); }
 		};
 
 		template<typename... RemainParam> struct TFetchParam {};
 		template<> struct TFetchParam<>
 		{
 			template<typename... FetchParam>
-			static void CallFun( size_t nIndex, void* pObj, UFunction funCall, void* pRetBuf, 
+			static void CallFun( size_t nIndex, FunctionType funCall, void* pRetBuf,
 				void** pArgArray, FetchParam...p )
-			{ TCallFunction<RetType> Temp( pObj, funCall, pRetBuf, p... ); }
+			{ TFetchResult<RetType> Temp( funCall, pRetBuf, p... ); }
 		};
 
 		template<typename FirstParam, typename... RemainParam>
 		struct TFetchParam<FirstParam, RemainParam...>
 		{
 			template<typename... FetchParam>
-			static void CallFun( size_t nIndex, void* pObj, UFunction funCall,void* pRetBuf, 
+			static void CallFun( size_t nIndex, FunctionType funCall,void* pRetBuf,
 				void** pArgArray, FetchParam...p )
-			{ TFetchParam<RemainParam...>::CallFun( nIndex + 1, pObj, funCall, pRetBuf, 
+			{ TFetchParam<RemainParam...>::CallFun( nIndex + 1, funCall, pRetBuf, 
 				pArgArray, p..., ArgFetcher<FirstParam>::CallWrapArg( pArgArray[nIndex] ) ); }
 		};
 
 	public:
-		void Call( void* pObj, void* pRetBuf, void** pArgArray, SFunction funRaw )
+		void Call( void* pRetBuf, void** pArgArray, uintptr_t funRaw )
 		{
-			UFunction funCall;
-			funCall.funOrg = funRaw;
-			TFetchParam<Param...>::CallFun( 0, pObj, funCall, pRetBuf, pArgArray );
+			TFetchParam<Param...>::CallFun( 0, (FunctionType)funRaw, pRetBuf, pArgArray );
 		}
 
 		static TFunctionWrap* GetInst()
@@ -289,18 +264,29 @@ namespace Gamma
 		}
 	};
 
-	template< typename ClassType, typename RetType, typename... Param >
-	inline IFunctionWrap* CreateFunWrap( RetType ( ClassType::*pFun )( Param... ) )
-	{ return TFunctionWrap<eCT_ThisCall, ClassType, RetType, Param...>::GetInst(); }
-
-	template< typename ClassType, typename RetType, typename... Param >
-	inline IFunctionWrap* CreateFunWrap( RetType ( ClassType::*pFun )( Param... ) const )
-	{ return TFunctionWrap<eCT_ThisCall, ClassType, RetType, Param...>::GetInst(); }
-
 	template< typename RetType, typename... Param >
-	inline IFunctionWrap* CreateFunWrap( RetType ( *pFun )( Param... ) )
-	{ return TFunctionWrap<eCT_CDecl, IFunctionWrap, RetType, Param...>::GetInst(); }
+	inline void BindFunction(RetType ( *pFun )( Param... ), const char* szName)
+	{
+		typedef TCallFunction<RetType, Param...> CallFunctionType;
+		typedef TFunctionWrap<CallFunctionType, RetType, Param...> FunctionWrap;
+		IFunctionWrap* pWrap = FunctionWrap::GetInst();
+		STypeInfoArray InfoArray = MakeFunArg<RetType, Param...>();
+		CScriptBase::RegistFunction(pWrap, (uintptr_t)pFun, InfoArray, nullptr, szName);
+	}
+	
+	template< typename RetType, typename ClassType, typename... Param >
+	inline void CreateFunWrap(RetType(ClassType::*pFun)(Param...), const char* szName)
+	{
+		typedef TCallClassFunction<RetType, ClassType, Param...> CallFunctionType;
+		return TFunctionWrap<CallFunctionType, RetType, Param...>::GetInst();
+	}
 
+	template< typename RetType, typename ClassType, typename... Param >
+	inline void CreateFunWrap(RetType(ClassType::*pFun)(Param...) const, const char* szName)
+	{
+		typedef TCallClassFunction<RetType, ClassType, Param...> CallFunctionType;
+		return TFunctionWrap<CallFunctionType, RetType, Param...>::GetInst();
+	}
 
 	//=======================================================================
 	// 类非常量成员函数回调包装
@@ -352,15 +338,6 @@ namespace Gamma
 				return s_nCallBackIndex;
 			}
 
-			static bool SetCallBack( int32 nIndex, bool bPureVirtual )
-			{
-				if( nIndex == GetCallBackIndex() )
-					return true;
-				assert( GetCallBackIndex() < 0 );
-				GetCallBackIndex() = nIndex;
-				return true;
-			}
-
 			template<typename... ParamPtr >
 			RetType WrapAddress( ParamPtr ... p )
 			{
@@ -396,16 +373,16 @@ namespace Gamma
 		static void Bind( bool bPureVirtual, const char* szFunName,
 			RetType(ClassType::*pFun)(Param...) const )
 		{
-			IFunctionWrap* pWrap = CreateFunWrap( pFun );
-			STypeInfoArray InfoArray = MakeFunArg( pFun );
+			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;
+			typedef TCallClassFunction<RetType, ClassType, Param...> CallFunctioType;			
+			typedef TFunctionWrap<CallFunctioType, RetType, ClassType, Param...> FunctionWrap;
+			IFunctionWrap* pWrap = FunctionWrap::GetInst();
+			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType, Param...>();
 			const char* szClassType = typeid( ClassType ).name();
 			void* funBoot = (void*)&CallBackWrap::BootFunction;
-			int32 nIndex = GetVirtualFunIndex( pFun );
-			CScriptBase::RegistClassCallback( pWrap, 
-				(uintptr_t)callOrgFun, InfoArray, szClassType, szFunName );
-			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;
-			CBWrap.BindFunction( GetFunAdress(), bPureVirtual);
-			CallBackWrap::SetCallBack( nIndex, bPureVirtual);
+			CallBackWrap::GetCallBackIndex() = GetVirtualFunIndex(pFun);
+			CScriptBase::RegistClassCallback( pWrap, funBoot,
+				CallBackWrap::GetCallBackIndex(), InfoArray, szClassType, szFunName );
 		}
 
 		template< typename ClassType, typename RetType, typename... Param >
@@ -423,20 +400,34 @@ namespace Gamma
 	template< typename ClassType >
 	class TDestructorWrap : public IFunctionWrap
 	{
-	public:
-		void Call( void* pObj, void* pRetBuf, void** pArgArray, SFunction funRaw )
+		static int32& GetCallBackIndex()
+		{
+			static int32 s_nCallBackIndex = -1;
+			return s_nCallBackIndex;
+		}
+
+		void Call( void* pRetBuf, void** pArgArray, uintptr_t funContext)
 		{
 			class Derive : public ClassType { public: ~Derive() {}; };
 			( (Derive*)pObj )->~Derive();
 		}
-	};
 
-	template< typename ClassType >
-	inline IFunctionWrap* CreateDestructorWrap()
-	{
-		static TDestructorWrap<ClassType> s_instance;
-		return &s_instance;
-	}
+		void Wrap(uint32 p0)
+		{
+			void* pArg = &p0;
+			CScriptBase::CallBack(s_nIndex, this, NULL, &pArg);
+		}
+
+	public:
+		inline void BindDestructorWrap()
+		{
+			static TDestructorWrap s_instance;
+			GetCallBackIndex() = Gamma::GetDestructorFunIndex<ClassType>();
+			void* funBoot = (void*)&_FunWrap::Wrap;
+			Gamma::CScriptBase::RegistDestructor(&s_instance, funBoot,
+				GetCallBackIndex(), typeid(ClassType).name());
+		}
+	};
 
 	//=======================================================================
 	// 析构函数调用包装绑定
@@ -448,11 +439,6 @@ namespace Gamma
 		class _FunWrap
 		{
 		public:
-			void Wrap( uint32 p0 )	
-			{ 
-				void* pArg = &p0;
-				CScriptBase::CallBack( s_nIndex, this, NULL, &pArg );
-			}
 		};
 
 		return (void*)&_FunWrap::Wrap;

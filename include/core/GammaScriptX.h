@@ -84,15 +84,7 @@
 
 #define REGIST_DESTRUCTOR_IMPLEMENT() \
 	destructor_Base_Class; struct destructor_Impl_Class \
-	{ \
-		static void Register()\
-		{ \
-			uint32 nIndex = Gamma::GetDestructorFunIndex<org_class>(); \
-			void* funBoot = GetDestructorBootFun( nIndex );\
-			Gamma::CScriptBase::RegistDestructor( Gamma::CreateDestructorWrap<org_class>(), \
-				funBoot, nIndex, typeid( org_class ).name() );\
-		} \
-	};  \
+	{ static void Register() { TDestructorWrap<org_class>::Bind(); } };  \
 	static Gamma::CScriptRegisterNode destructor##_register_node( listRegister, &destructor_Impl_Class::Register ); \
 	typedef destructor_Base_Class
 

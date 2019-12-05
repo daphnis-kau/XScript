@@ -38,7 +38,7 @@ namespace Gamma
 		const CByScriptBase& operator= ( const CByScriptBase& );
     public:
 		CByScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, 
-			uintptr_t funContext, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName );
+			uintptr_t funOrg, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName );
 		operator const gammacstring&( ) const { return m_sFunName; }
 		bool operator < ( const gammacstring& strKey ) { return (const gammacstring&)*this < strKey; }
 
@@ -52,7 +52,7 @@ namespace Gamma
 
 	protected:
 		IFunctionWrap*			m_funWrap;
-		uintptr_t				m_funContext;
+		uintptr_t				m_funOrg;
 		gammacstring			m_sFunName;
 		DataType				m_nResult;
 		vector<DataType>		m_listParam;
@@ -68,8 +68,9 @@ namespace Gamma
 		IFunctionWrap*	m_funSet;
 	public:
 		CByScriptMember( IFunctionWrap* funGetSet[2], const STypeInfoArray& aryTypeInfo, 
-			uintptr_t funContext, const char* szTypeInfoName, const char* szMemberName );
-		virtual void	Call( void* pRetBuf, void** pArgArray, CScriptBase& Script);
+			uintptr_t nOffset, const char* szTypeInfoName, const char* szMemberName );
+		virtual void	Call(void* pRetBuf, void** pArgArray, CScriptBase& Script);
+		uintptr_t		GetOffset() const { return m_funOrg; }
 		IFunctionWrap*	GetFunSet() const { return m_funSet; }
 	};
 
@@ -78,15 +79,15 @@ namespace Gamma
     //=====================================================================
     class CCallScriptBase : public CByScriptBase
 	{
+		bool			m_bPureVirtual;
 		const CCallScriptBase& operator= ( const CCallScriptBase& );
     public:
-		CCallScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, 
-			uintptr_t funContext, int32 nFunIndex, 
-			const char* szTypeInfoName, const char* szFunName );
+		CCallScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, uintptr_t funBoot, 
+			int32 nFunIndex, bool bPureVirtual, const char* szTypeInfoName, const char* szFunName );
         ~CCallScriptBase();
 
 		virtual void	Call( void* pRetBuf, void** pArgArray, CScriptBase& Script );
-		void*			GetBootFun() const { return (void*)m_funContext; }
+		void*			GetBootFun() const { return (void*)m_funOrg; }
 		int32			Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script );
 	};
 }

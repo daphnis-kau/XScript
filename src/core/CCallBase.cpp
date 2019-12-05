@@ -13,9 +13,9 @@ namespace Gamma
 	// 脚本调用C++的基本接口
 	//=====================================================================
 	CByScriptBase::CByScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo,
-		uintptr_t funContext, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName )
+		uintptr_t funOrg, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName )
 		: m_funWrap( funWrap )
-		, m_funContext(funContext)
+		, m_funOrg(funOrg)
 		, m_nResult( eDT_void )
 		, m_nFunIndex( nFunIndex )
 		, m_sFunName( szFunName )
@@ -32,16 +32,16 @@ namespace Gamma
 	
 	void CByScriptBase::Call(void* pRetBuf, void** pArgArray, CScriptBase& Script)
 	{
-		m_funWrap->Call(pRetBuf, pArgArray, m_funContext);
+		m_funWrap->Call(pRetBuf, pArgArray, m_funOrg);
 	}
 
 	//=====================================================================
 	// 脚本访问C++的成员接口
 	//=====================================================================
 	CByScriptMember::CByScriptMember( IFunctionWrap* funGetSet[2], 
-		const STypeInfoArray& aryTypeInfo, uintptr_t funOrg,
+		const STypeInfoArray& aryTypeInfo, uintptr_t nOffset,
 		const char* szTypeInfoName, const char* szMemberName )
-		: CByScriptBase( funGetSet[0], aryTypeInfo, funOrg, 
+		: CByScriptBase( funGetSet[0], aryTypeInfo, nOffset,
 			szTypeInfoName, eCT_MemberFunction, szMemberName )
 		, m_funSet( funGetSet[1] )
 	{
@@ -53,17 +53,19 @@ namespace Gamma
 	void CByScriptMember::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script)
 	{
 		if (!pRetBuf && m_funSet)
-			m_funSet->Call(&pRetBuf, pArgArray, m_funContext);
+			m_funSet->Call(&pRetBuf, pArgArray, GetOffset());
 		else if (pRetBuf && m_funWrap)
-			m_funWrap->Call(pRetBuf, pArgArray, m_funContext);
+			m_funWrap->Call(pRetBuf, pArgArray, GetOffset());
 	}
 
 	//=====================================================================
 	// C++调用脚本的基本接口
 	//=====================================================================
-	CCallScriptBase::CCallScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo,
-		uintptr_t funContext, int32 nFunIndex, const char* szTypeInfoName, const char* szFunName )
-		: CByScriptBase( funWrap, aryTypeInfo, funContext, szTypeInfoName, 0, szFunName )
+	CCallScriptBase::CCallScriptBase( 
+		IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, uintptr_t funBoot,
+		int32 nFunIndex, bool bPureVirtual, const char* szTypeInfoName, const char* szFunName )
+		: CByScriptBase( funWrap, aryTypeInfo, funBoot, szTypeInfoName, 0, szFunName )
+		, m_bPureVirtual(bPureVirtual)
 	{
 		m_nFunIndex = nFunIndex;
 		CClassRegistInfo::RegisterCallBack( szTypeInfoName, m_nFunIndex, this );
@@ -88,7 +90,7 @@ namespace Gamma
 	{
 		if( !pObject->m_pTable || !pObject->m_pTable->m_pFun[m_nFunIndex] )
 			return 0;
-		m_funWrap->Call( NULL, (void**)&pObject, m_funContext);
+		m_funWrap->Call( NULL, (void**)&pObject, 0 );
 		return 0;
 	}
 }

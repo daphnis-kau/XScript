@@ -43,17 +43,17 @@ namespace Gamma
         CScriptBase(void);
 		virtual ~CScriptBase( void );
 
-		static bool        		RegistFunction( IFunctionWrap* funWrap, uintptr_t funContext,
+		static bool        		RegistFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static bool        		RegistClassStaticFunction( IFunctionWrap* funWrap, uintptr_t funContext,
+		static bool        		RegistClassStaticFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static bool				RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funContext,
+		static bool				RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static bool				RegistClassCallback( IFunctionWrap* funWrap, uintptr_t funContext, uint32 nFunIndex,
+		static bool				RegistClassCallback( IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex, bool bPureVirtual,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static bool				RegistClassMember( IFunctionWrap* funGetSet[2], uintptr_t funContext,
+		static bool				RegistClassMember( IFunctionWrap* funGetSet[2], uintptr_t nOffset,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szMemberName );
-		static bool				RegistDestructor( IFunctionWrap* funWrap, uintptr_t funContext, uint32 nFunIndex,
+		static bool				RegistDestructor( IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex,
 									const char* szTypeInfoName );
 		static bool				RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
 		static bool				RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue);
