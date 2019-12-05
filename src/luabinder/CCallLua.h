@@ -42,7 +42,7 @@ namespace Gamma
 	{
 	public:
 		static bool	CallVM( CScriptLua* pScript, 
-			CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray );
+			CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray );
 		static void	DestrucVM( CScriptLua* pScript,
 			CCallScriptBase* pCallBase, SVirtualObj* pObject );
 	};

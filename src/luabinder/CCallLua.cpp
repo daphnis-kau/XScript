@@ -122,8 +122,8 @@ namespace Gamma
     //=====================================================================
     // C++调用Lua脚本的接口
 	//=====================================================================
-	bool CCallBackLua::CallVM( CScriptLua* pScript,	CCallScriptBase* pCallBase,
-		SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
+	bool CCallBackLua::CallVM( CScriptLua* pScript,	
+		CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray )
 	{	
 		lua_State* pL = pScript->GetLuaState();
 
@@ -134,7 +134,7 @@ namespace Gamma
 		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX );		// 2	
 
-		lua_pushlightuserdata( pL, pObject );
+		lua_pushlightuserdata( pL, *(void**)pArgArray[0] );
 		lua_gettable( pL, -2 );						// 3
 
 		if( lua_isnil( pL, -1 ) )
@@ -165,14 +165,14 @@ namespace Gamma
 		lua_insert(pL, -2);
 		const vector<DataType>& listParam = pCallBase->GetParamList();
 		DataType nResultType = pCallBase->GetResultType();
-		for( int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++ )
+		for( int32 nArgIndex = 1; nArgIndex < listParam.size(); nArgIndex++ )
 		{
 			DataType nType = listParam[nArgIndex];
 			CLuaTypeBase* pParamType = GetTypeBase( nType );
 			pParamType->PushToVM( nType, pL, (char*)pArgArray[nArgIndex] );
 		}
 
-		int32 nArg = (int32)( listParam.size() + 1 );
+		int32 nArg = (int32)( listParam.size() );
 		lua_pcall( pL, nArg, nResultType ? 1 : 0, nErrFunIndex );
 		if(nResultType)
 			GetTypeBase(nResultType)->GetFromVM( nResultType, pL, (char*)pRetBuf, -1 );

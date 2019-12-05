@@ -102,16 +102,12 @@ namespace Gamma
 		s_ScriptListLock.Unlock();
 	}
 
-	bool CScriptBase::RegistFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
+	bool CScriptBase::RegistGlobalFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
-			"", eCT_GlobalFunction, szFunctionName ) != nullptr;
-	}
-
-	bool CScriptBase::RegistClassStaticFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
-		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
-	{
+		if(!szTypeInfoName || !szTypeInfoName[0] )
+			return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
+				szTypeInfoName, eCT_GlobalFunction, szFunctionName ) != nullptr;
 		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
 			szTypeInfoName, eCT_ClassStaticFunction, szFunctionName ) != nullptr;
 	}
@@ -312,7 +308,7 @@ namespace Gamma
 
 	void CScriptBase::CallBack( int32 nIndex, void* pRetBuf, void** pArgArray )
 	{
-		SVirtualObj* pVirtualObj = (SVirtualObj*)pArgArray[0];
+		SVirtualObj* pVirtualObj = *(SVirtualObj**)pArgArray[0];
 		assert( CScriptBase::IsAllocVirtualTable( pVirtualObj->m_pTable ) );
 		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVirtualObj->m_pTable ) - 1;
 		assert( pFunTableHead->m_pClassInfo && pFunTableHead->m_pOldFunTable );

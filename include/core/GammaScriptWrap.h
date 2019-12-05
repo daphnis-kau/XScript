@@ -254,7 +254,7 @@ namespace Gamma
 	public:
 		void Call( void* pRetBuf, void** pArgArray, uintptr_t funRaw )
 		{
-			TFetchParam<Param...>::CallFun( 0, (FunctionType)funRaw, pRetBuf, pArgArray );
+			TFetchParam<Param...>::CallFun( 0, *(FunctionType*)&funRaw, pRetBuf, pArgArray );
 		}
 
 		static TFunctionWrap* GetInst()
@@ -265,27 +265,33 @@ namespace Gamma
 	};
 
 	template< typename RetType, typename... Param >
-	inline void BindFunction(RetType ( *pFun )( Param... ), const char* szName)
+	inline void CreateFunWrap(RetType ( *pFun )( Param... ), const char* szType, const char* szName)
 	{
 		typedef TCallFunction<RetType, Param...> CallFunctionType;
 		typedef TFunctionWrap<CallFunctionType, RetType, Param...> FunctionWrap;
 		IFunctionWrap* pWrap = FunctionWrap::GetInst();
 		STypeInfoArray InfoArray = MakeFunArg<RetType, Param...>();
-		CScriptBase::RegistFunction(pWrap, (uintptr_t)pFun, InfoArray, nullptr, szName);
+		CScriptBase::RegistGlobalFunction(pWrap, (uintptr_t)pFun, InfoArray, szType, szName);
 	}
 	
 	template< typename RetType, typename ClassType, typename... Param >
 	inline void CreateFunWrap(RetType(ClassType::*pFun)(Param...), const char* szName)
 	{
 		typedef TCallClassFunction<RetType, ClassType, Param...> CallFunctionType;
-		return TFunctionWrap<CallFunctionType, RetType, Param...>::GetInst();
+		typedef TFunctionWrap<CallFunctionType, RetType, ClassType*, Param...> FunctionWrap;
+		IFunctionWrap* pWrap = FunctionWrap::GetInst();
+		STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
+		CScriptBase::RegistClassFunction( pWrap, *(uintptr_t*)&pFun, InfoArray, typeid( ClassType ).name(), szName );
 	}
 
 	template< typename RetType, typename ClassType, typename... Param >
 	inline void CreateFunWrap(RetType(ClassType::*pFun)(Param...) const, const char* szName)
 	{
 		typedef TCallClassFunction<RetType, ClassType, Param...> CallFunctionType;
-		return TFunctionWrap<CallFunctionType, RetType, Param...>::GetInst();
+		typedef TFunctionWrap<CallFunctionType, RetType, ClassType*, Param...> FunctionWrap;
+		IFunctionWrap* pWrap = FunctionWrap::GetInst();
+		STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
+		CScriptBase::RegistClassFunction( pWrap, *(uintptr_t*)&pFun, InfoArray, typeid( ClassType ).name(), szName );
 	}
 
 	//=======================================================================
@@ -341,14 +347,16 @@ namespace Gamma
 			template<typename... ParamPtr >
 			RetType WrapAddress( ParamPtr ... p )
 			{
-				void* pCallArray[] = { this, ArgFetcher<Param...>::CallBackArg( p... ), NULL };
+				TCallBackWrap* pThis = this;
+				void* pCallArray[] = { &pThis, ArgFetcher<Param...>::CallBackArg( p... ), NULL };
 				return TCallBack<RetType>::OnCall( GetCallBackIndex(), pCallArray );
 			}
 
 			template<>
 			RetType WrapAddress<>()
 			{
-				void* pCallArray[] = { this, NULL };
+				TCallBackWrap* pThis = this;
+				void* pCallArray[] = { &pThis, NULL };
 				return TCallBack<RetType>::OnCall( GetCallBackIndex(), pCallArray );
 			}
 
@@ -371,18 +379,18 @@ namespace Gamma
 
 		template<typename RetType, typename ClassType, typename... Param >
 		static void Bind( bool bPureVirtual, const char* szFunName,
-			RetType(ClassType::*pFun)(Param...) const )
+			RetType(ClassType::*pFun)(Param...) )
 		{
 			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;
 			typedef TCallClassFunction<RetType, ClassType, Param...> CallFunctioType;			
-			typedef TFunctionWrap<CallFunctioType, RetType, ClassType, Param...> FunctionWrap;
+			typedef TFunctionWrap<CallFunctioType, RetType, ClassType*, Param...> FunctionWrap;
 			IFunctionWrap* pWrap = FunctionWrap::GetInst();
-			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType, Param...>();
+			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
 			const char* szClassType = typeid( ClassType ).name();
-			void* funBoot = (void*)&CallBackWrap::BootFunction;
+			auto funBoot = &CallBackWrap::BootFunction;
 			CallBackWrap::GetCallBackIndex() = GetVirtualFunIndex(pFun);
-			CScriptBase::RegistClassCallback( pWrap, funBoot,
-				CallBackWrap::GetCallBackIndex(), InfoArray, szClassType, szFunName );
+			CScriptBase::RegistClassCallback( pWrap, *(uintptr_t*)&funBoot,
+				CallBackWrap::GetCallBackIndex(), bPureVirtual, InfoArray, szClassType, szFunName );
 		}
 
 		template< typename ClassType, typename RetType, typename... Param >
@@ -390,7 +398,7 @@ namespace Gamma
 			RetType (ClassType::*pFun)(Param...) const )
 		{
 			typedef RetType(ClassType::*FunctionType)(Param...);
-			Bind( bPureVirtual, szFunName, (FunctionType)pFun, callOrgFun );
+			Bind( bPureVirtual, szFunName, (FunctionType)pFun );
 		}
 	};
 
@@ -409,21 +417,23 @@ namespace Gamma
 		void Call( void* pRetBuf, void** pArgArray, uintptr_t funContext)
 		{
 			class Derive : public ClassType { public: ~Derive() {}; };
-			( (Derive*)pObj )->~Derive();
+			( ( *(Derive**)pArgArray[0] ) )->~Derive();
 		}
 
 		void Wrap(uint32 p0)
 		{
-			void* pArg = &p0;
-			CScriptBase::CallBack(s_nIndex, this, NULL, &pArg);
+			void* pArg[] = { this, &p0 };
+			CScriptBase::CallBack( GetCallBackIndex(), NULL, pArg );
 		}
 
 	public:
-		inline void BindDestructorWrap()
+		static void Bind()
 		{
 			static TDestructorWrap s_instance;
 			GetCallBackIndex() = Gamma::GetDestructorFunIndex<ClassType>();
-			void* funBoot = (void*)&_FunWrap::Wrap;
+			auto funBootFun = &TDestructorWrap::Wrap;
+			assert( sizeof( funBootFun ) == sizeof( void* ) );
+			uintptr_t funBoot = *(uintptr_t*)&funBootFun;
 			Gamma::CScriptBase::RegistDestructor(&s_instance, funBoot,
 				GetCallBackIndex(), typeid(ClassType).name());
 		}
@@ -452,7 +462,7 @@ namespace Gamma
 	{
 	public:
 		void Call( void* pRetBuf, void** pArgArray, uintptr_t funContext )
-		{ new( pRetBuf ) MemberType( *(MemberType*)( (char*)pArgArray[0] + funContext ) ); }
+		{ new( pRetBuf ) MemberType( *(MemberType*)( ( *(char**)pArgArray[0] ) + funContext ) ); }
 		static IFunctionWrap* GetInst() { static TMemberGetWrap s_Inst; return &s_Inst; }
 	};
 
@@ -461,7 +471,7 @@ namespace Gamma
 	{
 	public:
 		void Call( void* pRetBuf, void** pArgArray, uintptr_t funContext )
-		{ *(MemberType**)pRetBuf = (MemberType*)( (char*)pArgArray[0] + funContext ); }
+		{ *(MemberType**)pRetBuf = (MemberType*)( ( *(char**)pArgArray[0] ) + funContext ); }
 		static IFunctionWrap* GetInst() { static TMemberGetWrapObject s_Inst; return &s_Inst; }
 	};
 
@@ -490,7 +500,7 @@ namespace Gamma
 	public:
 		void Call( void* pRetBuf, void** pArgArray, uintptr_t funContext )
 		{ 
-			*(MemberType*)( (char*)pArgArray[0] + funRaw.offset ) =
+			*(MemberType*)( (*(char**)pArgArray[0]) + funContext ) =
 			ArgFetcher<MemberType>::CallWrapArg( pArgArray[1] );
 		}
 		static IFunctionWrap* GetInst() { static TMemberSetWrap s_Inst; return &s_Inst; }

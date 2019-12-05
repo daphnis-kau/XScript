@@ -43,9 +43,7 @@ namespace Gamma
         CScriptBase(void);
 		virtual ~CScriptBase( void );
 
-		static bool        		RegistFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
-									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static bool        		RegistClassStaticFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
+		static bool        		RegistGlobalFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
 		static bool				RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );

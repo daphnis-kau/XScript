@@ -79,7 +79,7 @@ namespace Gamma
 	{
 		if( m_bPureVirtual )
 			return;
-		SFunctionTable* pTable = Script.GetOrgVirtualTable( pArgArray[0] );
+		SFunctionTable* pTable = Script.GetOrgVirtualTable( *(void**)pArgArray[0] );
 		if( !pTable || !pTable->m_pFun[m_nFunIndex] || 
 			pTable->m_pFun[m_nFunIndex] == GetBootFun() )
 			return;

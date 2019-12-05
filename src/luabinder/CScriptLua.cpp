@@ -399,10 +399,9 @@ namespace Gamma
         return pScriptLua;
 	}
 
-	bool CScriptLua::CallVM( CCallScriptBase* pCallBase, 
-		SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
+	bool CScriptLua::CallVM( CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray )
 	{
-		return CCallBackLua::CallVM( this, pCallBase, pObject, pRetBuf, pArgArray );
+		return CCallBackLua::CallVM( this, pCallBase, pRetBuf, pArgArray );
 	}
 
 	void CScriptLua::DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject )
