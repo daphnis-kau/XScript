@@ -388,6 +388,7 @@ namespace Gamma
 			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
 			const char* szClassType = typeid( ClassType ).name();
 			auto funBoot = &CallBackWrap::BootFunction;
+			assert( sizeof( funBoot ) == sizeof( uintptr_t ) );
 			CallBackWrap::GetCallBackIndex() = GetVirtualFunIndex(pFun);
 			CScriptBase::RegistClassCallback( pWrap, *(uintptr_t*)&funBoot,
 				CallBackWrap::GetCallBackIndex(), bPureVirtual, InfoArray, szClassType, szFunName );
@@ -432,7 +433,7 @@ namespace Gamma
 			static TDestructorWrap s_instance;
 			GetCallBackIndex() = Gamma::GetDestructorFunIndex<ClassType>();
 			auto funBootFun = &TDestructorWrap::Wrap;
-			assert( sizeof( funBootFun ) == sizeof( void* ) );
+			assert( sizeof( funBootFun ) == sizeof( uintptr_t ) );
 			uintptr_t funBoot = *(uintptr_t*)&funBootFun;
 			Gamma::CScriptBase::RegistDestructor(&s_instance, funBoot,
 				GetCallBackIndex(), typeid(ClassType).name());
