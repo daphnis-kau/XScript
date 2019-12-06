@@ -11,6 +11,19 @@
 namespace Gamma
 {
 	//=======================================================================
+	// 捕获编译时错误
+	//=======================================================================
+	template<bool bCompileSucceed> struct TCompileSucceed {};
+	template<> struct TCompileSucceed<true> { struct Succeeded {}; };
+
+	// 编译时检查类的大小是否相等
+	template<typename _T1, typename _T2> struct TClassSizeEqual
+	{ 
+		typedef TCompileSucceed<sizeof(_T1) == sizeof(_T2)> CCompileSucceed;
+		typedef typename CCompileSucceed::Succeeded Succeeded;
+	};
+
+	//=======================================================================
 	// 获取原始虚表
 	//=======================================================================
 	typedef SFunctionTable* ( *GetVirtualTableFun )( void* );
@@ -200,15 +213,6 @@ namespace Gamma
 		{ return funCall( p... ); }
 	};
 
-	template<typename RetType, typename ClassType, typename... Param>
-	struct TCallClassFunction
-	{
-	public:
-		typedef RetType(ClassType::*FunctionType)(Param...);
-		static RetType Call(FunctionType funCall, ClassType* pObj, Param...p)
-		{ return (pObj->*(funCall))(p...); }
-	};
-
 	template<typename CallFunctionType, typename RetType, typename... Param >
 	class TFunctionWrap : public IFunctionWrap
 	{
@@ -265,7 +269,8 @@ namespace Gamma
 	};
 
 	template< typename RetType, typename... Param >
-	inline void CreateFunWrap(RetType ( *pFun )( Param... ), const char* szType, const char* szName)
+	inline void CreateGlobalFunWrap(RetType ( *pFun )( Param... ),
+		const char* szType, const char* szName)
 	{
 		typedef TCallFunction<RetType, Param...> CallFunctionType;
 		typedef TFunctionWrap<CallFunctionType, RetType, Param...> FunctionWrap;
@@ -275,23 +280,14 @@ namespace Gamma
 	}
 	
 	template< typename RetType, typename ClassType, typename... Param >
-	inline void CreateFunWrap(RetType(ClassType::*pFun)(Param...), const char* szName)
+	inline void CreateClassFunWrap(RetType(pFun)(ClassType*, Param...), const char* szName)
 	{
-		typedef TCallClassFunction<RetType, ClassType, Param...> CallFunctionType;
+		const char* szType = typeid(ClassType).name();
+		typedef TCallFunction<RetType, ClassType*, Param...> CallFunctionType;
 		typedef TFunctionWrap<CallFunctionType, RetType, ClassType*, Param...> FunctionWrap;
 		IFunctionWrap* pWrap = FunctionWrap::GetInst();
 		STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
-		CScriptBase::RegistClassFunction( pWrap, *(uintptr_t*)&pFun, InfoArray, typeid( ClassType ).name(), szName );
-	}
-
-	template< typename RetType, typename ClassType, typename... Param >
-	inline void CreateFunWrap(RetType(ClassType::*pFun)(Param...) const, const char* szName)
-	{
-		typedef TCallClassFunction<RetType, ClassType, Param...> CallFunctionType;
-		typedef TFunctionWrap<CallFunctionType, RetType, ClassType*, Param...> FunctionWrap;
-		IFunctionWrap* pWrap = FunctionWrap::GetInst();
-		STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
-		CScriptBase::RegistClassFunction( pWrap, *(uintptr_t*)&pFun, InfoArray, typeid( ClassType ).name(), szName );
+		CScriptBase::RegistClassFunction( pWrap, (uintptr_t)pFun, InfoArray, szType, szName );
 	}
 
 	//=======================================================================
@@ -364,6 +360,12 @@ namespace Gamma
 			{
 				return WrapAddress( &p ... );
 			}
+
+			typedef decltype(&TCallBackWrap::BootFunction) FunctionType;
+			static RetType Call(FunctionType funCall, TCallBackWrap* pObj, Param...p)
+			{
+				return (pObj->*(funCall))(p...);
+			}
 		};
 	public:
 		static Gamma::SFunctionTable* GetVirtualTable( void* p )
@@ -381,14 +383,18 @@ namespace Gamma
 		static void Bind( bool bPureVirtual, const char* szFunName,
 			RetType(ClassType::*pFun)(Param...) )
 		{
-			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;
-			typedef TCallClassFunction<RetType, ClassType, Param...> CallFunctioType;			
-			typedef TFunctionWrap<CallFunctioType, RetType, ClassType*, Param...> FunctionWrap;
+			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;		
+			typedef TFunctionWrap<CallBackWrap, RetType, CallBackWrap*, Param...> FunctionWrap;
+
+			// 下面编译不过表示函数指针FunctionType的大小和uintptr_t不一致，
+			// 这和编译器有关，大部分编译器不会出现，本实现目前不支持这种情况
+			typedef TClassSizeEqual<CallBackWrap::FunctionType, uintptr_t> SizeCheck;
+			typedef typename SizeCheck::Succeeded Succeeded;
+
 			IFunctionWrap* pWrap = FunctionWrap::GetInst();
 			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
 			const char* szClassType = typeid( ClassType ).name();
-			auto funBoot = &CallBackWrap::BootFunction;
-			assert( sizeof( funBoot ) == sizeof( uintptr_t ) );
+			CallBackWrap::FunctionType funBoot = &CallBackWrap::BootFunction;
 			CallBackWrap::GetCallBackIndex() = GetVirtualFunIndex(pFun);
 			CScriptBase::RegistClassCallback( pWrap, *(uintptr_t*)&funBoot,
 				CallBackWrap::GetCallBackIndex(), bPureVirtual, InfoArray, szClassType, szFunName );
@@ -427,33 +433,22 @@ namespace Gamma
 			CScriptBase::CallBack( GetCallBackIndex(), NULL, pArg );
 		}
 
+		typedef decltype(&TDestructorWrap::Wrap) FunctionType;
 	public:
 		static void Bind()
 		{
+			// 下面编译不过表示函数指针FunctionType的大小和uintptr_t不一致，
+			// 这和编译器有关，大部分编译器不会出现，本实现目前不支持这种情况
+			typedef TClassSizeEqual<FunctionType, uintptr_t> SizeCheck;
+			typedef typename SizeCheck::Succeeded Succeeded;
+
 			static TDestructorWrap s_instance;
 			GetCallBackIndex() = Gamma::GetDestructorFunIndex<ClassType>();
-			auto funBootFun = &TDestructorWrap::Wrap;
-			assert( sizeof( funBootFun ) == sizeof( uintptr_t ) );
-			uintptr_t funBoot = *(uintptr_t*)&funBootFun;
-			Gamma::CScriptBase::RegistDestructor(&s_instance, funBoot,
+			FunctionType funBoot = &TDestructorWrap::Wrap;
+			Gamma::CScriptBase::RegistDestructor(&s_instance, *(uintptr_t*)&funBoot,
 				GetCallBackIndex(), typeid(ClassType).name());
 		}
 	};
-
-	//=======================================================================
-	// 析构函数调用包装绑定
-	//=======================================================================
-	template<typename ClassType>
-	static inline void* GetDestructorBootFun( int32 nIndex )
-	{
-		static int32 s_nIndex = nIndex;
-		class _FunWrap
-		{
-		public:
-		};
-
-		return (void*)&_FunWrap::Wrap;
-	}
 
 	//=======================================================================
 	// 成员读取包装
