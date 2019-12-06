@@ -16,10 +16,10 @@
 #define DEFINE_CLASS_BEGIN_IMPLEMENT( _get_vtable_class, _type, _class, ... ) \
 	namespace _class##_namespace { \
 	static Gamma::SGlobalExe _class##_register( \
-	Gamma::CScriptBase::RegistClass( #_class, \
-	Gamma::TInheritInfo<_class, ##__VA_ARGS__>::size, \
-	Gamma::TInheritInfo<_class, ##__VA_ARGS__>::Types().data(), \
-	Gamma::TInheritInfo<_class, ##__VA_ARGS__>::Values().data() ) ); \
+		Gamma::CScriptBase::RegistClass( #_class, \
+		Gamma::TInheritInfo<_class, ##__VA_ARGS__>::size, \
+		Gamma::TInheritInfo<_class, ##__VA_ARGS__>::Types().data(), \
+		Gamma::TInheritInfo<_class, ##__VA_ARGS__>::Values().data() ) ); \
 	static Gamma::CScriptRegisterList listRegister; \
 	typedef _class org_class; \
 	typedef _class org_##_type; \
@@ -37,112 +37,90 @@
 
 #define REGIST_CLASSFUNCTION_IMPLEMENT( _function_type, _function, _function_name ) \
 	_function_name##_Base_Class; \
-	template<typename _RetType, typename... Param> \
-	struct _function_name##_Template \
+	namespace _function_name##_namespace \
 	{ \
-		typedef decltype ( (_function_type)nullptr ) _fun_type;\
-		static _RetType Call( org_class* pThis, Param ... p ) \
-		{ _fun_type f = (_fun_type)&org_class::_function; return (pThis->*f)(p...); }\
-		static void Register()\
-		{ Gamma::CreateClassFunWrap( &_function_name##_Template::Call, #_function_name ); } \
-	};  \
-	template<typename ClassType, typename RetType, typename... Param> \
-		_function_name##_Template<RetType, Param...>\
-		_function_name##_Decl( RetType ( ClassType::*pFun )( Param... ) );\
-	template<typename ClassType, typename RetType, typename... Param> \
-		_function_name##_Template<RetType, Param...> \
-		_function_name##_Decl( RetType ( ClassType::*pFun )( Param... ) const );\
-	typedef decltype( _function_name##_Decl( (_function_type)nullptr ) ) \
-		_function_name##_Impl_Class;\
-	static Gamma::CScriptRegisterNode _function_name##RegisterNode( \
-		listRegister, &_function_name##_Impl_Class::Register ); \
+		template<typename _RetType, typename... Param> \
+		struct TFunctionRegister \
+		{ \
+			typedef decltype ( (_function_type)nullptr ) _fun_type;\
+			static _RetType Call( org_class* pThis, Param ... p ) \
+			{ \
+				_fun_type funMember = (_fun_type)&org_class::_function; \
+				return (pThis->*funMember)(p...); \
+			}\
+			static void Register()\
+			{ \
+				Gamma::CreateClassFunWrap( &TFunctionRegister::Call, #_function_name );\
+			} \
+		};  \
+		\
+		template<typename ClassType, typename RetType, typename... Param> \
+		TFunctionRegister<RetType, Param...> Decl( RetType ( ClassType::*pFun )( Param... ) );\
+		template<typename ClassType, typename RetType, typename... Param> \
+		TFunctionRegister<RetType, Param...> Decl( RetType ( ClassType::*pFun )( Param... ) const );\
+		typedef decltype( Decl( (_function_type)nullptr ) ) RegisterImpl;\
+		\
+		static Gamma::CScriptRegisterNode RegisterNode( listRegister, &RegisterImpl::Register ); \
+	}\
 	typedef _function_name##_Base_Class 
 
 
 #define REGIST_CALLBACKFUNCTION_IMPLEMENT( _is_pure, _function_type, _function, _function_name ) \
 	_function##_Base_Class; \
-	auto _function_name##_Pointer = (_function_type)&org_class::_function;\
-	typedef decltype( _function_name##_Pointer ) _function_name##_Type;\
-	template<bool bConst, bool bPure, typename _BaseClass, typename _RetType, typename... Param> \
-	struct _function_name##_Template;\
-	template<typename _BaseClass, typename _RetType, typename... Param> \
-	struct _function_name##_Template<false, false, _BaseClass, _RetType, Param...> \
-		: public _BaseClass \
-	{	\
-		_RetType _function( Param ... p ) { return org_class::_function(p...); }\
-		typedef _function_name##_Template\
-		<false, false, _BaseClass, _RetType, Param...> MyType; \
-		struct __class : public org_class, public Gamma::TCallBackBinder<MyType> { \
-		static _function_name##_Type GetFun() { return (_function_name##_Type)&__class::_function; }\
-		static void Register(){ Bind( false, #_function_name, GetFun() ); } }; \
-	}; \
-	template<typename _BaseClass, typename _RetType, typename... Param> \
-	struct _function_name##_Template<true, false, _BaseClass, _RetType, Param...> \
-		: public _BaseClass \
-	{	\
-		_RetType _function( Param ... p ) const { return org_class::_function(p...); }\
-		typedef _function_name##_Template\
-		<true, false, _BaseClass, _RetType, Param...> MyType; \
-		struct __class : public org_class, public Gamma::TCallBackBinder<MyType> { \
-		static _function_name##_Type GetFun() { return (_function_name##_Type)&__class::_function; }\
-		static void Register(){ Bind( false, #_function_name, GetFun() ); } }; \
-	}; \
-	template<typename _BaseClass, typename _RetType, typename... Param> \
-	struct _function_name##_Template<false, true, _BaseClass, _RetType, Param...> \
-		: public _BaseClass \
-	{	\
-		_RetType _function( Param ... p ) { throw; }\
-		typedef _function_name##_Template\
-		<false, true, _BaseClass, _RetType, Param...> MyType; \
-		struct __class : public org_class, public Gamma::TCallBackBinder<MyType> { \
-		static _function_name##_Type GetFun() { return (_function_name##_Type)&__class::_function; }\
-		static void Register(){ Bind( true, #_function_name, GetFun() ); } }; \
-	}; \
-	template<typename _BaseClass, typename _RetType, typename... Param> \
-	struct _function_name##_Template<true, true, _BaseClass, _RetType, Param...> \
-		: public _BaseClass \
-	{	\
-		_RetType _function( Param ... p ) const { throw; }\
-		typedef _function_name##_Template\
-		<true, true, _BaseClass, _RetType, Param...> MyType; \
-		struct __class : public org_class, public Gamma::TCallBackBinder<MyType> { \
-		static _function_name##_Type GetFun() { return (_function_name##_Type)&__class::_function; }\
-		static void Register(){ Bind( true, #_function_name, GetFun() ); } }; \
-	}; \
-	template<typename ClassType, typename RetType, typename... Param> \
-	_function_name##_Template<false, _is_pure, _function##_Base_Class, RetType, Param...> \
-	_function_name##_TemplateDecl( RetType ( ClassType::*pFun )( Param... ) );\
-	template<typename ClassType, typename RetType, typename... Param> \
-	_function_name##_Template<true, _is_pure, _function##_Base_Class, RetType, Param...> \
-	_function_name##_TemplateDecl( RetType ( ClassType::*pFun )( Param... ) const );\
-	typedef decltype( _function_name##_TemplateDecl( _function_name##_Pointer ) ) \
-		_function_name##_Impl_Class;\
-	static Gamma::CScriptRegisterNode _function_name##_register_node( \
-		listRegister, &_function_name##_Impl_Class::__class::Register ); \
-	static Gamma::SGlobalExe _function_name##_get_table( \
-		_function_name##_Impl_Class::__class::InsallGetVirtualTable() );\
-	typedef _function_name##_Impl_Class 
+	namespace _function_name##_namespace \
+	{ \
+		typedef decltype( (_function_type)nullptr ) FunctionType;\
+		typedef _function##_Base_Class BaseClass;\
+		\
+		template<bool bConst, bool bPure, typename _BaseClass, typename... Param> \
+		struct TFunctionOverride : public _BaseClass {}; \
+		template<typename _BaseClass, typename _RetType, typename... Param> \
+		struct TFunctionOverride<false, true, _BaseClass, _RetType, Param...> \
+		: public _BaseClass { _RetType _function( Param ... p ) { throw; } }; \
+		template<typename _BaseClass, typename _RetType, typename... Param> \
+		struct TFunctionOverride<true, true, _BaseClass, _RetType, Param...> \
+		: public _BaseClass { _RetType _function( Param ... p ) const { throw; } }; \
+		\
+		template<typename ClassType, typename RetType, typename... Param> \
+		TFunctionOverride<false, _is_pure, BaseClass, RetType, Param...> \
+			Decl( RetType ( ClassType::*pFun )( Param... ) );\
+		template<typename ClassType, typename RetType, typename... Param> \
+		TFunctionOverride<true, _is_pure, BaseClass, RetType, Param...> \
+			Decl( RetType ( ClassType::*pFun )( Param... ) const );\
+		typedef decltype (Decl( (_function_type)nullptr )) ImplementClass;\
+		\
+		typedef Gamma::TCallBackBinder<ImplementClass> CallbackBinder;\
+		struct RegisterImpl : public org_class { \
+		static FunctionType GetFun() { return (FunctionType)&RegisterImpl::_function; } \
+		static void Register(){ CallbackBinder::Bind( false, #_function_name, GetFun() ); } }; \
+		static Gamma::CScriptRegisterNode RegisterNode( listRegister, &RegisterImpl::Register ); \
+		static Gamma::SGlobalExe Execute( CallbackBinder::InsallGetVirtualTable() );\
+	}\
+	typedef _function_name##_namespace::ImplementClass 
 
 
 #define REGIST_CLASSMEMBER_GETSET_IMPLEMENT( _member, _new_name, get, set ) \
-	_new_name##_Base_Class; struct _new_name##_Impl_Class \
+	_new_name##_Base_Class; \
+	namespace _new_name##_namespace \
 	{ \
 		static void Register()\
 		{ \
-			org_class* c = (org_class*)0x4000000; IFunctionWrap* funGetSet[2];\
-			funGetSet[0] = get ? Gamma::CreateMemberGetWrap( c, &c->_member ) : NULL;\
-			funGetSet[1] = set ? Gamma::CreateMemberSetWrap( c, &c->_member ) : NULL;\
+			org_class* c = (org_class*)0x4000000; \
+			IFunctionWrap* funGetSet[2];\
+			funGetSet[0] = get ? Gamma::CreateMemberGetWrap( &c->_member ) : NULL;\
+			funGetSet[1] = set ? Gamma::CreateMemberSetWrap( &c->_member ) : NULL;\
 			ptrdiff_t offset = ((ptrdiff_t)&c->_member) - (ptrdiff_t)c;\
 			Gamma::CScriptBase::RegistClassMember( funGetSet, offset,\
 				Gamma::MakeMemberArg( c, &c->_member ), typeid( org_class ).name(), #_new_name );\
 		} \
+		static Gamma::CScriptRegisterNode RegisterNode( listRegister, &Register ); \
 	};  \
-	static Gamma::CScriptRegisterNode _new_name##_get_RegisterNode( listRegister, &_new_name##_Impl_Class::Register ); \
 	typedef _new_name##_Base_Class 
 
 
 #define REGIST_STATICFUNCTION_IMPLEMENT( _function_type, _function, _function_name ) \
-	_function_name##_Base_Class; struct _function_name##_Impl_Class \
+	_function_name##_Base_Class; \
+	namespace _function_name##_namespace \
 	{ \
 		static void Register()\
 		{ \
@@ -150,15 +128,18 @@
 			Gamma::CreateGlobalFunWrap( (_fun_type)(&org_class::_function), \
 			typeid( org_class ).name(), #_function_name );\
 		} \
+		static Gamma::CScriptRegisterNode RegisterNode( listRegister, &Register ); \
 	};  \
-	static Gamma::CScriptRegisterNode _function_name##RegisterNode( listRegister, &_function_name##_Impl_Class::Register ); \
 	typedef _function_name##_Base_Class 
 
 
 #define REGIST_DESTRUCTOR_IMPLEMENT() \
-	destructor_Base_Class; struct destructor_Impl_Class \
-	{ static void Register() { TDestructorWrap<org_class>::Bind(); } };  \
-	static Gamma::CScriptRegisterNode destructor##_register_node( listRegister, &destructor_Impl_Class::Register ); \
+	destructor_Base_Class; \
+	namespace destructor_namespace \
+	{ \
+		static void Register() { TDestructorWrap<org_class>::Bind(); } \
+		static Gamma::CScriptRegisterNode RegisterNode( listRegister, &Register ); \
+	};  \
 	typedef destructor_Base_Class
 
 

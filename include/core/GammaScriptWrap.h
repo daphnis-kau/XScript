@@ -203,37 +203,31 @@ namespace Gamma
 	template<> struct ArgFetcher<const ulong	&> : public ArgFetcher<ulong	> {};
 	template<> struct ArgFetcher<const float	&> : public ArgFetcher<float	> {};
 	template<> struct ArgFetcher<const double	&> : public ArgFetcher<double	> {};
-	
-	template<typename RetType, typename... Param>
-	struct TCallFunction
-	{
-	public:
-		typedef RetType(*FunctionType)(Param...);
-		static RetType Call( FunctionType funCall, Param...p )
-		{ return funCall( p... ); }
-	};
 
-	template<typename CallFunctionType, typename RetType, typename... Param >
+	//=======================================================================
+	// 函数调用包装
+	//=======================================================================
+	template<typename RetType, typename... Param >
 	class TFunctionWrap : public IFunctionWrap
 	{
-		typedef typename CallFunctionType::FunctionType FunctionType;
+		typedef RetType( *FunctionType )( Param... );
 
 		template< typename Type > struct TFetchResult
 		{
 			TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
-			{ new( pRetBuf ) Type( CallFunctionType::Call( funCall, p... ) ); }
+			{ new( pRetBuf ) Type( funCall( p... ) ); }
 		};
 
 		template< typename Type > struct TFetchResult<Type&>
 		{
 			TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
-			{ *(Type**)pRetBuf = &( CallFunctionType::Call( funCall, p... ) ); }
+			{ *(Type**)pRetBuf = &( funCall( p... ) ); }
 		};
 
 		template<> struct TFetchResult<void>
 		{
 			TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
-			{ CallFunctionType::Call( funCall, p... ); }
+			{ funCall( p... ); }
 		};
 
 		template<typename... RemainParam> struct TFetchParam {};
@@ -272,8 +266,7 @@ namespace Gamma
 	inline void CreateGlobalFunWrap(RetType ( *pFun )( Param... ),
 		const char* szType, const char* szName)
 	{
-		typedef TCallFunction<RetType, Param...> CallFunctionType;
-		typedef TFunctionWrap<CallFunctionType, RetType, Param...> FunctionWrap;
+		typedef TFunctionWrap<RetType, Param...> FunctionWrap;
 		IFunctionWrap* pWrap = FunctionWrap::GetInst();
 		STypeInfoArray InfoArray = MakeFunArg<RetType, Param...>();
 		CScriptBase::RegistGlobalFunction(pWrap, (uintptr_t)pFun, InfoArray, szType, szName);
@@ -283,53 +276,49 @@ namespace Gamma
 	inline void CreateClassFunWrap(RetType(pFun)(ClassType*, Param...), const char* szName)
 	{
 		const char* szType = typeid(ClassType).name();
-		typedef TCallFunction<RetType, ClassType*, Param...> CallFunctionType;
-		typedef TFunctionWrap<CallFunctionType, RetType, ClassType*, Param...> FunctionWrap;
+		typedef TFunctionWrap<RetType, ClassType*, Param...> FunctionWrap;
 		IFunctionWrap* pWrap = FunctionWrap::GetInst();
 		STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
 		CScriptBase::RegistClassFunction( pWrap, (uintptr_t)pFun, InfoArray, szType, szName );
 	}
 
 	//=======================================================================
-	// 类非常量成员函数回调包装
+	// 类成员函数回调包装
 	//=======================================================================
-	template< typename T >
-	struct TCallBack
-	{
-		static T OnCall( uint32 nCallBackIndex, void** pArgArray )
-		{
-			T ReturnValue;
-			CScriptBase::CallBack( nCallBackIndex, &ReturnValue, pArgArray );
-			return ReturnValue;
-		}
-	};
-
-	template<typename T>
-	struct TCallBack<T&>
-	{
-		static T& OnCall( uint32 nCallBackIndex, void** pArgArray )
-		{
-			T* pReturnValue;
-			int32 ret = CScriptBase::CallBack( nCallBackIndex, &pReturnValue, pArgArray );
-			// 纯虚函数回调，但回调没有实现
-			if( ret < 0 )
-				throw "i can do nothing here!!!";
-			return *pReturnValue;
-		}
-	};
-
-	template<>
-	struct TCallBack<void>
-	{
-		static void OnCall( uint32 nCallBackIndex, void** pArgArray )
-		{
-			CScriptBase::CallBack( nCallBackIndex, NULL, pArgArray );
-		}
-	};
-
 	template<typename ClassFunType>
 	class TCallBackBinder
 	{
+		template< typename T >
+		struct TCallBack
+		{
+			static T OnCall( uint32 nCallBackIndex, void** pArgArray )
+			{
+				T ReturnValue;
+				CScriptBase::CallBack( nCallBackIndex, &ReturnValue, pArgArray );
+				return ReturnValue;
+			}
+		};
+
+		template<typename T>
+		struct TCallBack<T&>
+		{
+			static T& OnCall( uint32 nCallBackIndex, void** pArgArray )
+			{
+				T* pReturnValue;
+				CScriptBase::CallBack( nCallBackIndex, &pReturnValue, pArgArray );
+				return *pReturnValue;
+			}
+		};
+
+		template<>
+		struct TCallBack<void>
+		{
+			static void OnCall( uint32 nCallBackIndex, void** pArgArray )
+			{
+				CScriptBase::CallBack( nCallBackIndex, NULL, pArgArray );
+			}
+		};
+
 		template<typename RetType, typename ClassType, typename... Param >
 		class TCallBackWrap
 		{
@@ -453,7 +442,7 @@ namespace Gamma
 	//=======================================================================
 	// 成员读取包装
 	//=======================================================================
-	template< typename ClassType, typename MemberType >
+	template<typename MemberType>
 	class TMemberGetWrap : public IFunctionWrap
 	{
 	public:
@@ -462,7 +451,7 @@ namespace Gamma
 		static IFunctionWrap* GetInst() { static TMemberGetWrap s_Inst; return &s_Inst; }
 	};
 
-	template< typename ClassType, typename MemberType >
+	template<typename MemberType>
 	class TMemberGetWrapObject : public IFunctionWrap
 	{
 	public:
@@ -471,8 +460,8 @@ namespace Gamma
 		static IFunctionWrap* GetInst() { static TMemberGetWrapObject s_Inst; return &s_Inst; }
 	};
 
-	template< typename ClassType, typename MemberType >
-	inline IFunctionWrap* CreateMemberGetWrap( ClassType*, MemberType* )
+	template<typename MemberType>
+	inline IFunctionWrap* CreateMemberGetWrap(MemberType*)
 	{
 		STypeInfo TypeInfo;
 		GetTypeInfo<MemberType>( TypeInfo );
@@ -483,14 +472,14 @@ namespace Gamma
 			( ( TypeInfo.m_nType >>  8 )&0xf ) >= eDTE_Pointer ||
 			( ( TypeInfo.m_nType >>  4 )&0xf ) >= eDTE_Pointer ||
 			( ( TypeInfo.m_nType       )&0xf ) >= eDTE_Pointer )
-			return TMemberGetWrap<ClassType, MemberType>::GetInst();
-		return TMemberGetWrapObject<ClassType, MemberType>::GetInst();
+			return TMemberGetWrap<MemberType>::GetInst();
+		return TMemberGetWrapObject<MemberType>::GetInst();
 	}
 
 	//=======================================================================
 	// 成员写入包装
 	//=======================================================================
-	template< typename ClassType, typename MemberType >
+	template<typename MemberType>
 	class TMemberSetWrap : public IFunctionWrap
 	{
 	public:
@@ -502,10 +491,10 @@ namespace Gamma
 		static IFunctionWrap* GetInst() { static TMemberSetWrap s_Inst; return &s_Inst; }
 	};
 
-	template< typename ClassType, typename MemberType >
-	inline IFunctionWrap* CreateMemberSetWrap( ClassType*, MemberType* )
+	template<typename MemberType>
+	inline IFunctionWrap* CreateMemberSetWrap( MemberType* )
 	{
-		return TMemberSetWrap<ClassType, MemberType>::GetInst();
+		return TMemberSetWrap<MemberType>::GetInst();
 	}
 
 	template< typename ClassType, typename MemberType >

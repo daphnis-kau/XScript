@@ -82,7 +82,7 @@ public:
 		return 0;
 	};
 
-	virtual TestBase* NewThis() = 0;
+	virtual TestBase* NewThis() const = 0;
 
 	virtual TestBase* TestThis() = 0;
 
@@ -155,8 +155,6 @@ REGIST_GLOBALFUNCTION( run_cpp_lua );
 void TestLua()
 {
 	g_ScriptLua = new CScriptLua;
-
-	;
 
 	typedef decltype ( ( TestBase*( TestBase::* )( ) )nullptr ) aaa;
 	typedef decltype ( ( decltype ( &TestBase::NewThis ) )nullptr ) bbbb;
