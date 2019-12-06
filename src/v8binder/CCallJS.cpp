@@ -24,8 +24,9 @@ namespace Gamma
 		{
 			const vector<DataType>& listParam = pCallBase->GetParamList();
 			size_t nParamCount = listParam.size();
+			const DataType* aryParam = &listParam[0];
 			size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
-			size_t nParamSize = CalBufferSize( listParam, aryParamSize );
+			size_t nParamSize = CalBufferSize(aryParam, nParamCount, aryParamSize );
 			DataType nResultType = pCallBase->GetResultType();
 			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
 			size_t nArgSize = pCallBase->GetParamCount()*sizeof( void* );
@@ -43,9 +44,9 @@ namespace Gamma
 
 			uint32 nArgCount = args.Length();
 			LocalValue undefined = Undefined( Script.GetIsolate() );
-			for( uint32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++ )
+			for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 			{
-				DataType nType = listParam[nArgIndex];
+				DataType nType = aryParam[nArgIndex];
 				CJSTypeBase* pParamType = GetTypeBase( nType );
 				LocalValue arg = nArgIndex >= nArgCount ? undefined : args[nArgIndex];
 				pParamType->FromVMValue( nType, Script, pDataBuf, arg );

@@ -105,10 +105,10 @@ namespace Gamma
 		return ((const CClassRegistInfo*)nType)->GetClassAligenSize();
 	}
 
-	size_t CalBufferSize(const std::vector<DataType>& aryParam, size_t arySize[])
+	size_t CalBufferSize(const DataType* aryParam, size_t nParamCount, size_t arySize[])
 	{
 		size_t nTotalSize = 0;
-		for (size_t i = 0; i < aryParam.size(); i++)
+		for (size_t i = 0; i < nParamCount; i++)
 			nTotalSize += (arySize[i] = GetAligenSizeOfType(aryParam[i]));
 		return nTotalSize;
 	}

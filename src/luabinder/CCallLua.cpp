@@ -62,8 +62,9 @@ namespace Gamma
 		{
 			const vector<DataType>& listParam = pCallBase->GetParamList();
 			size_t nParamCount = listParam.size();
+			const DataType* aryParam = &listParam[0];
 			size_t* aryParamSize = (size_t*)alloca(sizeof(size_t)*nParamCount);
-			size_t nParamSize = CalBufferSize(listParam, aryParamSize);
+			size_t nParamSize = CalBufferSize(aryParam, nParamCount, aryParamSize);
 			DataType nResultType = pCallBase->GetResultType();
 			size_t nReturnSize = nResultType ? GetAligenSizeOfType(nResultType) : sizeof(int64);
 			size_t nArgSize = pCallBase->GetParamCount()*sizeof(void*);
@@ -74,9 +75,9 @@ namespace Gamma
 			int32 nStkId = 1;
 			//Lua函数最右边的参数，在Lua stack的栈顶,         
 			//放在m_listParam的第一个成员中
-			for( int32 nArgIndex = 0; nArgIndex < listParam.size(); nArgIndex++ )
+			for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 			{
-				DataType nType = listParam[nArgIndex];
+				DataType nType = aryParam[nArgIndex];
 				CLuaTypeBase* pParamType = GetTypeBase( nType );
 				pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
 				pArgArray[nArgIndex] = pDataBuf;
