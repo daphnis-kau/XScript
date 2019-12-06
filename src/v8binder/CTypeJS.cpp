@@ -21,7 +21,7 @@ namespace Gamma
 		return s_Instance;
 	}
 
-	inline CClassRegistInfo* CJSObject::_FromVMValue(DataType eType,
+	inline const CClassRegistInfo* CJSObject::_FromVMValue(DataType eType,
 		CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj )
 	{
 		auto pClassInfo = (const CClassRegistInfo*)((eType >> 1) << 1);
@@ -55,7 +55,7 @@ namespace Gamma
 			return NULL;
 		}
 
-		CClassRegistInfo* pObjInfo = pInfo->m_pClassInfo;
+		const CClassRegistInfo* pObjInfo = pInfo->m_pClassInfo->m_pClassInfo;
 		if( pObjInfo == pClassInfo)
 		{
 			*(void**)( pDataBuf ) = pInfo->m_pObject;
@@ -137,7 +137,7 @@ namespace Gamma
 		CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj)
 	{
 		void* pObject = NULL;
-		CClassRegistInfo* pClassInfo = 
+		const CClassRegistInfo* pClassInfo = 
 			_FromVMValue(eType, Script, (char*)&pObject, obj);
 		CJSObject::FromVMValue(eType, Script, (char*)&pObject, obj);
 		assert(pClassInfo);

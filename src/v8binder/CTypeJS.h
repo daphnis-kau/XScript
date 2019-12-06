@@ -248,7 +248,7 @@ namespace Gamma
 	class CJSObject : public CJSPointer
 	{
 	protected:
-		CClassRegistInfo* _FromVMValue(DataType eType, 
+		const CClassRegistInfo* _FromVMValue(DataType eType, 
 			CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj);
 		LocalValue _ToVMValue(DataType eType, 
 			CScriptJS& Script, void* pObj, bool bCopy);
