@@ -3,7 +3,7 @@
 
 namespace Gamma
 {
-	const size_t s_aryOrgSize[eDT_count] =
+	const size_t s_aryOrgSize[] =
 	{
 		0,
 		sizeof( char ),
@@ -23,11 +23,10 @@ namespace Gamma
 		sizeof( double ),
 		sizeof( const char* ),
 		sizeof( const wchar_t* ),
-		sizeof( int32 ),
 		sizeof( void* )
 	};
 
-	const size_t s_aryAligenSize[eDT_count] =
+	const size_t s_aryAligenSize[] =
 	{
 		0,
 		AligenUp(sizeof(char), sizeof(void*)),
@@ -47,7 +46,6 @@ namespace Gamma
 		AligenUp(sizeof(double), sizeof(void*)),
 		AligenUp(sizeof(const char*), sizeof(void*)),
 		AligenUp( sizeof( const wchar_t* ), sizeof( void* ) ),
-		AligenUp( sizeof( int32 ), sizeof( void* ) ),
 		AligenUp(sizeof(void*), sizeof(void*))
 	};
 
@@ -81,19 +79,19 @@ namespace Gamma
 		else
 		{
 			if( nPointCount > 1 || nType != eDT_class )
-				return eDT_class;
+				return eDT_enum;
 			const char* szTypeName = argTypeInfo.m_szTypeName;
 			auto pClassInfo = CClassRegistInfo::RegisterClass(
 				"", szTypeName, argTypeInfo.m_nSize, nType == eDT_enum );
 			if( !pClassInfo->IsEnum() )
 				return ( (DataType)pClassInfo ) | 1;
-			return eDT_class;
+			return eDT_enum;
 		}
 	}
 
 	size_t GetSizeOfType( DataType nType )
 	{
-		if( nType < eDT_count )
+		if( nType <= eDT_enum )
 			return s_aryOrgSize[nType];
 		if( nType&1 )
 			return sizeof( void* );
@@ -102,7 +100,7 @@ namespace Gamma
 
 	size_t GetAligenSizeOfType(DataType nType)
 	{
-		if (nType < eDT_count)
+		if( nType <= eDT_enum )
 			return s_aryAligenSize[nType];
 		if (nType & 1)
 			return sizeof(void*);

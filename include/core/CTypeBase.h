@@ -13,7 +13,7 @@
 
 namespace Gamma
 {
-	// 特别注意，为了处理方便，将eDT_custom_type类型定义为buffer
+	// 特别注意，为了处理方便，将eDT_enum类型定义为buffer
 	typedef ptrdiff_t DataType;
 
 	DataType ToDataType( const STypeInfo& argTypeInfo );

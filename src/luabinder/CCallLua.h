@@ -19,7 +19,7 @@ namespace Gamma
 	extern CLuaTypeBase* s_aryLuaType[eDT_count];
 	inline CLuaTypeBase* GetTypeBase(DataType eType)
 	{
-		if (eType < eDT_count)
+		if( eType <= eDT_enum )
 			return s_aryLuaType[eType];
 		if (eType & 1)
 			return &CLuaObject::GetInst();

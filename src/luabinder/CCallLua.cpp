@@ -43,7 +43,6 @@ namespace Gamma
 		&CLuaDouble::GetInst(),
 		&CLuaString::GetInst(),
 		&CLuaWString::GetInst(),
-		nullptr,
 		&CLuaBuffer::GetInst()
 	};
 
