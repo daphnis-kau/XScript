@@ -231,11 +231,18 @@ namespace Gamma
 		m_pIsolate->Exit();
 		m_pIsolate->Dispose();
 		m_pIsolate = NULL;
+
+		while( m_mapClassInfo.GetFirst() )
+			delete m_mapClassInfo.GetFirst();
+		while( m_mapCallBase.GetFirst() )
+			delete m_mapCallBase.GetFirst();
+		while( m_mapObjInfo.GetFirst() )
+			delete m_mapObjInfo.GetFirst();
 	}
 
 	PersistentFunTmplt& CScriptJS::GetPersistentFunTemplate( const CClassRegistInfo* pInfo )
 	{
-		SClassInfo* pClassInfo = m_mapClassInfo.Find(pInfo);
+		SClassInfo* pClassInfo = m_mapClassInfo.Find( (const void*)pInfo );
 		static PersistentFunTmplt s_Instance;
 		return pClassInfo ? pClassInfo->m_FunctionTemplate : s_Instance;
 	}
@@ -415,7 +422,20 @@ namespace Gamma
 		std::cout << *stack_trace;
 	}
 
-	Gamma::CScriptJS::SObjInfo* CScriptJS::AllocObjectInfo()
+	CScriptJS::SCallInfo* CScriptJS::GetCallInfo( CByScriptBase* pCallBase )
+	{
+		SCallInfo* pCallInfo = m_mapCallBase.Find( (const void*)pCallBase );
+		if( pCallInfo )
+			return pCallInfo;
+		pCallInfo = new CScriptJS::SCallInfo;
+		pCallInfo->m_pCallBase = pCallBase;
+		pCallInfo->m_pScript = this;
+		pCallInfo->m_strName.Reset( m_pIsolate, String::NewFromUtf8
+			( m_pIsolate, pCallBase->GetFunctionName().c_str() ) );
+		return pCallInfo;
+	}
+
+	CScriptJS::SObjInfo* CScriptJS::AllocObjectInfo()
 	{
 		if( !m_pFreeObjectInfo )
 		{
@@ -558,7 +578,7 @@ namespace Gamma
 			pCallInfo->m_pCallBase, info.This(), value );
 	}
 
-	void CScriptJS::BindObj(void* pObject, Local<Object> ScriptObj, const CClassRegistInfo* pInfo, void* pSrc)
+	void CScriptJS::BindObj( void* pObject, Local<Object> ScriptObj, const CClassRegistInfo* pInfo, void* pSrc )
 	{
 		SObjInfo& ObjectInfo = *AllocObjectInfo();
 		ObjectInfo.m_bRecycle = false;
@@ -576,7 +596,7 @@ namespace Gamma
 		}
 
 		ObjectInfo.m_Object.Reset(m_pIsolate, ScriptObj);
-		ObjectInfo.m_pClassInfo = m_mapClassInfo.Find(pInfo);
+		ObjectInfo.m_pClassInfo = m_mapClassInfo.Find( (const void*)pInfo );
 		ObjectInfo.m_pObject = pObject;
 		m_mapObjInfo.Insert(ObjectInfo);
 
@@ -596,7 +616,7 @@ namespace Gamma
 	{
 		void* pObject = pObjectInfo->m_pObject;
 		bool bRecycle = pObjectInfo->m_bRecycle;
-		CClassRegistInfo* pInfo = pObjectInfo->m_pClassInfo->m_pClassInfo;
+		const CClassRegistInfo* pInfo = pObjectInfo->m_pClassInfo->m_pClassInfo;
 		CScriptJS* pScript = pObjectInfo->m_pClassInfo->m_pScript;
 		Isolate* isolate = pScript->GetIsolate();
 		v8::HandleScope handle_scope(isolate);
@@ -630,12 +650,16 @@ namespace Gamma
 	bool CScriptJS::CallVM( CCallScriptBase* pCallBase, 
 		SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
 	{
-		return false;
+		SCallInfo* pInfo = GetCallInfo( pCallBase );
+		return CCallBackJS::CallVM( *pInfo->m_pScript, 
+			pInfo->m_strName, pCallBase, pObject, pRetBuf, pArgArray );
 	}
 
 	void CScriptJS::DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
-
+		SCallInfo* pInfo = GetCallInfo( pCallBase );
+		return CCallBackJS::DestrucVM( *pInfo->m_pScript,
+			pInfo->m_strName, pCallBase, pObject );
 	}
 
 	Gamma::CScriptJS::SObjInfo* CScriptJS::FindExistObjInfo( void* pObj )
@@ -824,196 +848,111 @@ namespace Gamma
 		return true;
 	}
 
-    void CScriptJS::RegistFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
-    {
-		string strPackageName;
-		string szTypeName = szTypeInfoName ? szTypeInfoName : "";
-		const char* szFunName = szFunctionName;
-#ifdef _WIN32
-		if( szTypeName.find( " Gamma::" ) != string::npos )
-#else
-		if( szTypeName.find( "N5Gamma" ) != string::npos )
-#endif
-			strPackageName = "Gamma";
-		else if( ( szFunName = strrchr( szFunctionName, '.' ) ) != NULL )
+	void CScriptJS::BuildRegisterInfo()
+	{
+		const CTypeIDNameMap& mapRegisterInfo = CClassRegistInfo::GetAllRegisterInfo();
+		for( auto pInfo = mapRegisterInfo.GetFirst(); pInfo; pInfo = pInfo->GetNext() )
 		{
-			strPackageName.assign( szFunctionName, szFunName + 1 );
-			szFunctionName = szFunName + 1;
+			if( pInfo->IsEnum() )
+				continue;
+
+			if( pInfo->GetTypeIDName().empty() )
+			{
+				HandleScope handle_scope( m_pIsolate );
+				Local<Context> context = m_Context.Get( m_pIsolate );
+				Context::Scope context_scope( context );
+				Local<Object> globalObj = context->Global();
+				Local<String> strPackage = String::NewFromUtf8( m_pIsolate, "window" );
+				LocalValue Package = globalObj->Get( strPackage );
+				assert( !Package.IsEmpty() );
+				const CCallBaseMap& mapFunction = pInfo->GetRegistFunction();
+				for( auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext() )
+				{
+					Local<Function> funGlobal = Function::New( GetIsolate(),
+						&CScriptJS::Callback, External::New( m_pIsolate, GetCallInfo(pCall) ) );
+					const char* szFunName = pCall->GetFunctionName().c_str();
+					Package->ToObject( m_pIsolate )->Set( 
+						String::NewFromUtf8( m_pIsolate, szFunName ), funGlobal );
+				}
+				continue;
+			}
+
+			HandleScope handle_scope( m_pIsolate );
+			Local<Context> context = m_Context.Get( m_pIsolate );
+			Context::Scope context_scope( context );
+			Local<Object> globalObj = context->Global();
+
+			const char* szClass = pInfo->GetClassName().c_str();
+			Local<String> strClassName = String::NewFromUtf8( m_pIsolate, szClass );
+			Local<FunctionTemplate> NewTemplate = FunctionTemplate::New(
+				m_pIsolate, &CScriptJS::NewObject, External::New( m_pIsolate, pInfo ) );
+			NewTemplate->SetClassName( strClassName );
+			NewTemplate->InstanceTemplate()->SetInternalFieldCount( 1 );
+			Local<Function> NewClass = NewTemplate->GetFunction( context ).ToLocalChecked();
+			PersistentFunTmplt& persistentTemplate = GetPersistentFunTemplate( pInfo );
+			persistentTemplate.Reset( m_pIsolate, NewTemplate );
+
+			LocalValue Base = Undefined( m_pIsolate );
+			if( pInfo->BaseRegist().size() )
+			{
+				const CClassRegistInfo* pBaseInfo = pInfo->BaseRegist()[0].m_pBaseInfo;
+				PersistentFunTmplt& persistentTemplate = GetPersistentFunTemplate( pBaseInfo );
+				Local<FunctionTemplate> BaseTemplate = persistentTemplate.Get( m_pIsolate );
+				Base = BaseTemplate->GetFunction( context ).ToLocalChecked();
+			}
+
+			string strNewPath = szClass;
+			Local<Function> GammaClass = m_GammaClass.Get( m_pIsolate );
+			Local<String> strPathName = String::NewFromUtf8( m_pIsolate, strNewPath.c_str() );
+			LocalValue args[] = { NewClass, strPathName, Base };
+			GammaClass->Call( globalObj, 3, args );
+
+			MaybeLocal<Value> Prototype = NewClass->Get( context, m_Prototype.Get( m_pIsolate ) );
+			Local<Object> PrototypeObj = Prototype.ToLocalChecked()->ToObject( m_pIsolate );
+			Local<Value> InfoValue = External::New( m_pIsolate, pInfo );
+			PrototypeObj->Set( context, String::NewFromUtf8( m_pIsolate, "Deconstruction" ),
+				Function::New( m_pIsolate, &CScriptJS::Destruction, InfoValue ) );
+			for( uint32 i = 1; i < pInfo->BaseRegist().size(); i++ )
+				MakeMeberFunction( pInfo->BaseRegist()[i].m_pBaseInfo, NewClass, PrototypeObj, true );
+			MakeMeberFunction( pInfo, NewClass, PrototypeObj, false );
 		}
-		else
-			strPackageName = "window";
-
-		HandleScope handle_scope(m_pIsolate);
-		Local<Context> context = m_Context.Get(m_pIsolate);
-		Context::Scope context_scope(context);
-
-		Local<Object> globalObj = context->Global();
-		Local<String> strPackage = String::NewFromUtf8(m_pIsolate, strPackageName.c_str());
-		LocalValue Package = globalObj->Get(strPackage);
-		assert(!Package.IsEmpty());
- 
-		CByScriptBase* pCallBase = new CByScriptBase(*this, aryTypeInfo, funWrap, "", eCT_GlobalFunction, szFunctionName);
-		Local<Function> funGlobal = Function::New(GetIsolate(),
-			&CScriptJS::Callback, External::New(m_pIsolate, pCallBase));
-		Package->ToObject(m_pIsolate)->Set(String::NewFromUtf8(m_pIsolate, szFunctionName), funGlobal);
 	}
 
-	void CScriptJS::RegistClassStaticFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
-	{
-		new CByScriptBase( *this, aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassStaticFunction, szFunctionName );
-	}
-
-    void CScriptJS::RegistClassFunction( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
-	{
-		new CByScriptBase( *this, aryTypeInfo, funWrap, szTypeInfoName, eCT_ClassFunction, szFunctionName );
-    }
-
-    ICallBackWrap& CScriptJS::RegistClassCallback( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funWrap, const char* szTypeInfoName, const char* szFunctionName )
-	{
-		return *( new CCallBackJS( *this, aryTypeInfo, funWrap, szTypeInfoName, szFunctionName ) );
-	}
-
-	void CScriptJS::RegistConstruct(IObjectConstruct* pObjectConstruct, const char* szTypeIDName)
-	{
-		CClassRegistInfo* pInfo = GetRegistInfoByTypeInfoName(szTypeIDName);
-		assert(pInfo);
-		pInfo->SetObjectConstruct(pObjectConstruct);
-
-		HandleScope handle_scope(m_pIsolate);
-		Local<Context> context = m_Context.Get(m_pIsolate);
-		Context::Scope context_scope(context);
-		Local<Object> globalObj = context->Global();
-
-		const char* szClass = pInfo->GetClassName().c_str();
-		Local<String> strClassName = String::NewFromUtf8(m_pIsolate, szClass);
-		Local<FunctionTemplate> NewTemplate = FunctionTemplate::New(
-			m_pIsolate, &CScriptJS::NewObject, External::New(m_pIsolate, pInfo));
-		NewTemplate->SetClassName(strClassName);
-		NewTemplate->InstanceTemplate()->SetInternalFieldCount(1);
-		Local<Function> NewClass = NewTemplate->GetFunction( context ).ToLocalChecked();
-		PersistentFunTmplt& persistentTemplate = GetPersistentFunTemplate( pInfo );
-		persistentTemplate.Reset(m_pIsolate, NewTemplate);
-
-		LocalValue Base = Undefined(m_pIsolate);
-		if (pInfo->BaseRegist().size())
-		{
-			const CClassRegistInfo* pBaseInfo = pInfo->BaseRegist()[0].m_pBaseInfo;
-			PersistentFunTmplt& persistentTemplate = GetPersistentFunTemplate( pBaseInfo );
-			Local<FunctionTemplate> BaseTemplate = persistentTemplate.Get(m_pIsolate);
-			Base = BaseTemplate->GetFunction(context).ToLocalChecked();
-		}
-
-		string strNewPath = szClass;
-		string szTypeName = szTypeIDName;
-#ifdef _WIN32
-		if (szTypeName.find(" Gamma::") != string::npos)
-#else
-		if (szTypeName.find("N5Gamma") != string::npos)
-#endif
-			strNewPath = "Gamma." + strNewPath;
-
-		Local<Function> GammaClass = m_GammaClass.Get(m_pIsolate);
-		Local<String> strPathName = String::NewFromUtf8(m_pIsolate, strNewPath.c_str());
-		LocalValue args[] = { NewClass, strPathName, Base };
-		GammaClass->Call(globalObj, 3, args);
-
-		MaybeLocal<Value> Prototype = NewClass->Get(context, m_Prototype.Get(m_pIsolate));
-		Local<Object> PrototypeObj = Prototype.ToLocalChecked()->ToObject(m_pIsolate);
-		Local<Value> InfoValue = External::New(m_pIsolate, pInfo);
-		PrototypeObj->Set( context, String::NewFromUtf8(m_pIsolate, "Deconstruction"),
-			Function::New(m_pIsolate, &CScriptJS::Destruction, InfoValue));
-		for (uint32 i = 1; i < pInfo->BaseRegist().size(); i++)
-			MakeMeberFunction(pInfo->BaseRegist()[i].m_pBaseInfo, NewClass, PrototypeObj, true);
-		MakeMeberFunction(pInfo, NewClass, PrototypeObj, false);
-	}
-
-	void CScriptJS::MakeMeberFunction(CClassRegistInfo* pInfo, 
-		Local<Function> NewClass, v8::Local<v8::Object> Prototype, bool bBase)
+	void CScriptJS::MakeMeberFunction( const CClassRegistInfo* pInfo, 
+		Local<Function> NewClass, v8::Local<v8::Object> Prototype, bool bBase )
 	{
 		Local<Context> context = m_pIsolate->GetCurrentContext();
-		const map<string, CCallBase*>& mapFunction = pInfo->GetRegistFunction();
+		const CCallBaseMap& mapFunction = pInfo->GetRegistFunction();
 		string strName = pInfo->GetClassName().c_str();
-		for (map<string, CCallBase*>::const_iterator it = mapFunction.begin(); it != mapFunction.end(); it++)
+		for( auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext() )
 		{
-			if (it->first.empty())
-				continue;
-			CCallBase* pCallBase = it->second;
-			if (pCallBase->GetFunctionIndex() == eCT_MemberFunction)
+			const char* szFunName = pCall->GetFunctionName().c_str();
+			if( pCall->GetFunctionIndex() == eCT_MemberFunction )
 			{
-				Prototype->SetAccessor(context, String::NewFromUtf8(m_pIsolate, it->first.c_str()),
-					&CScriptJS::GetterCallback, &CScriptJS::SetterCallback, External::New(m_pIsolate, pCallBase));
+				Prototype->SetAccessor( context, String::NewFromUtf8( m_pIsolate, szFunName ),
+					&CScriptJS::GetterCallback, &CScriptJS::SetterCallback, 
+					External::New( m_pIsolate, GetCallInfo( pCall ) ) );
 			}
-			else if (pCallBase->GetFunctionIndex() == eCT_ClassStaticFunction)
+			else if( pCall->GetFunctionIndex() == eCT_ClassStaticFunction )
 			{
-				NewClass->Set(context, String::NewFromUtf8(m_pIsolate, it->first.c_str()),
-					Function::New(m_pIsolate, &CScriptJS::Callback, External::New(m_pIsolate, pCallBase)));
+				NewClass->Set( context, String::NewFromUtf8( m_pIsolate, szFunName ),
+					Function::New( m_pIsolate, &CScriptJS::Callback, 
+						External::New( m_pIsolate, GetCallInfo( pCall ) ) ) );
 			}
 			else
 			{
-				Prototype->Set(context, String::NewFromUtf8(m_pIsolate, it->first.c_str()),
-					Function::New(m_pIsolate, &CScriptJS::Callback, External::New(m_pIsolate, pCallBase)));
+				Prototype->Set( context, String::NewFromUtf8( m_pIsolate, szFunName ),
+					Function::New( m_pIsolate, &CScriptJS::Callback, 
+						External::New( m_pIsolate, GetCallInfo( pCall ) ) ) );
 			}
 		}
-		if (!bBase)
+		if( !bBase )
 			return;
-		for (uint32 i = 0; i < pInfo->BaseRegist().size(); i++)
-			MakeMeberFunction(pInfo->BaseRegist()[i].m_pBaseInfo, NewClass, Prototype, true);
+		for( uint32 i = 0; i < pInfo->BaseRegist().size(); i++ )
+			MakeMeberFunction( pInfo->BaseRegist()[i].m_pBaseInfo, NewClass, Prototype, true );
 	}
 
-	ICallBackWrap& CScriptJS::RegistDestructor(const char* szTypeInfoName, IFunctionWrap* funWrap)
-	{
-		STypeInfo aryInfo[2];
-		aryInfo[0].m_nType = ( eDT_class << 24 )|eDTE_Pointer;
-		aryInfo[0].m_szTypeName = szTypeInfoName;
-		aryInfo[1].m_nType = eDT_void;
-		aryInfo[1].m_szTypeName = typeid( void ).name();
-		STypeInfoArray aryTypeInfo ={ aryInfo, 2 };
-		return *( new CCallBackJS( *this, aryTypeInfo, funWrap, szTypeInfoName, "" ) );
-	}
-
-    void CScriptJS::RegistClassMember( const STypeInfoArray& aryTypeInfo, IFunctionWrap* funGetSet[2], const char* szTypeInfoName, const char* szMemberName )
-	{
-		new CByScriptMember( *this, aryTypeInfo, funGetSet, szTypeInfoName, szMemberName );
-    }
-
-    void CScriptJS::RegistClass( uint32 nSize, const char* szTypeIDName, const char* szClass, ... )
-	{
-		va_list listBase;
-		va_start( listBase, szClass );
-		RegistClass( &CScriptJS::MakeType, nSize, szTypeIDName, szClass, listBase );
-		va_end( listBase );
-	}
-
-	void CScriptJS::RegistClass( MakeTypeFunction funMakeType, uint32 nSize, 
-		const char* szTypeIDName, const char* szClass, va_list listBase )
-	{
-		CClassRegistInfo* pClassInfo = new CClassRegistInfo( this, szClass, szTypeIDName, nSize, funMakeType );
-		m_mapRegistClassInfo.Insert( *pClassInfo );
-		m_mapTypeID2ClassInfo.Insert( *pClassInfo );
-
-		const char* szBaseClass = NULL;
-		while( ( szBaseClass = va_arg( listBase, const char* ) ) != NULL )
-		{
-			gammacstring strKey( szBaseClass, true );
-			CTypeIDName* pType = m_mapTypeID2ClassInfo.Find( strKey );
-			assert( pType != NULL );
-			CClassRegistInfo* pBaseInfo = static_cast<CClassRegistInfo*>( pType );
-			pClassInfo->AddBaseRegist( pBaseInfo, va_arg( listBase, int32 ) );
-		}
-	}
-
-    void CScriptJS::RegistEnum( const char* szTypeIDName, const char* szTableName, int32 nTypeSize )
-	{
-		m_mapSizeOfEnum[szTypeIDName] = nTypeSize;
-		HandleScope handle_scope(m_pIsolate);
-		Local<Context> context = m_Context.Get(m_pIsolate);
-		Context::Scope context_scope(context);
-		Local<Object> globalObj = context->Global();
-		LocalValue key = String::NewFromUtf8(m_pIsolate, szTableName);
-		globalObj->Set(context, key, v8::Object::New(m_pIsolate) );
-    }
-
-    int32 CScriptJS::Compiler( int32 nArgc, char** szArgv )
+	int32 CScriptJS::Compiler( int32 nArgc, char** szArgv )
     {
         return -1;
     }
@@ -1046,38 +985,5 @@ namespace Gamma
 	void CScriptJS::GCAll()
 	{
 		m_pIsolate->IdleNotificationDeadline(0.1);
-	}
-
-	std::string CScriptJS::GetInstancesDump()
-	{
-		return "";
-	}
-
-	void CScriptJS::DumpInstanceTree( const char* szFileName )
-	{
-	}
-
-	void CScriptJS::FrameMove()
-	{
-	}
-
-	std::string CScriptJS::GetProfile()
-	{
-		return std::string();
-	}
-
-	size_t CScriptJS::GetClassCount()
-	{
-		return 0;
-	}
-
-	bool CScriptJS::GetInstanceInfo(size_t nClassIndex, size_t& nInstanceCount, size_t& nMemory, char szClassName[256])
-	{
-		return false;
-	}
-
-	size_t CScriptJS::GetVMTotalSize()
-	{
-		return 0;
 	}
 };

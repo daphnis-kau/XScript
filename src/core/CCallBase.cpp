@@ -30,7 +30,7 @@ namespace Gamma
 		m_nParamCount = (uint32)m_listParam.size();
 	}
 	
-	void CByScriptBase::Call(void* pRetBuf, void** pArgArray, CScriptBase& Script)
+	void CByScriptBase::Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const
 	{
 		m_funWrap->Call(pRetBuf, pArgArray, m_funOrg);
 	}
@@ -50,7 +50,7 @@ namespace Gamma
 		m_nParamCount = 1;
 	}
 
-	void CByScriptMember::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script)
+	void CByScriptMember::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script) const
 	{
 		if (!pRetBuf && m_funSet)
 			m_funSet->Call(&pRetBuf, pArgArray, GetOffset());
@@ -75,7 +75,7 @@ namespace Gamma
     {
 	}
 
-	void CCallScriptBase::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script )
+	void CCallScriptBase::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script ) const
 	{
 		if( m_bPureVirtual )
 			return;

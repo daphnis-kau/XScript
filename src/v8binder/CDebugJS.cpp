@@ -181,8 +181,8 @@ namespace Gamma
 				uint64 nDecode = DecodeWebSocketProtocol( &Protocal, pExtraBuffer, nExtraSize );
 				if( nDecode == INVALID_64BITID )
 					break;
-				strCmd.append( pExtraBuffer, nExtraSize );
-				strBuffer.erase( 0, nDecode + sizeof(SWebSocketProtocal) );
+				strCmd.append( pExtraBuffer, (uint32)nExtraSize );
+				strBuffer.erase( 0, (uint32)nDecode + sizeof(SWebSocketProtocal) );
 				if( !Protocal.m_bFinished )
 					continue;
 				if( Protocal.m_nId == eWS_Text ||

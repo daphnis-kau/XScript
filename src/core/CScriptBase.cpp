@@ -105,11 +105,10 @@ namespace Gamma
 	bool CScriptBase::RegistGlobalFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
-		if(!szTypeInfoName || !szTypeInfoName[0] )
-			return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
-				szTypeInfoName, eCT_GlobalFunction, szFunctionName ) != nullptr;
+		ECallingType eCallingType = szTypeInfoName && szTypeInfoName[0] ?
+			eCT_ClassStaticFunction : eCT_GlobalFunction;
 		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
-			szTypeInfoName, eCT_ClassStaticFunction, szFunctionName ) != nullptr;
+			szTypeInfoName, eCallingType, szFunctionName ) != nullptr;
 	}
 
 	bool CScriptBase::RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,

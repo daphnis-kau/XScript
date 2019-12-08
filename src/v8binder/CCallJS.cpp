@@ -17,7 +17,7 @@ namespace Gamma
 	//=====================================================================
 	// JS脚本调用C++的接口
 	//=====================================================================
-	void CByScriptJS::CallByJS(CScriptJS& Script, CByScriptBase* pCallBase, 
+	void CByScriptJS::CallByJS(CScriptJS& Script, const CByScriptBase* pCallBase,
 		const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
 		try
@@ -65,7 +65,7 @@ namespace Gamma
 		}
 	}
 
-	void CByScriptJS::GetByJS(CScriptJS& Script, CByScriptBase* pByScript,
+	void CByScriptJS::GetByJS(CScriptJS& Script, const CByScriptBase* pByScript,
 		LocalValue This, v8::ReturnValue<v8::Value> ret)
 	{
 		try
@@ -92,7 +92,7 @@ namespace Gamma
 		}
 	}
 
-	void CByScriptJS::SetByJS( CScriptJS& Script, CByScriptBase* pByScript,
+	void CByScriptJS::SetByJS( CScriptJS& Script, const CByScriptBase* pByScript,
 		LocalValue This, LocalValue arg)
 	{
 		try
@@ -122,7 +122,7 @@ namespace Gamma
 	// C++调用JS脚本的接口
 	//=====================================================================
 	bool CCallBackJS::CallVM( CScriptJS& Script, v8::Persistent<v8::String>& strName,
-		CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
+		const CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
 	{
 		Script.CallJSStatck(true);
 
@@ -187,7 +187,7 @@ namespace Gamma
 	}
 
 	void CCallBackJS::DestrucVM( CScriptJS& Script, v8::Persistent<v8::String>& strName,
-		CCallScriptBase* pCallBase, SVirtualObj* pObject )
+		const CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
 		Script.CallJSStatck(true);
 		v8::Isolate* isolate = Script.GetIsolate();

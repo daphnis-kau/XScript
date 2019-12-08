@@ -42,7 +42,7 @@ namespace Gamma
 		operator const gammacstring&( ) const { return m_sFunName; }
 		bool operator < ( const gammacstring& strKey ) { return (const gammacstring&)*this < strKey; }
 
-		virtual void			Call(void* pRetBuf, void** pArgArray, CScriptBase& Script);
+		virtual void			Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const;
 		IFunctionWrap*			GetFunWrap()		const { return m_funWrap; }
 		const vector<DataType>&	GetParamList()		const { return m_listParam; }
 		DataType				GetResultType()		const { return m_nResult; }
@@ -69,7 +69,7 @@ namespace Gamma
 	public:
 		CByScriptMember( IFunctionWrap* funGetSet[2], const STypeInfoArray& aryTypeInfo, 
 			uintptr_t nOffset, const char* szTypeInfoName, const char* szMemberName );
-		virtual void	Call(void* pRetBuf, void** pArgArray, CScriptBase& Script);
+		virtual void	Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const;
 		uintptr_t		GetOffset() const { return m_funOrg; }
 		IFunctionWrap*	GetFunSet() const { return m_funSet; }
 	};
@@ -86,7 +86,7 @@ namespace Gamma
 			int32 nFunIndex, bool bPureVirtual, const char* szTypeInfoName, const char* szFunName );
         ~CCallScriptBase();
 
-		virtual void	Call( void* pRetBuf, void** pArgArray, CScriptBase& Script );
+		virtual void	Call( void* pRetBuf, void** pArgArray, CScriptBase& Script ) const;
 		void*			GetBootFun() const { return (void*)m_funOrg; }
 		int32			Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script );
 	};

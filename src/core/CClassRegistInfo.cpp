@@ -47,7 +47,8 @@ namespace Gamma
 			pInfo = new CClassRegistInfo( szTypeIDName );
 			Inst.m_mapTypeID2ClassInfo.Insert( *pInfo );
 		}
-		if(szClassName && szClassName[0])
+
+		if( szClassName && szClassName[0] )
 			pInfo->m_szClassName = szClassName;
 		pInfo->m_bIsEnum = bEnum;
 		assert( pInfo->m_nSizeOfClass == 0 || pInfo->m_nSizeOfClass == nSize );
