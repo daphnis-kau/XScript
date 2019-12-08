@@ -113,25 +113,26 @@ namespace Gamma
 	}
 
 	bool CScriptBase::RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
-		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
+		const STypeInfoArray& aryTypeInfo, const char* szFunctionName )
 	{
 		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
-			szTypeInfoName, eCT_ClassFunction, szFunctionName ) != nullptr;
+			aryTypeInfo.aryInfo[0].m_szTypeName, eCT_ClassFunction, szFunctionName ) != nullptr;
 	}
 
 	bool CScriptBase::RegistClassCallback( 
 		IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex, bool bPureVirtual,
-		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
+		const STypeInfoArray& aryTypeInfo, const char* szFunctionName )
 	{
-		return new CCallScriptBase( funWrap, aryTypeInfo, funBoot,
-			nFunIndex, bPureVirtual, szTypeInfoName, szFunctionName ) != nullptr;
+		return new CCallScriptBase( funWrap, aryTypeInfo, funBoot, nFunIndex, 
+			bPureVirtual, aryTypeInfo.aryInfo[0].m_szTypeName, szFunctionName ) != nullptr;
 	}
 
 	bool CScriptBase::RegistClassMember( IFunctionWrap* funGetSet[2], uintptr_t nOffset,
-		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szMemberName )
+		const STypeInfoArray& aryTypeInfo, const char* szMemberName )
 	{
 		assert( funGetSet && ( funGetSet[0] || funGetSet[1] ) );
 		gammacstring keyName( szMemberName, true );
+		const char* szTypeInfoName = aryTypeInfo.aryInfo[0].m_szTypeName;
 		assert( CClassRegistInfo::GetRegistInfo( szTypeInfoName )->
 			GetRegistFunction().Find( keyName ) == nullptr );
 		return new CByScriptMember( funGetSet, aryTypeInfo, nOffset,
@@ -159,16 +160,10 @@ namespace Gamma
 	}
 
 	bool CScriptBase::RegistDestructor( IFunctionWrap* funWrap,
-		uintptr_t funBoot, uint32 nFunIndex, const char* szTypeInfoName )
+		uintptr_t funBoot, uint32 nFunIndex, const STypeInfoArray& aryTypeInfo )
 	{
-		STypeInfo aryInfo[2];
-		aryInfo[0].m_nType = ( eDT_custom_type << 24 )|eDTE_Pointer;
-		aryInfo[0].m_szTypeName = szTypeInfoName;
-		aryInfo[1].m_nType = eDT_void;
-		aryInfo[1].m_szTypeName = typeid( void ).name();
-		STypeInfoArray aryTypeInfo = { aryInfo, 2 };
-		return new CCallScriptBase( funWrap, aryTypeInfo,
-			funBoot, nFunIndex, false, szTypeInfoName, "" ) != nullptr;
+		return new CCallScriptBase( funWrap, aryTypeInfo,funBoot, nFunIndex, 
+			false, aryTypeInfo.aryInfo[0].m_szTypeName, "" ) != nullptr;
 	}
 
 	bool CScriptBase::RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize )
@@ -260,7 +255,8 @@ namespace Gamma
 		if( it == m_mapVirtualTableOld2New.end() || it->first != pOldFunTable )
 		{
 			int32 nFunCount = pOldFunTable->GetFunctionCount();			
-			if( it != m_mapVirtualTableOld2New.end() && (void**)it->first < (void**)pOldFunTable + nFunCount )
+			if( it != m_mapVirtualTableOld2New.end() && 
+				(void**)it->first < (void**)pOldFunTable + nFunCount )
 				nFunCount = (int32)(ptrdiff_t)( (void**)it->first - (void**)pOldFunTable );
 
 			SFunctionTableHead* pFunTableHead = AllocFunArray( nFunCount + 1 );
@@ -312,7 +308,7 @@ namespace Gamma
 		assert( CScriptBase::IsAllocVirtualTable( pVirtualObj->m_pTable ) );
 		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVirtualObj->m_pTable ) - 1;
 		assert( pFunTableHead->m_pClassInfo && pFunTableHead->m_pOldFunTable );
-		const vector<CCallScriptBase*>& listFun = pFunTableHead->m_pClassInfo->GetNewFunctionList();
+		auto& listFun = pFunTableHead->m_pClassInfo->GetNewFunctionList();
 		CCallScriptBase* pCallScript = listFun[nIndex];
 		CScriptBase* pScriptBase = pFunTableHead->m_pScript;
 		pScriptBase->CheckUnlinkCppObj();

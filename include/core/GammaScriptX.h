@@ -111,7 +111,7 @@
 			funGetSet[1] = set ? Gamma::CreateMemberSetWrap( &c->_member ) : NULL;\
 			ptrdiff_t offset = ((ptrdiff_t)&c->_member) - (ptrdiff_t)c;\
 			Gamma::CScriptBase::RegistClassMember( funGetSet, offset,\
-				Gamma::MakeMemberArg( c, &c->_member ), typeid( org_class ).name(), #_new_name );\
+				Gamma::MakeMemberArg( c, &c->_member ), #_new_name );\
 		} \
 		static Gamma::CScriptRegisterNode RegisterNode( listRegister, &Register ); \
 	};  \

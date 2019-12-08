@@ -46,13 +46,13 @@ namespace Gamma
 		static bool        		RegistGlobalFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
 		static bool				RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
-									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static bool				RegistClassCallback( IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex, bool bPureVirtual,
-									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
+									const STypeInfoArray& aryTypeInfo, const char* szFunctionName );
+		static bool				RegistClassCallback( IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex, 
+									bool bPureVirtual, const STypeInfoArray& aryTypeInfo, const char* szFunctionName );
 		static bool				RegistClassMember( IFunctionWrap* funGetSet[2], uintptr_t nOffset,
-									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szMemberName );
-		static bool				RegistDestructor( IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex,
-									const char* szTypeInfoName );
+									const STypeInfoArray& aryTypeInfo, const char* szMemberName );
+		static bool				RegistDestructor( IFunctionWrap* funWrap, uintptr_t funBoot, 
+									uint32 nFunIndex, const STypeInfoArray& aryTypeInfo );
 		static bool				RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
 		static bool				RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue);
 		static bool				RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize );

@@ -23,6 +23,7 @@ namespace Gamma
 		sizeof( double ),
 		sizeof( const char* ),
 		sizeof( const wchar_t* ),
+		sizeof( int32 ),
 		sizeof( void* )
 	};
 
@@ -45,7 +46,8 @@ namespace Gamma
 		AligenUp(sizeof(float), sizeof(void*)),
 		AligenUp(sizeof(double), sizeof(void*)),
 		AligenUp(sizeof(const char*), sizeof(void*)),
-		AligenUp(sizeof(const wchar_t*), sizeof(void*)),
+		AligenUp( sizeof( const wchar_t* ), sizeof( void* ) ),
+		AligenUp( sizeof( int32 ), sizeof( void* ) ),
 		AligenUp(sizeof(void*), sizeof(void*))
 	};
 
@@ -63,10 +65,11 @@ namespace Gamma
 
 		if( nPointCount == 0 )
 		{
-			if( nType != eDT_custom_type )
+			if( nType < eDT_enum )
 				return nType;
 			const char* szTypeName = argTypeInfo.m_szTypeName;
-			auto pClassInfo = CClassRegistInfo::GetRegistInfo( szTypeName );
+			auto pClassInfo = CClassRegistInfo::RegisterClass( 
+				"", szTypeName, argTypeInfo.m_nSize, nType == eDT_enum );
 			if( !pClassInfo->IsEnum() )
 				return (DataType)pClassInfo;
 			if( pClassInfo->GetClassSize() == 4 )
@@ -77,13 +80,14 @@ namespace Gamma
 		}
 		else
 		{
-			if( nPointCount > 1 || nType != eDT_custom_type )
-				return eDT_custom_type;
+			if( nPointCount > 1 || nType != eDT_class )
+				return eDT_class;
 			const char* szTypeName = argTypeInfo.m_szTypeName;
-			auto pClassInfo = CClassRegistInfo::GetRegistInfo( szTypeName );
+			auto pClassInfo = CClassRegistInfo::RegisterClass(
+				"", szTypeName, argTypeInfo.m_nSize, nType == eDT_enum );
 			if( !pClassInfo->IsEnum() )
 				return ( (DataType)pClassInfo ) | 1;
-			return eDT_custom_type;
+			return eDT_class;
 		}
 	}
 

@@ -22,7 +22,7 @@ namespace Gamma
 	{
 		try
 		{
-			const vector<DataType>& listParam = pCallBase->GetParamList();
+			auto& listParam = pCallBase->GetParamList();
 			size_t nParamCount = listParam.size();
 			const DataType* aryParam = &listParam[0];
 			size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
@@ -33,28 +33,27 @@ namespace Gamma
 			char* pDataBuf = (char*)alloca( nParamSize + nReturnSize + nArgSize );
 			char* pResultBuf = pDataBuf + nParamSize;
 			void** pArgArray = (void**)( pResultBuf + nReturnSize );
-			void* pObject = NULL;
 
-			DataType nThisType = pCallBase->GetThisType();
-			if( nThisType )
-			{
-				CJSObject::GetInst().FromVMValue( nThisType, Script, (char*)&pObject, args.This() );
-				assert( pObject );
-			}
-
-			uint32 nArgCount = args.Length();
+			int32 nFunctionIndex = pCallBase->GetFunctionIndex();
+			int32 nArgCount = args.Length();
 			LocalValue undefined = Undefined( Script.GetIsolate() );
-			for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+			int32 nArgIndex = nFunctionIndex >= eCT_ClassFunction ? -1 : 0;
+			for( uint32 nParamIndex = 0; nParamIndex < nParamCount; nParamIndex++, nArgIndex++ )
 			{
-				DataType nType = aryParam[nArgIndex];
+				DataType nType = aryParam[nParamIndex];
 				CJSTypeBase* pParamType = GetTypeBase( nType );
-				LocalValue arg = nArgIndex >= nArgCount ? undefined : args[nArgIndex];
-				pParamType->FromVMValue( nType, Script, pDataBuf, arg );
-				pArgArray[nArgIndex] = pDataBuf;
-				pDataBuf += aryParamSize[nArgIndex];
+				LocalValue arg = undefined;
+				if( nArgIndex < 0 )
+					pParamType->FromVMValue( nType, Script, pDataBuf, args.This() );
+				else if( nArgIndex < nArgCount )
+					pParamType->FromVMValue( nType, Script, pDataBuf, args[nArgIndex] );
+				else
+					pParamType->FromVMValue( nType, Script, pDataBuf, undefined );
+				pArgArray[nParamIndex] = pDataBuf;
+				pDataBuf += aryParamSize[nParamIndex];
 			}
 
-			pCallBase->Call(pObject, pResultBuf, pArgArray, Script);
+			pCallBase->Call(pResultBuf, pArgArray, Script);
 			Script.CheckUnlinkCppObj();
 			if (!nResultType )
 				return;
@@ -72,7 +71,7 @@ namespace Gamma
 		try
 		{
 			void* pObject = NULL;
-			DataType nThisType = pByScript->GetThisType();
+			DataType nThisType = pByScript->GetParamList()[0];
 			CJSObject::GetInst().FromVMValue( nThisType, Script, (char*)&pObject, This);
 			if (pObject == NULL)
 				return;
@@ -80,7 +79,8 @@ namespace Gamma
 			DataType nResultType = pByScript->GetResultType();
 			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
 			char* pResultBuf = (char*)alloca( nReturnSize);
-			pByScript->Call(pObject, pResultBuf, NULL, Script);
+			void* aryArg[] = { &pObject, nullptr };
+			pByScript->Call( pResultBuf, aryArg, Script );
 			Script.CheckUnlinkCppObj();
 			if (!nResultType )
 				return;
@@ -98,7 +98,7 @@ namespace Gamma
 		try
 		{
 			void* pObject = NULL;
-			DataType nThisType = pByScript->GetThisType();
+			DataType nThisType = pByScript->GetParamList()[0];
 			CJSObject::GetInst().FromVMValue( nThisType, Script, (char*)&pObject, This );
 			if (pObject == NULL)
 				return;
@@ -109,8 +109,8 @@ namespace Gamma
 			LocalValue undefined = Undefined( Script.GetIsolate() );
 			CJSTypeBase* pParamType = GetTypeBase( nType );
 			pParamType->FromVMValue(nType, Script, pDataBuf, arg);
-			void* aryArg[] = { pDataBuf };
-			pByScript->Call(pObject, NULL, aryArg, Script);
+			void* aryArg[] = { &pObject, pDataBuf, nullptr };
+			pByScript->Call(NULL, aryArg, Script);
 			Script.CheckUnlinkCppObj();
 		}
 		catch (...)
@@ -134,18 +134,18 @@ namespace Gamma
 		v8::Local<v8::Context> context = Script.GetContext().Get(isolate);
 		v8::Context::Scope context_scope(context);
 
-		DataType nThisType = pCallBase->GetThisType();
+		DataType nThisType = pCallBase->GetParamList()[0];
 		LocalValue pThis = CJSObject::GetInst().ToVMValue( nThisType, Script, (char*)&pObject);
 		v8::Local<v8::Object> object = pThis->ToObject(isolate);
 
-		const vector<DataType>& listParam = pCallBase->GetParamList();
-		int32 nParamCount = (int32)listParam.size();
+		const DataType* aryParam = &( pCallBase->GetParamList()[1] );
+		int32 nParamCount = (int32)pCallBase->GetParamCount() - 1;
 		size_t nTotalSize = sizeof( LocalValue )*nParamCount;
 		LocalValue* args = ( LocalValue* )alloca( sizeof( nTotalSize ) );
 		for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 		{
 			new ( args + nArgIndex ) LocalValue;
-			DataType nType = listParam[nArgIndex];
+			DataType nType = aryParam[nArgIndex];
 			CJSTypeBase* pParamType = GetTypeBase( nType );
 			args[nArgIndex] = pParamType->ToVMValue( nType, Script, (char*)pArgArray[nArgIndex] );
 		}
@@ -198,7 +198,7 @@ namespace Gamma
 		v8::Local<v8::Context> context = Script.GetContext().Get(isolate);
 		v8::Context::Scope context_scope(context);
 
-		DataType nThisType = pCallBase->GetThisType();
+		DataType nThisType = pCallBase->GetParamList()[0];
 		LocalValue pThis = CJSObject::GetInst().ToVMValue( nThisType, Script, (char*)&pObject );
 		v8::Local<v8::Object> object = pThis->ToObject( isolate );
 		v8::MaybeLocal<v8::Value> fun = object->Get(context, strName.Get(isolate));

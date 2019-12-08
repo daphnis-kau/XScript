@@ -18,6 +18,7 @@ namespace Gamma
 
 	CGlobalClassRegist::CGlobalClassRegist()
 	{
+		m_mapTypeID2ClassInfo.Insert( *new CClassRegistInfo( "" ) );
 	}
 
 	CGlobalClassRegist::~CGlobalClassRegist()
@@ -42,11 +43,15 @@ namespace Gamma
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
 		if( !pInfo )
-			pInfo = new CClassRegistInfo(szTypeIDName);
-		assert( pInfo->GetClassSize() == 0 );
-		pInfo->m_szClassName = szClassName;
-		pInfo->m_nSizeOfClass = nSize;
+		{
+			pInfo = new CClassRegistInfo( szTypeIDName );
+			Inst.m_mapTypeID2ClassInfo.Insert( *pInfo );
+		}
+		if(szClassName && szClassName[0])
+			pInfo->m_szClassName = szClassName;
 		pInfo->m_bIsEnum = bEnum;
+		assert( pInfo->m_nSizeOfClass == 0 || pInfo->m_nSizeOfClass == nSize );
+		pInfo->m_nSizeOfClass = nSize;
 		pInfo->m_nAligenSizeOfClass = AligenUp( nSize, sizeof( void* ) );
 		return pInfo;
 	}
@@ -55,10 +60,7 @@ namespace Gamma
 	{
 		gammacstring strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
-		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
-		if( pInfo )
-			return pInfo;
-		return new CClassRegistInfo( szTypeInfoName );
+		return Inst.m_mapTypeID2ClassInfo.Find( strKey );
 	}
 
 	const CClassRegistInfo* CClassRegistInfo::SetObjectConstruct( 
@@ -159,7 +161,6 @@ namespace Gamma
         , m_bIsEnum(false)
 		, m_nInheritDepth(0)
 	{
-		CGlobalClassRegist::GetInst().m_mapTypeID2ClassInfo.Insert( *this );
     }
 
     CClassRegistInfo::~CClassRegistInfo()

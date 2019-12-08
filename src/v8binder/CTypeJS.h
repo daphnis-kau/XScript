@@ -300,7 +300,7 @@ namespace Gamma
 		TBuildinObject( uint32 nSize, const char* szName ) 
 			: CJSPointer( sizeof( Type )*nSize ), m_szBuildinName( szName ) 
 		{
-			m_nType = eDT_custom_type;
+			m_nType = eDT_class;
 			m_nFlag = 0;
 		}
 		virtual LocalValue ToVMValue(DataType eType, 

@@ -263,11 +263,10 @@ namespace Gamma
 	};
 
 	template< typename RetType, typename... Param >
-	inline void CreateGlobalFunWrap(RetType ( *pFun )( Param... ),
+	inline void CreateGlobalFunWrap(RetType ( *pFun )( Param... ), 
 		const char* szType, const char* szName)
 	{
-		typedef TFunctionWrap<RetType, Param...> FunctionWrap;
-		IFunctionWrap* pWrap = FunctionWrap::GetInst();
+		IFunctionWrap* pWrap = TFunctionWrap<RetType, Param...>::GetInst();
 		STypeInfoArray InfoArray = MakeFunArg<RetType, Param...>();
 		CScriptBase::RegistGlobalFunction(pWrap, (uintptr_t)pFun, InfoArray, szType, szName);
 	}
@@ -275,11 +274,9 @@ namespace Gamma
 	template< typename RetType, typename ClassType, typename... Param >
 	inline void CreateClassFunWrap(RetType(pFun)(ClassType*, Param...), const char* szName)
 	{
-		const char* szType = typeid(ClassType).name();
-		typedef TFunctionWrap<RetType, ClassType*, Param...> FunctionWrap;
-		IFunctionWrap* pWrap = FunctionWrap::GetInst();
+		IFunctionWrap* pWrap = TFunctionWrap<RetType, ClassType*, Param...>::GetInst();
 		STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
-		CScriptBase::RegistClassFunction( pWrap, (uintptr_t)pFun, InfoArray, szType, szName );
+		CScriptBase::RegistClassFunction( pWrap, (uintptr_t)pFun, InfoArray, szName );
 	}
 
 	//=======================================================================
@@ -382,11 +379,10 @@ namespace Gamma
 
 			IFunctionWrap* pWrap = FunctionWrap::GetInst();
 			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
-			const char* szClassType = typeid( ClassType ).name();
 			CallBackWrap::FunctionType funBoot = &CallBackWrap::BootFunction;
 			CallBackWrap::GetCallBackIndex() = GetVirtualFunIndex(pFun);
 			CScriptBase::RegistClassCallback( pWrap, *(uintptr_t*)&funBoot,
-				CallBackWrap::GetCallBackIndex(), bPureVirtual, InfoArray, szClassType, szFunName );
+				CallBackWrap::GetCallBackIndex(), bPureVirtual, InfoArray, szFunName );
 		}
 
 		template< typename ClassType, typename RetType, typename... Param >
@@ -434,8 +430,12 @@ namespace Gamma
 			static TDestructorWrap s_instance;
 			GetCallBackIndex() = Gamma::GetDestructorFunIndex<ClassType>();
 			FunctionType funBoot = &TDestructorWrap::Wrap;
-			Gamma::CScriptBase::RegistDestructor(&s_instance, *(uintptr_t*)&funBoot,
-				GetCallBackIndex(), typeid(ClassType).name());
+			STypeInfo aryInfo[2];
+			GetTypeInfo<ClassType*>( aryInfo[0] );
+			GetTypeInfo<void>( aryInfo[1] );
+			STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
+			Gamma::CScriptBase::RegistDestructor(&s_instance, 
+				*(uintptr_t*)&funBoot, GetCallBackIndex(), TypeInfo );
 		}
 	};
 
@@ -465,7 +465,7 @@ namespace Gamma
 	{
 		STypeInfo TypeInfo;
 		GetTypeInfo<MemberType>( TypeInfo );
-		if( ( TypeInfo.m_nType >> 24 ) != eDT_custom_type ||
+		if( ( TypeInfo.m_nType >> 24 ) != eDT_class ||
 			( ( TypeInfo.m_nType >> 20 )&0xf ) >= eDTE_Pointer ||
 			( ( TypeInfo.m_nType >> 16 )&0xf ) >= eDTE_Pointer ||
 			( ( TypeInfo.m_nType >> 12 )&0xf ) >= eDTE_Pointer ||
@@ -503,7 +503,7 @@ namespace Gamma
 		static STypeInfo aryInfo[2];
 		GetTypeInfo<ClassType*>( aryInfo[0] );
 		GetTypeInfo<MemberType>( aryInfo[1] );
-		if( ( aryInfo[1].m_nType >> 24 ) == eDT_custom_type &&
+		if( ( aryInfo[1].m_nType >> 24 ) == eDT_class &&
 			( ( aryInfo[1].m_nType >> 20 )&0xf ) < eDTE_Pointer &&
 			( ( aryInfo[1].m_nType >> 16 )&0xf ) < eDTE_Pointer &&
 			( ( aryInfo[1].m_nType >> 12 )&0xf ) < eDTE_Pointer &&

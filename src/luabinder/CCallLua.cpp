@@ -43,6 +43,7 @@ namespace Gamma
 		&CLuaDouble::GetInst(),
 		&CLuaString::GetInst(),
 		&CLuaWString::GetInst(),
+		nullptr,
 		&CLuaBuffer::GetInst()
 	};
 
@@ -60,11 +61,11 @@ namespace Gamma
 
 		try
 		{
-			const vector<DataType>& listParam = pCallBase->GetParamList();
+			auto& listParam = pCallBase->GetParamList();
 			size_t nParamCount = listParam.size();
 			const DataType* aryParam = &listParam[0];
-			size_t* aryParamSize = (size_t*)alloca(sizeof(size_t)*nParamCount);
-			size_t nParamSize = CalBufferSize(aryParam, nParamCount, aryParamSize);
+			size_t* aryParamSize = (size_t*)alloca( sizeof(size_t)*nParamCount );
+			size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
 			DataType nResultType = pCallBase->GetResultType();
 			size_t nReturnSize = nResultType ? GetAligenSizeOfType(nResultType) : sizeof(int64);
 			size_t nArgSize = pCallBase->GetParamCount()*sizeof(void*);
@@ -75,7 +76,7 @@ namespace Gamma
 			int32 nStkId = 1;
 			//Lua函数最右边的参数，在Lua stack的栈顶,         
 			//放在m_listParam的第一个成员中
-			for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+			for( size_t nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 			{
 				DataType nType = aryParam[nArgIndex];
 				CLuaTypeBase* pParamType = GetTypeBase( nType );
@@ -164,9 +165,9 @@ namespace Gamma
 		}
 
 		lua_insert(pL, -2);
-		const vector<DataType>& listParam = pCallBase->GetParamList();
+		auto& listParam = pCallBase->GetParamList();
 		DataType nResultType = pCallBase->GetResultType();
-		for( int32 nArgIndex = 1; nArgIndex < listParam.size(); nArgIndex++ )
+		for( size_t nArgIndex = 1; nArgIndex < listParam.size(); nArgIndex++ )
 		{
 			DataType nType = listParam[nArgIndex];
 			CLuaTypeBase* pParamType = GetTypeBase( nType );

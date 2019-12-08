@@ -12,6 +12,12 @@ const char* szLua =
 
 CScriptBase* g_ScriptLua;
 
+enum ETestEnum
+{
+	eTE_0,
+	eTE_1,
+};
+
 class A
 {
 	uint32 n;
@@ -91,7 +97,7 @@ public:
 		return "TestBase";
 	}
 
-	uint64 TestRet( const char* p1, uint16 p2 ) const
+	uint64 TestRet( const char* p1, ETestEnum p2 ) const
 	{
 		printf( "%f,%s,%d\n", x, p1, p2 );
 		return 9876543210;
@@ -114,14 +120,6 @@ void run_cpp_lua( int a, const int& b, int c, int d )
 {
 	g_ScriptLua->RunFunction( NULL, "aaa", a, "qqqqqq" );
 }
-
-enum ETestEnum
-{
-	eTE_0,
-	eTE_1,
-};
-
-REGIST_ENUMTYPE( ETestEnum );
 
 DEFINE_CLASS_BEGIN( CVector2f )
 	REGIST_CLASSMEMBER( x )
@@ -155,7 +153,6 @@ REGIST_GLOBALFUNCTION( run_cpp_lua );
 void TestLua()
 {
 	g_ScriptLua = new CScriptLua;
-
 	typedef decltype ( ( TestBase*( TestBase::* )( ) )nullptr ) aaa;
 	typedef decltype ( ( decltype ( &TestBase::NewThis ) )nullptr ) bbbb;
 

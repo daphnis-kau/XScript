@@ -32,8 +32,9 @@ namespace Gamma
 		eDT_double				= 15,
 		eDT_const_char_str		= 16,
 		eDT_const_wchar_t_str	= 17,
-		eDT_custom_type			= 18,
-		eDT_count				= 19,
+		eDT_enum				= 18,
+		eDT_class				= 19,
+		eDT_count				= 20,
 	};    
 
 	enum EDataTypeEx
@@ -49,7 +50,8 @@ namespace Gamma
 
     struct STypeInfo
 	{
-        uint32		m_nType;
+		uint32		m_nSize;
+		uint32		m_nType;
 		const char*	m_szTypeName;
 	};
 }
