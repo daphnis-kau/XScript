@@ -50,6 +50,9 @@
     <ProjectReference Include="luabinder.vcxproj">
       <Project>{7679734e-42ab-4435-8cf1-d85fc534cc62}</Project>
     </ProjectReference>
+    <ProjectReference Include="v8binder.vcxproj">
+      <Project>{79313c4f-aea7-4058-a86c-44f13063cbdc}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E52F65F3-9106-4016-B282-ACEC20C98AD1}</ProjectGuid>

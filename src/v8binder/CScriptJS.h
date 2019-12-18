@@ -73,6 +73,7 @@ namespace Gamma
 		PersistentFunction			m_GammaClass;
 		PersistentString			m_CppField;
 		PersistentString			m_Prototype;
+		PersistentString			m_Deconstruction;
 		PersistentString			m___proto__;
 
 		vector<SStringDynamic>		m_vecStringInfo;

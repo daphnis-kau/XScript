@@ -6,9 +6,14 @@
 using namespace std;
 using namespace Gamma;
 
+//#define JS 1
+
 const char* szLua =
-"function aaa( a, b ) print( a, b ) end\n"
-"run_cpp_lua( 1234, 3456, 98765, \"122\" );\n";
+	"function aaa( a, b ) print( a, b ) end\n"
+	"run_cpp_lua( 1234, 3456, 98765, \"122\" );\n";
+const char* szJS =
+	"function aaa( a, b ) Console.Log( a, b ) end\n"
+	"run_cpp_lua( 1234, 3456, 98765, \"122\" );\n";
 
 CScriptBase* g_ScriptLua;
 
@@ -152,7 +157,12 @@ REGIST_GLOBALFUNCTION( run_cpp_lua );
 
 void TestLua()
 {
+#ifdef JS
+	g_ScriptLua = new CScriptJS;
+#else
 	g_ScriptLua = new CScriptLua;
+#endif
+
 	typedef decltype ( ( TestBase*( TestBase::* )( ) )nullptr ) aaa;
 	typedef decltype ( ( decltype ( &TestBase::NewThis ) )nullptr ) bbbb;
 

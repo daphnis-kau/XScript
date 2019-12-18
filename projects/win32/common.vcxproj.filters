@@ -33,13 +33,7 @@
     <ClInclude Include="..\..\include\common\GammaCpp.h">
       <Filter>inlude</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\common\GammaCppFunArg.h">
-      <Filter>inlude</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\common\GammaCppParser.h">
-      <Filter>inlude</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\common\GammaCppTemplateHelp.h">
       <Filter>inlude</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\common\TList.h">

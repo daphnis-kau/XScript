@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/GammaCpp.h"
+#include <type_traits>
 #include <typeinfo>
 
 namespace Gamma
@@ -14,14 +15,11 @@ namespace Gamma
 	template<typename T>
 	struct STypeID 
 	{
-		static const T& ConstReference();
-		struct SConver { SConver( const T& ); };
-		struct SEnumType { enum { eTypeID = eDT_enum }; };
-		struct SClassType { enum { eTypeID = eDT_class }; };
-		static SClassType GetType( const SConver& v );
-		static SEnumType GetType( const int v );
-		typedef decltype ( GetType( ConstReference() ) ) TypeValue;
-		enum{ eTypeID = TypeValue::eTypeID, eSize = sizeof(T) };
+		enum
+		{ 
+			eTypeID = std::is_enum<T>::value ? eDT_enum : eDT_class,
+			eSize = sizeof(T) 
+		};
 	};
 
 	///< 特化c++内置基本类型

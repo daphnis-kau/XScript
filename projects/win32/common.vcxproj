@@ -350,9 +350,7 @@
     <ClInclude Include="..\..\include\common\CThread.h" />
     <ClInclude Include="..\..\include\common\CVirtualFun.h" />
     <ClInclude Include="..\..\include\common\GammaCpp.h" />
-    <ClInclude Include="..\..\include\common\GammaCppFunArg.h" />
     <ClInclude Include="..\..\include\common\GammaCppParser.h" />
-    <ClInclude Include="..\..\include\common\GammaCppTemplateHelp.h" />
     <ClInclude Include="..\..\include\common\Http.h" />
     <ClInclude Include="..\..\include\common\Memory.h" />
     <ClInclude Include="..\..\include\common\Help.h" />

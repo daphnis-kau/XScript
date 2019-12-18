@@ -112,6 +112,7 @@ namespace Gamma
 
 		m_CppField.Reset( m_pIsolate, v8::String::NewFromUtf8( m_pIsolate, "__cpp_obj_info__" ) );
 		m_Prototype.Reset( m_pIsolate, String::NewFromUtf8( m_pIsolate, "prototype" ) );
+		m_Deconstruction.Reset( m_pIsolate, String::NewFromUtf8( m_pIsolate, "Deconstruction" ) );
 		m___proto__.Reset( m_pIsolate, v8::String::NewFromUtf8( m_pIsolate, "__proto__" ) );
 
 		RunString(	
@@ -190,19 +191,6 @@ namespace Gamma
 			"			CurPackage = CurPackage[aryPath[i]];\n"
 			"		}\n"
 			"		return CurPackage[aryPath[i]];\n"
-			"	}\n"
-
-			"	Gamma.require = function( aryPackageName, funCallback )\n"
-			"	{\n"
-			"		var aryRequirePackage = [Gamma];\n"
-			"		for( var i = 0; i < aryPackageName.length; i++ )\n"
-			"		{\n"
-			"			var curPackage = s_aryGammaPackage[aryPackageName[i]];\n"
-			"			if( !curPackage )\n"
-			"				curPackage = s_aryGammaPackage[aryPackageName[i]] = {};\n"
-			"			aryRequirePackage.push( curPackage );\n"
-			"		}\n"
-			"		funCallback.apply( null, aryRequirePackage );\n"
 			"	}\n"
 
 			"	Gamma.ClassCast = function( obj, __class, ... arguments )\n"
@@ -659,7 +647,7 @@ namespace Gamma
 	{
 		SCallInfo* pInfo = GetCallInfo( pCallBase );
 		return CCallBackJS::DestrucVM( *pInfo->m_pScript,
-			pInfo->m_strName, pCallBase, pObject );
+			pInfo->m_pScript->m_Deconstruction, pCallBase, pObject );
 	}
 
 	Gamma::CScriptJS::SObjInfo* CScriptJS::FindExistObjInfo( void* pObj )
@@ -910,7 +898,7 @@ namespace Gamma
 			MaybeLocal<Value> Prototype = NewClass->Get( context, m_Prototype.Get( m_pIsolate ) );
 			Local<Object> PrototypeObj = Prototype.ToLocalChecked()->ToObject( m_pIsolate );
 			Local<Value> InfoValue = External::New( m_pIsolate, pInfo );
-			PrototypeObj->Set( context, String::NewFromUtf8( m_pIsolate, "Deconstruction" ),
+			PrototypeObj->Set( context, m_Deconstruction.Get( m_pIsolate ),
 				Function::New( m_pIsolate, &CScriptJS::Destruction, InfoValue ) );
 			for( uint32 i = 1; i < pInfo->BaseRegist().size(); i++ )
 				MakeMeberFunction( pInfo->BaseRegist()[i].m_pBaseInfo, NewClass, PrototypeObj, true );
