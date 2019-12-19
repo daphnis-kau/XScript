@@ -81,6 +81,7 @@ namespace Gamma
 		, m_eAttachType( eAT_Detach )
 		, m_nExceptionID( 1 )
 		, m_bExpectStep( false )
+		, m_nCurFrame( 0 )
     {
 		if( !nDebugPort )
 			return;
