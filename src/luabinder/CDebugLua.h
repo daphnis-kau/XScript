@@ -21,17 +21,12 @@ namespace Gamma
         lua_State*          m_pState;
 		bool				m_bStop;
         bool                m_bInCoroutine;
-        int32               m_nRunningStackLevel;    //当前调试器执行的堆栈深度
-        int32               m_nBreakStackLevel;        //断点的堆栈深度
+        int32               m_nCurStackDepth; 
+        int32               m_nTargetStackDepth;
 		uint32				m_nValueID;
 
-        //-----------------------------------------------------
-        // 当脚本执行中行跳转时将会调用此函数
-        //-----------------------------------------------------
-        static void			HookProc( lua_State *pState, lua_Debug* pDebug );
-        void				LineHook( lua_State *pState,lua_Debug* pDebug );
-        void				SetHook( lua_State* pState,bool bSetHook );
-
+        static void			DebugHook( lua_State *pState, lua_Debug* pDebug );
+        void				OnDebugHook( lua_State *pState,lua_Debug* pDebug );
 		uint32				GetVariableField( const char* szField );
 		virtual void		ReadFile( std::string& strBuffer, const char* szFileName );
 		virtual uint32		GenBreakPointID( const char* szFileName, int32 nLine );

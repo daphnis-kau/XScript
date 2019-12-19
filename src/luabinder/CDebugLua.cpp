@@ -20,14 +20,11 @@ namespace Gamma
 	static void* s_szValue2ID = (void*)"v2i";
 	static void* s_szID2Value = (void*)"i2v";
 
-    //-----------------------------------------------------
-    // 当脚本执行中行跳转时将会调用此函数
-    //-----------------------------------------------------
     CDebugLua::CDebugLua( CScriptBase* pBase, uint16 nDebugPort )
         : CDebugBase( pBase, nDebugPort )
 		, m_pState(NULL)
-        , m_nRunningStackLevel(-1)
-        , m_nBreakStackLevel(-1)
+        , m_nCurStackDepth(-1)
+        , m_nTargetStackDepth(-1)
         , m_bInCoroutine(false)
 		, m_bStop(false)
 		, m_nValueID( LOCAL_VARIABLE_ID )
@@ -125,14 +122,14 @@ namespace Gamma
 		return s_nBreakPointID++;
 	}
 
-    void CDebugLua::HookProc( lua_State *pState, lua_Debug* pDebug )
+    void CDebugLua::DebugHook( lua_State *pState, lua_Debug* pDebug )
     {
 		CScriptLua* pScriptLua = CScriptLua::GetScript( pState );
 		CDebugBase* pDebugger = pScriptLua->GetDebugger();
-		static_cast<CDebugLua*>( pDebugger )->LineHook( pState, pDebug );
+		static_cast<CDebugLua*>( pDebugger )->OnDebugHook( pState, pDebug );
     }
 
-    void CDebugLua::LineHook( lua_State* pState, lua_Debug* pDebug )
+    void CDebugLua::OnDebugHook( lua_State* pState, lua_Debug* pDebug )
     {
 		bool bStop = false;
 		if( m_bStop && ( pDebug->event == LUA_HOOKLINE || pDebug->event == LUA_HOOKRET ) )
@@ -143,8 +140,7 @@ namespace Gamma
 
 		if( !bStop )
 		{
-			lua_getinfo ( pState, "S", pDebug );
-			lua_getinfo ( pState, "l", pDebug );
+			lua_getinfo ( pState, "lS", pDebug );
 			if( GetBreakPoint( pDebug->source, pDebug->currentline ) )
 				bStop = true;
 		}
@@ -159,7 +155,7 @@ namespace Gamma
             {
             case LUA_HOOKCALL:
                 //resume
-                if( m_nBreakStackLevel <= m_nRunningStackLevel )
+                if( m_nTargetStackDepth <= m_nCurStackDepth )
                 {
                     //打开这个开关，在coroutine中运行的代码都不会触发任何调试器的状态变化
                     m_bInCoroutine = true;
@@ -182,28 +178,26 @@ namespace Gamma
 			return;
         }
 
-		if( m_nBreakStackLevel != -1 )
+		if( m_nTargetStackDepth != -1 )
 		{
 			//单步执行是打开的
 			switch( pDebug->event )
 			{
 			case LUA_HOOKCALL:
 				//并不是每一次LUA_HOOKCALL都会增加堆栈深度，所以这里不得不每次遍历堆栈来获得深度，是不是安装了coco的原因呢
-				m_nRunningStackLevel = GetFrameCount();
-				/*if(GetFrameCount()!=++m_nRunningStackLevel)
-				DebugBreak();*/
-				if( m_nBreakStackLevel < m_nRunningStackLevel )	//step out或者step over
-					lua_sethook( pState, &CDebugLua::HookProc, LUA_MASKCALL | LUA_MASKRET | (HaveBreakPoint()?LUA_MASKLINE:0), 0 );
+				m_nCurStackDepth = GetFrameCount();
+				if( m_nTargetStackDepth < m_nCurStackDepth )	//step out或者step over
+					lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | (HaveBreakPoint()?LUA_MASKLINE:0), 0 );
 				return;
 			case LUA_HOOKRET:
 				if(m_bInCoroutine)
 					m_bInCoroutine=false;
 				//并不是每一次LUA_HOOKRETURN都会减少堆栈深度，所以这里不得不每次遍历堆栈来获得深度，是不是安装了coco的原因呢
-				m_nRunningStackLevel = GetFrameCount()-1;
+				m_nCurStackDepth = GetFrameCount()-1;
 				/*if(GetFrameCount()!=m_nRunningStackLevel--)
 				DebugBreak();*/
-				if( m_nBreakStackLevel>=m_nRunningStackLevel )
-					lua_sethook( pState, &CDebugLua::HookProc, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
+				if( m_nTargetStackDepth>=m_nCurStackDepth )
+					lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
 				return;
 			case LUA_HOOKTAILRET:
 				break;
@@ -213,10 +207,10 @@ namespace Gamma
 				throw( L"Invalid event in lua hook function" );
 			}
 
-			if(  (!bStop) && (m_nBreakStackLevel>=0) && (m_nBreakStackLevel<m_nRunningStackLevel)  )
+			if(  (!bStop) && (m_nTargetStackDepth>=0) && (m_nTargetStackDepth<m_nCurStackDepth)  )
 				return;
 
-			m_nRunningStackLevel=m_nBreakStackLevel=-1;//关闭所有各类单步执行
+			m_nCurStackDepth=m_nTargetStackDepth=-1;//关闭所有各类单步执行
 		}
 		else
 		{
@@ -225,7 +219,7 @@ namespace Gamma
 		}
 
 		m_pState = pState;
-        lua_sethook( pState, &CDebugLua::HookProc, 0, 0 );
+        lua_sethook( pState, &CDebugLua::DebugHook, 0, 0 );
         Debug();
 	}
 
@@ -235,9 +229,9 @@ namespace Gamma
 		CScriptLua* pScriptLua = static_cast<CScriptLua*>( GetScriptBase() );
 		lua_State* pState = pScriptLua->GetLuaState();
 		if( !HaveBreakPoint() )
-			lua_sethook( pState, &CDebugLua::HookProc, 0, 0 );
+			lua_sethook( pState, &CDebugLua::DebugHook, 0, 0 );
 		else
-			lua_sethook( pState, &CDebugLua::HookProc, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
+			lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
 		return nID;
 	}
 
@@ -247,9 +241,9 @@ namespace Gamma
 		CScriptLua* pScriptLua = static_cast<CScriptLua*>( GetScriptBase() );
 		lua_State* pState = pScriptLua->GetLuaState();
 		if( !HaveBreakPoint() )
-			lua_sethook( pState, &CDebugLua::HookProc, 0, 0 );
+			lua_sethook( pState, &CDebugLua::DebugHook, 0, 0 );
 		else
-			lua_sethook( pState, &CDebugLua::HookProc, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
+			lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
 	}
 
 	void CDebugLua::Stop()
@@ -257,35 +251,35 @@ namespace Gamma
 		m_bStop = true;
 		CScriptLua* pScriptLua = static_cast<CScriptLua*>( GetScriptBase() );
 		lua_State* pState = pScriptLua->GetLuaState();
-		lua_sethook( pState, &CDebugLua::HookProc, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
+		lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
 	}
 
 	void CDebugLua::Continue()
 	{
 		if( !HaveBreakPoint() )
 			return;
-		lua_sethook( m_pState, &CDebugLua::HookProc, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
+		lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
 	}
 
     void CDebugLua::StepNext()
     {
-        lua_sethook( m_pState, &CDebugLua::HookProc, LUA_MASKLINE | LUA_MASKCALL | LUA_MASKRET, 0 );
-        m_nRunningStackLevel = GetFrameCount();
-        m_nBreakStackLevel = m_nRunningStackLevel;    //栈级别必须与当前执行深度相同
+        lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKLINE | LUA_MASKCALL | LUA_MASKRET, 0 );
+        m_nCurStackDepth = GetFrameCount();
+        m_nTargetStackDepth = m_nCurStackDepth;
     }
 
     void CDebugLua::StepIn()
     {
-        lua_sethook( m_pState, &CDebugLua::HookProc, LUA_MASKLINE | LUA_MASKCALL | LUA_MASKRET, 0 );
-        m_nRunningStackLevel = GetFrameCount();
-        m_nBreakStackLevel = INT_MAX;                    //无堆栈级别需求，任何情况都可以断
+        lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKLINE | LUA_MASKCALL | LUA_MASKRET, 0 );
+        m_nCurStackDepth = GetFrameCount();
+        m_nTargetStackDepth = INT_MAX;
     }
 
     void CDebugLua::StepOut()
     {
-        lua_sethook( m_pState, &CDebugLua::HookProc, LUA_MASKCALL | LUA_MASKRET | (HaveBreakPoint()?LUA_MASKLINE:0), 0 );
-        m_nRunningStackLevel = GetFrameCount();
-        m_nBreakStackLevel = m_nRunningStackLevel - 1;    //堆栈级别必须比当前执行深度小1
+        lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | (HaveBreakPoint()?LUA_MASKLINE:0), 0 );
+        m_nCurStackDepth = GetFrameCount();
+        m_nTargetStackDepth = m_nCurStackDepth - 1; 
     }
 
 	int32 CDebugLua::SwitchFrame( int32 nCurFrame )

@@ -117,7 +117,8 @@ namespace Gamma
 		}
 
 		m_bEnterDebug = true;
-		std::cout << szException << std::endl;
+		m_pBase->Output( szException, -1 );
+		m_pBase->Output( "\n", -1 );
 		SException Exception = { szException, bBeCaught };
 
 		if( m_nRemoteConnecter == INVALID_SOCKET )
@@ -130,6 +131,7 @@ namespace Gamma
 
 	void CDebugBase::Debug()
 	{
+		m_nCurFrame = 0;
 		m_bEnterDebug = true;
 		if( m_nRemoteConnecter == INVALID_SOCKET )
 			ConsoleDebug( NULL );
@@ -352,7 +354,9 @@ namespace Gamma
 			pEvent->AddChild( pBody );
 		SendNetData( pEvent );
 #ifdef LOG_REMOTE_COMMAND
-		std::cout << "event : " << szEvent << std::endl;
+		m_pBase->Output( "event : ", -1 );
+		m_pBase->Output( szEvent, -1 );
+		m_pBase->Output( "\n", -1 );
 #endif
 	}
 
@@ -369,14 +373,16 @@ namespace Gamma
 			pRespone->AddChild( pBody );
 		SendNetData( pRespone );
 #ifdef LOG_REMOTE_COMMAND
-		std::cout << "response : " << szCommand << ":" << szSequence << std::endl;
+		m_pBase->Output( "response : ", -1 );
+		m_pBase->Output( szCommand, -1 );
+		m_pBase->Output( ":", -1 );
+		m_pBase->Output( szSequence, -1 );
+		m_pBase->Output( "\n", -1 );
 #endif
 	}
 
 	void CDebugBase::OnNetData( CDebugCmd* pCmd )
 	{
-		if (pCmd->GetContentLen()==0)
-			std::cout;
 		CmdLock();
 		m_bRemoteCmdValid = true;
 		m_listDebugCmd.PushBack( *pCmd );
@@ -449,7 +455,11 @@ namespace Gamma
 		const char* szCommand = pCmd->At<const char*>( "command" );
 		const char* szSequence = pCmd->At<const char*>( "seq" );
 #ifdef LOG_REMOTE_COMMAND
-		std::cout << "process : " << szCommand << ":" << szSequence << std::endl;
+		m_pBase->Output( "process : ", -1 );
+		m_pBase->Output( szCommand, -1 );
+		m_pBase->Output( ":", -1 );
+		m_pBase->Output( szSequence, -1 );
+		m_pBase->Output( "\n", -1 );
 #endif
 
 		if( !stricmp( szCommand, "initialize" ) )
@@ -753,7 +763,7 @@ namespace Gamma
 			if( !bNewLine )
 				return NULL;
 
-			std::cout << "(gdb) ";
+			m_pBase->Output( "(gdb) ", -1 );
 			char szBuf[ sizeof(m_szBuffer) ];
 			if( m_pBase->Input( szBuf, sizeof(szBuf) ) && szBuf[0] != '\n' )
 				memcpy( m_szBuffer, szBuf, sizeof(szBuf) );
@@ -787,7 +797,7 @@ namespace Gamma
 	{
 		if( nLine <= 0 || szSource == NULL )
 		{
-			std::cout << "Source not available.\n";
+			m_pBase->Output( "Source not available.\n", -1 );
 			return false;
 		}
 
@@ -796,23 +806,24 @@ namespace Gamma
 		const char* szLine = ReadFileLine( szSource, nLine );
 		if( !szLine )
 			return false;
-		std::cout << nLine;
-		std::cout << " ";
-		if( bIsBreakLine )
-			std::cout << "B";
-		else
-			std::cout << " ";
-		if(bIsCurLine)
-			std::cout << ">>";
-		std::cout << "\t" << szLine << std::endl;
+		char szLineNumber[32];
+		sprintf( szLineNumber, "%d %s%s\t", nLine,
+			( bIsBreakLine ? "B" : " " ), ( bIsCurLine ? ">>" : "" ) );
+		m_pBase->Output( szLineNumber, -1 );
+		m_pBase->Output( szLine, -1 );
+		m_pBase->Output( "\n", -1 );
 		return true;
 	}
 
 	void CDebugBase::PrintFrame( int32 nFrame, 
 		const char* szFun, const char* szSource, int32 nLine )
 	{
-		std::cout << "#" << nFrame << "  " << ( szFun ? szFun : "(unknown)" ) 
-			<< " " << ( szSource ? szSource : "(no source)" )  << ":" << nLine << "\n";
+		char szFrameInfo[1024];
+		sprintf( szFrameInfo, "#%d  %s ", nFrame, ( szFun ? szFun : "(unknown)" ) );
+		m_pBase->Output( szFrameInfo, -1 );
+		m_pBase->Output( szSource ? szSource : "(no source)", -1 );
+		sprintf( szFrameInfo, ":%d\n", nLine );
+		m_pBase->Output( szFrameInfo, -1 );
 	}
 
 	void CDebugBase::ConsoleDebug( SException* pException )
@@ -821,7 +832,11 @@ namespace Gamma
 		const char* szCurFunction = NULL;
 		const char* szCurSource = NULL;
 		if( pException )
-			std::cout << "Exception : " << pException->szException << std::endl; 
+		{
+			m_pBase->Output( "Exception : ", -1 );
+			m_pBase->Output( pException->szException, -1 );
+			m_pBase->Output( "\n", -1 );
+		}
 		GetFrameInfo( m_nCurFrame, &m_nCurLine, &szCurFunction, &szCurSource );
 		if( m_bPrintFrame )
 			PrintFrame( m_nCurFrame, szCurFunction, szCurSource, m_nCurLine );
@@ -853,7 +868,7 @@ namespace Gamma
 					"disable                           disable all break point\n"
 					"help                              print this infomation\n"
 					;
-				std::cout << szHelp;
+				m_pBase->Output( szHelp, -1 );
 			}
 			else if( !strcmp( szBuf, "continue") || !strcmp( szBuf, "c" ) )
 			{
@@ -916,7 +931,7 @@ namespace Gamma
 				if( !szBuf || !IsNumber( *szBuf ) || 
 					( nFrame = SwitchFrame( atoi( szBuf ) ) ) < 0 )
 				{
-					std::cout << "Invalid stack number.\n";
+					m_pBase->Output( "Invalid stack index.\n", -1 );
 					continue;
 				}
 				m_nCurFrame = nFrame;
@@ -929,13 +944,14 @@ namespace Gamma
 				szBuf = ReadWord();
 				if( ( !szBuf || !szBuf[0] ) && m_strLastVarName.empty() )
 				{
-					std::cout << "The history is empty.\n";
+					m_pBase->Output( "Variable not specified.\n", -1 );
 					continue;
 				}
 				szBuf = szBuf && szBuf[0] ? szBuf : m_strLastVarName.c_str();
 				m_strLastVarName = szBuf;
 				SValueInfo Info = GetVariable( GetVariableID( m_nCurFrame, szBuf ) );
-				std::cout << Info.strValue << std::endl;
+				m_pBase->Output( Info.strValue.c_str(), -1 );
+				m_pBase->Output( "\n", -1 );
 			}
 			else if( !strcmp( szBuf, "enable" ) )
 			{
@@ -957,7 +973,7 @@ namespace Gamma
 			}
 			else if( strlen ( szBuf ) )
 			{
-				std::cout << "Invalid command!\n";
+				m_pBase->Output( "Invalid command!\n", -1 );
 			}
 		}
 	}
@@ -975,19 +991,17 @@ namespace Gamma
 		}
 		else if( IsNumber( *szBuf ) )
 		{
-			//提供了当前文件的断点行号
 			GetFrameInfo( m_nCurFrame, NULL, NULL, &szSource );
 			nBreakLine = atoi( szBuf );
 		}
-		//提供了断点的文件和行号
 		else if( ( pColon = (char*)strchr( szBuf, ':' ) ) == NULL )
 		{
-			std::cout << "Please supply filename and linenumber.\n";
+			m_pBase->Output( "Filename and line number must be provided.\n", -1 );
 			return;
 		}
 		else if( !IsNumber( *( pColon + 1 ) ) )
 		{
-			std::cout << "Please supply linenumber after filename.\n";
+			m_pBase->Output( "Line number must be provided.\n", -1 );
 			return;
 		}
 		else
@@ -997,10 +1011,9 @@ namespace Gamma
 			nBreakLine = atoi( pColon + 1 );
 		}
 
-		if( AddBreakPoint( szSource, nBreakLine ) == INVALID_32BITID )
-		{
-			std::cout << "break loacation not exist.\n";
-		}
+		if( AddBreakPoint( szSource, nBreakLine ) != INVALID_32BITID )
+			return;
+		m_pBase->Output( "Break location not found.\n", -1 );
 	}
 
 	void CDebugBase::PrintBreakInfo()
@@ -1009,9 +1022,10 @@ namespace Gamma
 		while( it != m_setBreakPoint.end() )
 		{
 			const CBreakPoint& BreakPoint = *it++;
-			std::cout << BreakPoint.GetBreakPointID() << "\t" 
-				<< BreakPoint.GetModuleName() << ":" 
-				<< it->GetLineNum() << "\n";
+			char szBreakInfo[1024];
+			sprintf( szBreakInfo, "%d\t%s:%d\n", BreakPoint.GetBreakPointID(),
+				BreakPoint.GetModuleName(), it->GetLineNum() );
+			m_pBase->Output( szBreakInfo, -1 );
 		}
 	}
 

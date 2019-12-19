@@ -285,8 +285,21 @@ namespace Gamma
 
 	int CScriptBase::Input( char* szBuffer, int nCount )
 	{
-		std::cin.read( szBuffer, nCount );
-		return (int32)strlen( szBuffer );
+		for( int32 i = 0; i < nCount - 1; i++ )
+		{
+			std::cin.read( &szBuffer[i], 1 );
+			if( szBuffer[i] != '\n' )
+				continue;
+			szBuffer[i] = 0;
+			return i;
+		}
+		return nCount;
+	}
+
+	int CScriptBase::Output( const char* szBuffer, int nCount )
+	{
+		std::cout << szBuffer;
+		return nCount;
 	}
 
 	void CScriptBase::UnlinkCppObj( void* pObj )
@@ -329,8 +342,11 @@ namespace Gamma
 		catch( ... )
 		{
 			const char* szClass = pFunTableHead->m_pClassInfo->GetClassName().c_str();
-			std::cout << "Unknown Error while call VM with " 
-				<< strFunctionName.c_str() << "in " << szClass << endl;
+			pScriptBase->Output( "Unknown Error while call VM with ", -1 );
+			pScriptBase->Output( strFunctionName.c_str(), -1 ); 
+			pScriptBase->Output( "in ", -1 );
+			pScriptBase->Output( szClass, -1 );
+			pScriptBase->Output( "\n", -1 );
 		}
 	}
 }

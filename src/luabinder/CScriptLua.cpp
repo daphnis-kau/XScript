@@ -275,7 +275,7 @@ namespace Gamma
 		RunString( szDebugPrint );
 
         lua_register( pL, "__cpp_cast",	&CScriptLua::ClassCast );
-        lua_register( pL, "gsd",		&CScriptLua::DebugBreak );
+        lua_register( pL, "gdb",		&CScriptLua::DebugBreak );
 		lua_register( pL, "BTrace",		&CScriptLua::BackTrace );
 
         lua_register( pL, "uint32",		&CScriptLua::ToUint32 );

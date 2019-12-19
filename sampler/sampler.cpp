@@ -174,6 +174,7 @@ void TestLua()
 		"a = Test_Base:new(); \n"
 
 		"function a:GetThis( v ) \n"
+		"	gdb()\n"
 		"	print( \"call GetThis\", v:x(), v:y() );\n"
 		"   return 3;\n"
 		"end\n"

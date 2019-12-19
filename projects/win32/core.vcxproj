@@ -332,11 +332,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="common.vcxproj">
-      <Project>{52f209e8-3601-4f74-82cf-538dd46bb353}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\..\src\core\CCallBase.cpp" />
     <ClCompile Include="..\..\src\core\CClassRegistInfo.cpp" />
     <ClCompile Include="..\..\src\core\CDebugBase.cpp" />

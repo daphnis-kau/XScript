@@ -67,7 +67,8 @@ namespace Gamma
         SFunctionTable*			GetOrgVirtualTable( void* pObj );
 		SFunctionTable*     	CheckNewVirtualTable( SFunctionTable* pOldFunTable, const CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth );
         void                	AddSearchPath( const char* szPath );
-		int						Input( char* szBuffer, int nCount );
+		virtual int				Input( char* szBuffer, int nCount );
+		virtual int				Output( const char* szBuffer, int nCount );
 
 		virtual bool        	RunFile( const char* szFileName, bool bReload ) = 0;
 		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize ) = 0;
