@@ -59,6 +59,7 @@ namespace Gamma
 		static int32			Panic( lua_State* pL );	
 		static void*			Realloc( void* pContex, void* pPreBuff, size_t nOldSize, size_t nNewSize );	
 		static int32			Print( lua_State* pL );
+		static int32			ToString( lua_State* pL );
 
 		static void				DebugHookProc( lua_State *pState, lua_Debug* pDebug );
 		static bool				GetGlobObject( lua_State* pL, const char* szKey );

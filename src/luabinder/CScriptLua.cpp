@@ -297,6 +297,7 @@ namespace Gamma
 
 		CLuaBuffer::RegistClass( this );
 		lua_register( pL, "print",		&CScriptLua::Print );
+		lua_register( pL, "tostring",	&CScriptLua::ToString );
 
 		BuildRegisterInfo();
     }
@@ -795,6 +796,7 @@ namespace Gamma
 			lua_pushvalue( pL, -1 );  /* function to be called */
 			lua_pushvalue( pL, i );   /* value to print */
 			lua_call( pL, 1, 1 );
+			ToString( pL );
 			s = lua_tostring( pL, -1 );  /* get result */
 			if( s == NULL )
 				return luaL_error( pL, LUA_QL("tostring") " must return a string to " LUA_QL("print") );
@@ -805,6 +807,65 @@ namespace Gamma
 		}
 		pScriptLua->Output( "\n", -1 );
 		return 0;
+	}
+
+	int32 CScriptLua::ToString( lua_State* pL )
+	{
+		luaL_checkany( pL, -1 );
+		if( luaL_callmeta( pL, -1, "__tostring" ) )
+			return 1;  
+
+		int type = lua_type( pL, -1 );
+		const char* s = nullptr;
+		if( type == LUA_TNUMBER )
+			s = lua_tostring( pL, -1 );
+		else if( type == LUA_TSTRING )
+			return 1;
+		else if( type == LUA_TBOOLEAN )
+			s = lua_toboolean( pL, -1 ) ? "true" : "false";
+		else if( type == LUA_TNIL )
+			s = "nil";
+
+		if( s )
+		{
+			lua_pop( pL, 1 );
+			lua_pushstring( pL, s );
+			return 1;
+		}
+
+		const void* ptr = lua_topointer( pL, -1 );
+		const char* name = luaL_typename( pL, -1 );
+		if( type != LUA_TTABLE )
+		{
+			lua_pop( pL, 1 );
+			lua_pushfstring( pL, "%s: %p", name, ptr );
+			return 1;
+		}
+
+		lua_getmetatable( pL, -1 );
+		if( lua_isnil( pL, -1 ) )
+		{
+			lua_pop( pL, 2 );
+			lua_pushfstring( pL, "table: %p", ptr );
+			return 1;
+		}
+
+		lua_pushstring( pL, "_info" );
+		lua_rawget( pL, -2 );
+		if( lua_isnil( pL, -1 ) )
+		{
+			lua_pop( pL, 3 );
+			lua_pushfstring( pL, "table: %p", ptr );
+			return 1;
+		}
+
+		auto pInfo = (const CClassRegistInfo*)lua_touserdata( pL, -1 );
+		lua_pushstring( pL, pInfo->GetObjectIndex().c_str() );
+		lua_rawget( pL, -4 );
+		const void* pObject = lua_touserdata( pL, -1 );
+		lua_pop( pL, 4 );
+		lua_pushfstring( pL, "%s: %p->%p", pInfo->GetClassName().c_str(), ptr, pObject );
+		return 1;
 	}
 
     //=========================================================================

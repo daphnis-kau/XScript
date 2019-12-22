@@ -164,8 +164,8 @@ namespace Gamma
 								const char** szFunction, const char** szSource ) = 0;
 		virtual int32		SwitchFrame( int32 nCurFrame ) = 0;
 		virtual uint32		GetVariableID( int32 nCurFrame, const char* szName ) = 0;
-		virtual uint32		GetChildrenID( uint32 nParentID, bool bIndex, 
-								uint32 nStart, uint32* aryChild, uint32 nCount ) = 0;
+		virtual uint32		GetChildrenID( uint32 nParentID, bool bIndex, uint32 nStart, 
+								uint32* aryChild = nullptr, uint32 nCount = 0 ) = 0;
 		virtual SValueInfo	GetVariable( uint32 nID ) = 0;
 		virtual void		Stop() = 0;
 		virtual void		Continue() = 0;

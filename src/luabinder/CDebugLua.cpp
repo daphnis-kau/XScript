@@ -16,7 +16,14 @@ extern "C"
 
 namespace Gamma
 {
-	#define LOCAL_VARIABLE_ID 1
+	enum EPreDefinedVariableID
+	{
+		ePDVID_Scopes	= 1,
+		ePDVID_Global	= 2,
+		ePDVID_Local	= 3,
+		ePDVID_Count	= 4,
+	};
+
 	#define LUA_MASKALL (LUA_MASKCALL|LUA_MASKRET|LUA_MASKLINE)
 	static void* s_szValue2ID = (void*)"v2i";
 	static void* s_szID2Value = (void*)"i2v";
@@ -26,7 +33,7 @@ namespace Gamma
 		, m_pState( NULL )
 		, m_pPreState( NULL )
         , m_nBreakFrame( MAX_INT32 )
-		, m_nValueID( LOCAL_VARIABLE_ID )
+		, m_nValueID( ePDVID_Count )
 	{
 		CScriptLua* pScript = static_cast<CScriptLua*>( pBase );
 		lua_State* pL = pScript->GetLuaState();
@@ -283,7 +290,7 @@ namespace Gamma
 	uint32 CDebugLua::GetVariableID( int32 nCurFrame, const char* szName )
 	{
 		if( szName == NULL )
-			return LOCAL_VARIABLE_ID;
+			return ePDVID_Scopes;
 
 		if( !IsWordChar( szName[0] ) )
 			return INVALID_32BITID;
@@ -327,34 +334,51 @@ namespace Gamma
 	{
 		SValueInfo Info;
 		Info.nID = nID;
-		if( nID == INVALID_32BITID )
+		if( nID == ePDVID_Scopes )
 		{
-			Info.strValue = "nil";
+			Info.strName = "scope";
+			Info.nNameValues = 2;
 			return Info;
 		}
 
-		// add to s_szID2Value
-		lua_pushlightuserdata( m_pState, s_szID2Value );
-		lua_rawget( m_pState, LUA_REGISTRYINDEX );	
-		lua_pushnumber( m_pState, nID );
-		lua_rawget( m_pState, -2 );     
-		lua_remove( m_pState, -2 );  
+		if( nID == ePDVID_Global )
+		{
+			Info.strName = "_G";
+			Info.strValue = "Global";
+		}
+		else if( nID == ePDVID_Local )
+		{
+			Info.strName = "Local";
+			Info.strValue = "Local";
+		}
+		else
+		{
+			lua_pushlightuserdata( m_pState, s_szID2Value );
+			lua_rawget( m_pState, LUA_REGISTRYINDEX );
+			lua_pushnumber( m_pState, nID );
+			lua_rawget( m_pState, -2 );
+			lua_remove( m_pState, -2 );
+			CScriptLua::ToString( m_pState );
+			const char* s = lua_tostring( m_pState, -1 );
+			Info.strValue = s ? s : "nil";
+			lua_pop( m_pState, 1 );
+		}
 
-		lua_getglobal( m_pState, "tostring");
-		lua_pushvalue( m_pState, -2 );
-		lua_call( m_pState, 1, 1 );
-		const char* s = lua_tostring( m_pState, -1 );  /* get result */
-		Info.strValue = s ? s : "nil";
-		lua_pop( m_pState, 1 );
-
-		// [todo get property]
-		lua_pop( m_pState, 1 );
+		Info.nIndexValues = GetChildrenID( nID, true, 0 );
+		Info.nNameValues = GetChildrenID( nID, false, 0 );
 		return Info;
 	}
 
 	uint32 CDebugLua::GetChildrenID( uint32 nParentID, bool bIndex, 
 		uint32 nStart, uint32* aryChild, uint32 nCount )
 	{
+		if( nParentID == ePDVID_Scopes && !bIndex && nCount >= 2 )
+		{
+			aryChild[0] = ePDVID_Global;
+			aryChild[1] = ePDVID_Local;
+			return 2;
+		}
+
 		return 0;
 	}
 }

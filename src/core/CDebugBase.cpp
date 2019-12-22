@@ -695,6 +695,12 @@ namespace Gamma
 			bool bIndex = pArg->At<std::string>( "filter" ) == "indexed";
 			uint32 nStart = pArg->At<uint32>( "start" );
 			uint32 nCount = pArg->At<uint32>( "count" );
+			if( nCount == 0 )
+			{
+				SValueInfo Info = GetVariable( nParentID );
+				nCount = bIndex ? Info.nIndexValues : Info.nNameValues;
+			}
+
 			uint32* aryChild = (uint32*)alloca( sizeof(uint32)*nCount );
 			uint32 nResult = GetChildrenID( nParentID, bIndex, nStart, aryChild, nCount );
 
