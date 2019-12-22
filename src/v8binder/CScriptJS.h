@@ -76,11 +76,11 @@ namespace Gamma
 		PersistentString			m_Deconstruction;
 		PersistentString			m___proto__;
 
-		vector<SStringDynamic>		m_vecStringInfo;
+		std::vector<SStringDynamic>	m_vecStringInfo;
 		tbyte*						m_pTempStrBuffer64K;
 		uint32						m_nCurUseSize;
 		uint32						m_nStrBufferStack;
-		wstring						m_szTempUcs2;
+		std::wstring				m_szTempUcs2;
 
 		SObjInfo*					m_pFreeObjectInfo;
 		TRBTree<SObjInfo>			m_mapObjInfo;

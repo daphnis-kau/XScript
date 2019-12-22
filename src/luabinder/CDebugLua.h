@@ -8,25 +8,23 @@
 //=====================================================================
 
 #include "core/CDebugBase.h"
-#include <string>
+#include <vector>
 
 struct lua_State;
 struct lua_Debug;
-using namespace std;
 
 namespace Gamma
 {
     class CDebugLua : public CDebugBase
-    {
-        lua_State*          m_pState;
-		bool				m_bStop;
-        bool                m_bInCoroutine;
-        int32               m_nCurStackDepth; 
-        int32               m_nTargetStackDepth;
+	{
+        lua_State*			m_pState;
+		lua_State*			m_pPreState;
+        int32				m_nBreakFrame;
 		uint32				m_nValueID;
 
         static void			DebugHook( lua_State *pState, lua_Debug* pDebug );
-        void				OnDebugHook( lua_State *pState,lua_Debug* pDebug );
+		void				Debug( lua_State* pState );
+
 		uint32				GetVariableField( const char* szField );
 		virtual void		ReadFile( std::string& strBuffer, const char* szFileName );
 		virtual uint32		GenBreakPointID( const char* szFileName, int32 nLine );

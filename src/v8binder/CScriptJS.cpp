@@ -380,26 +380,36 @@ namespace Gamma
 		{
 			// V8 didn't provide any extra information about this error; just
 			// print the exception.
-			std::cout << "Error:" << *exception << endl;
+			Output( "Error:", -1 );
+			Output( *exception, -1 );
+			Output( "\n", -1 );
 			return;
 		}
 
+		char szNumber[32];
 		// Print (filename):(line number): (message).
 		v8::String::Utf8Value filename(m_pIsolate, message->GetScriptResourceName());
-		int linenum = message->GetLineNumber(context).ToChecked();
-		std::cout << *filename << ":" << linenum << "\n\t" << *exception << endl;;
+		sprintf( szNumber, "%d", message->GetLineNumber( context ).ToChecked() );
+		Output( *filename, -1 );
+		Output( ":", -1 );
+		Output( szNumber, -1 );
+		Output( "\n\t", -1 );
+		Output( *exception, -1 );
+		Output( "\n", -1 );
+
 		// Print line of source code.
-		v8::Local<String> souceline = message->GetSourceLine(context).ToLocalChecked();
-		std::cout << *String::Utf8Value(m_pIsolate, souceline) << endl;
+		v8::Local<String> souceline = message->GetSourceLine( context ).ToLocalChecked();
+		Output( *String::Utf8Value( m_pIsolate, souceline ), -1 );
+		Output( "\n", -1 );
 
 		// Print wavy underline (GetUnderline is deprecated).
 		int start = message->GetStartColumn();
-		for (int i = 0; i < start; i++)
-			std::cout << " ";
+		for( int i = 0; i < start; i++ )
+			Output( " ", -1 );
 		int end = message->GetEndColumn();
-		for (int i = start; i < end; i++)
-			std::cout << "^";
-		std::cout << endl;
+		for( int i = start; i < end; i++ )
+			Output( " ^", -1 );
+		Output( "\n", -1 );
 		v8::MaybeLocal<Value> backTrace = try_catch->StackTrace(context);
 		if (backTrace.IsEmpty())
 			return;
@@ -407,7 +417,7 @@ namespace Gamma
 		v8::String::Utf8Value stack_trace(m_pIsolate, strBackTrace->ToString(m_pIsolate));
 		if (!stack_trace.length())
 			return;
-		std::cout << *stack_trace;
+		Output( *stack_trace, -1 );
 	}
 
 	CScriptJS::SCallInfo* CScriptJS::GetCallInfo( CByScriptBase* pCallBase )
@@ -455,6 +465,8 @@ namespace Gamma
 	//===================================================================================
 	void CScriptJS::Log(const v8::FunctionCallbackInfo<v8::Value>& args)
 	{
+		Local<External> wrap = Local<External>::Cast( args.Data() );
+		CScriptJS* pScript = (CScriptJS*)wrap->Value();
 		Isolate* isolate = args.GetIsolate();
 		HandleScope scope( isolate );
 		for (int32 i = 0; i < args.Length(); i++)
@@ -462,9 +474,10 @@ namespace Gamma
 			Local<Value> arg = args[i];
 			String::Utf8Value value( isolate, arg );
 			const char* szValue = *value;
-			std::cout << szValue << " ";
+			pScript->Output( szValue, -1 );
+			pScript->Output( " ", -1 );
 		}
-		std::cout << endl;
+		pScript->Output( "\n", -1 );
 	}
 
 	void CScriptJS::Break(const v8::FunctionCallbackInfo<v8::Value>& args)
@@ -685,7 +698,7 @@ namespace Gamma
 	{
 		CheckUnlinkCppObj();
 		FILE* iFile = NULL;
-		string sFileName;
+		std::string sFileName;
 		if( szFileName[0] == '/' || ::strchr( szFileName, ':' ) )
 		{
 			if( NULL == ( iFile = fopen( szFileName, "rb" ) ) )
@@ -694,7 +707,7 @@ namespace Gamma
 		}
 		else
 		{
-			list<string>::iterator it = m_listSearchPath.begin();
+			std::list<std::string>::iterator it = m_listSearchPath.begin();
 			while( it != m_listSearchPath.end() && 
 				NULL == ( iFile = fopen( ( *it + szFileName ).c_str(), "rb" ) ) )
 				++it;
@@ -709,7 +722,7 @@ namespace Gamma
 		else
 			sFileName = "file:///" + sFileName;
 
-		string sBuf;
+		std::string sBuf;
 		fseek( iFile, 0, SEEK_END );
 		sBuf.resize( ftell( iFile ) );
 		fseek( iFile, 0, SEEK_SET );
@@ -751,7 +764,7 @@ namespace Gamma
 	bool CScriptJS::RunBuffer( const void* pBuffer, size_t nSize )
 	{
 		CheckUnlinkCppObj();
-		string strSource((const char*)pBuffer, nSize);
+		std::string strSource((const char*)pBuffer, nSize);
 		return RunString(strSource.c_str());
 	}
 
@@ -815,8 +828,8 @@ namespace Gamma
 		const char* szFunName = strrchr( szFunction, '.' );
 		if (szFunName)
 		{
-			string szClass;
-			szClass = string(szFunction, szFunName - szFunction);
+			std::string szClass;
+			szClass = std::string(szFunction, szFunName - szFunction);
 			Local<Value>object = classObject->Get(String::NewFromUtf8(m_pIsolate, szClass.c_str()));
 			if (object.IsEmpty())
 				return false;
@@ -889,7 +902,7 @@ namespace Gamma
 				Base = BaseTemplate->GetFunction( context ).ToLocalChecked();
 			}
 
-			string strNewPath = szClass;
+			std::string strNewPath = szClass;
 			Local<Function> GammaClass = m_GammaClass.Get( m_pIsolate );
 			Local<String> strPathName = String::NewFromUtf8( m_pIsolate, strNewPath.c_str() );
 			LocalValue args[] = { NewClass, strPathName, Base };
@@ -911,7 +924,7 @@ namespace Gamma
 	{
 		Local<Context> context = m_pIsolate->GetCurrentContext();
 		const CCallBaseMap& mapFunction = pInfo->GetRegistFunction();
-		string strName = pInfo->GetClassName().c_str();
+		std::string strName = pInfo->GetClassName().c_str();
 		for( auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext() )
 		{
 			const char* szFunName = pCall->GetFunctionName().c_str();

@@ -86,7 +86,7 @@ namespace Gamma
 		m_funWrap->Call( pRetBuf, pArgArray, (uintptr_t)pTable->m_pFun[m_nFunIndex] );
 	}
 
-	int32 CCallScriptBase::Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script )
+	int32 CCallScriptBase::Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script ) const
 	{
 		if( !pObject->m_pTable || !pObject->m_pTable->m_pFun[m_nFunIndex] )
 			return 0;

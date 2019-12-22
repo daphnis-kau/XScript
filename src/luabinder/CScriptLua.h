@@ -22,9 +22,10 @@ namespace Gamma
 		enum { eMemoryStep = 8, eMaxManageMemoryCount = 8 };
 		struct SMemoryBlock	{ SMemoryBlock* m_pNext; };
 
-		vector<lua_State*>		m_vecLuaState;
-		wstring					m_szTempUcs2;
-		string					m_szTempUtf8;
+		std::vector<lua_State*>	m_vecLuaState;
+		std::wstring			m_szTempUcs2;
+		std::string				m_szTempUtf8;
+		std::set<std::string>	m_setRuningString;
 
 		SMemoryBlock*			m_pAllAllocBlock;
 		SMemoryBlock*			m_aryBlock[eMaxManageMemoryCount];
@@ -73,8 +74,8 @@ namespace Gamma
         static void             RegistToLua( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
         static void             RemoveFromLua( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
 
-		virtual bool			CallVM( CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray );
-		virtual void			DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject );
+		virtual bool			CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray );
+		virtual void			DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject );
 
 		friend class CDebugLua;
 		friend class CLuaBuffer;

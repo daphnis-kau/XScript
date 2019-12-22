@@ -260,7 +260,7 @@ namespace Gamma
 
 			SFunctionTableHead* pFunTableHead = AllocFunArray( nFunCount + 1 );
 			SFunctionTable* pNewFunTable = (SFunctionTable*)( pFunTableHead + 1 );
-			m_mapVirtualTableOld2New.insert( make_pair( pOldFunTable, pNewFunTable ) );
+			m_mapVirtualTableOld2New.insert( std::make_pair( pOldFunTable, pNewFunTable ) );
 			memcpy( pNewFunTable->m_pFun, pOldFunTable->m_pFun, nFunCount*sizeof(void*) );
 			pNewFunTable->m_pFun[nFunCount] = NULL;
 			pFunTableHead->m_pScript = this;
@@ -320,8 +320,8 @@ namespace Gamma
 		assert( CScriptBase::IsAllocVirtualTable( pVirtualObj->m_pTable ) );
 		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVirtualObj->m_pTable ) - 1;
 		assert( pFunTableHead->m_pClassInfo && pFunTableHead->m_pOldFunTable );
-		auto& listFun = pFunTableHead->m_pClassInfo->GetNewFunctionList();
-		CCallScriptBase* pCallScript = listFun[nIndex];
+		const CClassRegistInfo* pClassInfo = pFunTableHead->m_pClassInfo;
+		const CCallScriptBase* pCallScript = pClassInfo->GetOverridableFunction( nIndex );
 		CScriptBase* pScriptBase = pFunTableHead->m_pScript;
 		pScriptBase->CheckUnlinkCppObj();
 		auto& strFunctionName = pCallScript->GetFunctionName();

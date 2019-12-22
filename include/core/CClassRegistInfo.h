@@ -16,8 +16,6 @@
 #include <vector>
 #include <map>
 
-using namespace std;
-
 namespace Gamma
 {
 	class CTypeBase;
@@ -40,9 +38,9 @@ namespace Gamma
 		gammacstring					m_szClassName;		// 类的名字
 		gammacstring					m_szTypeIDName;		// 编译器生成的类型信息
 
-		vector<CCallScriptBase*>		m_vecNewFunction;	// 需要注册的函数对应的索引以及对应的引导函数
-		vector<SBaseInfo>				m_vecBaseRegist;    // 包含的基类信息
-		vector<SBaseInfo>				m_vecChildRegist;   // 包含的子类信息
+		std::vector<CCallScriptBase*>	m_vecOverridableFun;// 可重写的函数
+		std::vector<SBaseInfo>			m_vecBaseRegist;    // 包含的基类信息
+		std::vector<SBaseInfo>			m_vecChildRegist;   // 包含的子类信息
         IObjectConstruct*				m_pObjectConstruct;
 		uint32							m_nSizeOfClass;
 		uint32							m_nAligenSizeOfClass;
@@ -79,7 +77,7 @@ namespace Gamma
         bool                            FindBase( const CClassRegistInfo* pRegistBase ) const;
 		bool							IsBaseObject(ptrdiff_t nDiff) const;
 		bool							IsEnum() const { return m_bIsEnum; }
-		const vector<SBaseInfo>&    	BaseRegist() const { return m_vecBaseRegist; }
+		const std::vector<SBaseInfo>&  	BaseRegist() const { return m_vecBaseRegist; }
 		const gammacstring&            	GetTypeIDName() const { return m_szTypeIDName; }
 		const gammacstring&            	GetClassName() const { return m_szClassName; }
 		const gammacstring&            	GetObjectIndex() const { return m_szTypeIDName; }
@@ -87,7 +85,7 @@ namespace Gamma
 		uint32                          GetClassAligenSize() const { return m_nAligenSizeOfClass; }
 		uint8							GetInheritDepth() const { return m_nInheritDepth; }
 		const CCallBaseMap&				GetRegistFunction() const { return m_mapRegistFunction; }
-		const vector<CCallScriptBase*>& GetNewFunctionList() const { return m_vecNewFunction; }
+		const CCallScriptBase*			GetOverridableFunction( int32 nIndex ) const { return m_vecOverridableFun[nIndex]; }
     }; 
 }                                            
                                             

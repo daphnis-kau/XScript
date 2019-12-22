@@ -106,13 +106,14 @@ namespace Gamma
 		{
 			char szBuf[256];
 			sprintf( szBuf, "An unknow exception occur on calling %s\n", pCallBase->GetFunctionName().c_str() );
-			std::cout << szBuf << endl;
+			pScript->Output( szBuf, -1 );
             luaL_error( pL, exp.what() );
         }
 		catch( ... )
         {
 			char szBuf[256];
 			sprintf( szBuf, "An unknow exception occur on calling %s\n", pCallBase->GetFunctionName().c_str() );
+			pScript->Output( szBuf, -1 );
             luaL_error( pL, szBuf );
         }
 
@@ -124,7 +125,7 @@ namespace Gamma
     // C++调用Lua脚本的接口
 	//=====================================================================
 	bool CCallBackLua::CallVM( CScriptLua* pScript,	
-		CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray )
+		const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray )
 	{	
 		lua_State* pL = pScript->GetLuaState();
 
@@ -182,7 +183,7 @@ namespace Gamma
     }
 
 	void CCallBackLua::DestrucVM( CScriptLua* pScript,
-		CCallScriptBase* pCallBase, SVirtualObj* pObject )
+		const CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
 	}
 };

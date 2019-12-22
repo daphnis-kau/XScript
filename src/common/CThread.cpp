@@ -26,8 +26,6 @@
 
 #include "common/CThread.h"
 
-using namespace std;
-
 namespace Gamma
 {
 #ifdef _WIN32

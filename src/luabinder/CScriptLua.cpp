@@ -324,7 +324,10 @@ namespace Gamma
 
 	int32 CScriptLua::Panic( lua_State* pL ) 
 	{
-		std::cout << "PANIC: unprotected error in call to Lua API : " << lua_tostring( pL, -1 ) << endl;
+		CScriptLua* pScriptLua = GetScript( pL );
+		pScriptLua->Output( "PANIC: unprotected error in call to Lua API : ", -1 );
+		pScriptLua->Output( lua_tostring( pL, -1 ), -1 );
+		pScriptLua->Output( "\n", -1 );
 		return 0;
 	}
 
@@ -399,12 +402,12 @@ namespace Gamma
         return pScriptLua;
 	}
 
-	bool CScriptLua::CallVM( CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray )
+	bool CScriptLua::CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray )
 	{
 		return CCallBackLua::CallVM( this, pCallBase, pRetBuf, pArgArray );
 	}
 
-	void CScriptLua::DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject )
+	void CScriptLua::DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
 		return CCallBackLua::DestrucVM( this, pCallBase, pObject );
 	}
@@ -749,7 +752,7 @@ namespace Gamma
 				const char* szFileName = luaL_checkstring( pL, 1 );
 				if( szFileName == NULL || szFileName[0] == 0 )
 					return 1;
-				wstring strName = Utf8ToUcs( szFileName );
+				std::wstring strName = Utf8ToUcs( szFileName );
 				assert( strName.size() < 1024 );
 				char szAcsName[4096];
 				WideCharToMultiByte( CP_ACP, NULL, strName.c_str(), -1, 
@@ -782,6 +785,7 @@ namespace Gamma
 
 	int32 CScriptLua::Print( lua_State* pL )
 	{
+		CScriptLua* pScriptLua = GetScript( pL );
 		int n = lua_gettop( pL );  /* number of arguments */
 		int i;
 		lua_getglobal( pL, "tostring");
@@ -795,11 +799,11 @@ namespace Gamma
 			if( s == NULL )
 				return luaL_error( pL, LUA_QL("tostring") " must return a string to " LUA_QL("print") );
 			if( i > 1 )
-				std::cout << "\t";
-			std::cout << s;
+				pScriptLua->Output( "\t", -1 );
+			pScriptLua->Output( s, -1 );
 			lua_pop( pL, 1 );  /* pop result */
 		}
-		std::cout << endl;
+		pScriptLua->Output( "\n", -1 );
 		return 0;
 	}
 
@@ -923,11 +927,10 @@ namespace Gamma
 		lua_rawget( pL, LUA_REGISTRYINDEX ); //1
 		int32 nErrFunIndex = lua_gettop( pL );
 
-		static set<string> s_setRuningString;
-		pair< set<string>::iterator, bool > ib = s_setRuningString.insert( szStr );
+		auto ib = m_setRuningString.insert( szStr );
 		std::stringstream name;
 		name << "@GammaScriptStringTrunk"<< (uintptr_t)(void*)( ib.first->c_str() );
-		string strName = name.str();
+		std::string strName = name.str();
 		const char* szName = strName.c_str();
 
 		// 通过_ReadString装载字符串的代码块
@@ -943,12 +946,13 @@ namespace Gamma
 			// 装载失败时移走错误函数，并且从s_setRuningString删除字符串
 			lua_remove( pL, nErrFunIndex );
 			if( ib.second )
-				s_setRuningString.erase( ib.first );
+				m_setRuningString.erase( ib.first );
 
 			const char* szError = lua_tostring( pL, -1 );
 			if( szError )
 			{
-				std::cout << szError << endl;
+				Output( szError, -1 );
+				Output( "\n", -1 );
 				lua_remove( pL, 1 );
 			}
 
@@ -970,7 +974,7 @@ namespace Gamma
 			fread( &fileBuff[0], fileBuff.size(), 1, fp );
 			fclose( fp );
 		}
-		string fileBuff;
+		std::string fileBuff;
 		bool bFinished;
 	};
 
@@ -996,7 +1000,7 @@ namespace Gamma
 
 	struct SReadWithPackage
 	{
-		vector<tbyte>* pBuffer;
+		std::vector<tbyte>* pBuffer;
 		bool bFinished;
 	};
 
@@ -1019,10 +1023,10 @@ namespace Gamma
 		if( szFileName[0] == '/' || ::strchr( szFileName, ':' ) )
 			return LoadSingleFile( pL, szFileName, bReload ) > 0;
 
-		for( list<string>::iterator it = m_listSearchPath.begin(); it != m_listSearchPath.end(); ++it )
+		for( auto it = m_listSearchPath.begin(); it != m_listSearchPath.end(); ++it )
 		{
 			int32 nResult;
-			string sFileName = *it + szFileName;
+			std::string sFileName = *it + szFileName;
 			if( !GetFileExtend( szFileName ) )
 				sFileName.append( ".lua" );
 			if( 0 == ( nResult = LoadSingleFile( pL, sFileName.c_str(), bReload ) ) )
@@ -1038,7 +1042,7 @@ namespace Gamma
         lua_pop( pL, 1 );
         if( CScriptLua::GetScript( pL )->LoadFile( pL, szFileName, true ) )
             return 1;
-        string szError = string( "Cannot find the file ") + szFileName;
+        std::string szError = std::string( "Cannot find the file ") + szFileName;
         lua_pushstring( pL, szError.c_str() );
         return 1;
     }
@@ -1069,7 +1073,8 @@ namespace Gamma
 		const char* szError = lua_tostring( pL, -1 );
 		if( szError )
 		{
-			std::cout << szError << std::endl;
+			Output( szError, -1 );
+			Output( "\n", -1 );
 			lua_remove( pL, 1 );
 		}
 		return -1;
@@ -1178,7 +1183,7 @@ namespace Gamma
 
 #ifdef _DEBUG
 	 uint32 g_nIndex = 0;
-	 pair<const char*, uint32> g_aryLog[1024];
+	 std::pair<const char*, uint32> g_aryLog[1024];
 
 	 void CScriptLua::DebugHookProc( lua_State *pState, lua_Debug* pDebug )
 	 {
@@ -1226,7 +1231,7 @@ namespace Gamma
 
 	const char* _ReadBuffer( lua_State* /*pL*/, void* pContext, size_t* pSize )
 	{
-		pair<const void*, size_t>* pairBuffer = ( pair<const void*, size_t>* )pContext;
+		auto pairBuffer = ( std::pair<const void*, size_t>* )pContext;
 		*pSize = pairBuffer->second;
 		pairBuffer->second = 0;
 		return *pSize ? (const char*)pairBuffer->first : NULL;
@@ -1243,7 +1248,7 @@ namespace Gamma
 		char szBuf[1024];
 		static uint32 s_nBufferIndex = 0;
 		sprintf( szBuf, "@GammaScriptBufferTrunk%x", s_nBufferIndex );
-		pair<const void*, size_t> context( pBuffer, nSize );
+		std::pair<const void*, size_t> context( pBuffer, nSize );
 
 		// 通过_ReadString装载字符串的代码块
 		if( !lua_load( pL, &_ReadBuffer, &context, szBuf ) )
@@ -1259,7 +1264,8 @@ namespace Gamma
 		const char* szError = lua_tostring( pL, -1 );
 		if( szError )
 		{
-			std::cout << szError << endl;
+			Output( szError, -1 );
+			Output( "\n", -1 );
 			lua_remove( pL, 1 );
 		}
 

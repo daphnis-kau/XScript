@@ -12,8 +12,6 @@
 #include "CTypeBase.h"
 #include <list>
 
-using namespace std;
-
 namespace Gamma
 {
 	enum ECallingType
@@ -35,6 +33,7 @@ namespace Gamma
     class CByScriptBase 
 		: public CCallBaseMap::CRBTreeNode
     {
+		typedef std::vector<DataType> DataTypeArray;
 		const CByScriptBase& operator= ( const CByScriptBase& );
     public:
 		CByScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, 
@@ -44,7 +43,7 @@ namespace Gamma
 
 		virtual void			Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const;
 		IFunctionWrap*			GetFunWrap()		const { return m_funWrap; }
-		const vector<DataType>&	GetParamList()		const { return m_listParam; }
+		const DataTypeArray&	GetParamList()		const { return m_listParam; }
 		DataType				GetResultType()		const { return m_nResult; }
 		uint32					GetParamCount()		const { return m_nParamCount; }
 		int32					GetFunctionIndex()	const { return m_nFunIndex; }
@@ -55,7 +54,7 @@ namespace Gamma
 		uintptr_t				m_funOrg;
 		gammacstring			m_sFunName;
 		DataType				m_nResult;
-		vector<DataType>		m_listParam;
+		DataTypeArray			m_listParam;
 		uint32					m_nParamCount;
 		int32					m_nFunIndex;
 	};
@@ -88,7 +87,7 @@ namespace Gamma
 
 		virtual void	Call( void* pRetBuf, void** pArgArray, CScriptBase& Script ) const;
 		void*			GetBootFun() const { return (void*)m_funOrg; }
-		int32			Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script );
+		int32			Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script ) const;
 	};
 }
 

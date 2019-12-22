@@ -10,8 +10,6 @@
 #include "core/CCallBase.h"
 #include "CTypeJS.h"
 
-using namespace std;
-
 namespace Gamma
 {
 	class CScriptJS;

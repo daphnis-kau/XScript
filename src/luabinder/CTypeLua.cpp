@@ -15,8 +15,6 @@ extern "C"
 #include "CScriptLua.h"
 #include "core/CClassRegistInfo.h"
 
-using namespace std;
-
 namespace Gamma
 {
     //=====================================================================
@@ -819,7 +817,7 @@ namespace Gamma
 			return 0;
 		}
 
-		string strBuffer;
+		std::string strBuffer;
 		Bytef szBuffer[4096];
 
 		z_stream zipStream;
@@ -861,7 +859,7 @@ namespace Gamma
 			return 0;
 		}
 
-		string strBuffer;
+		std::string strBuffer;
 		Bytef szBuffer[4096];
 
 		z_stream zipStream;

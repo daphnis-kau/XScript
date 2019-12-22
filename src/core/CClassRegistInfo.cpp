@@ -97,7 +97,7 @@ namespace Gamma
 			return pInfo;
 
 		// 自然继承，虚表要延续
-		vector<CCallScriptBase*>& vecNewFunction = pBaseInfo->m_vecNewFunction;
+		auto& vecNewFunction = pBaseInfo->m_vecOverridableFun;
 		for( int32 i = 0; i < (int32)vecNewFunction.size(); i++ )
 		{
 			if( !vecNewFunction[i] )
@@ -131,10 +131,10 @@ namespace Gamma
 		if( !pInfo )
 			return nullptr;
 		// 不能重复注册
-		if( nIndex >= pInfo->m_vecNewFunction.size() )
-			pInfo->m_vecNewFunction.resize( nIndex + 1 );
-		assert( pInfo->m_vecNewFunction[nIndex] == NULL );
-		pInfo->m_vecNewFunction[nIndex] = pCallScriptBase;
+		if( nIndex >= pInfo->m_vecOverridableFun.size() )
+			pInfo->m_vecOverridableFun.resize( nIndex + 1 );
+		assert( pInfo->m_vecOverridableFun[nIndex] == NULL );
+		pInfo->m_vecOverridableFun[nIndex] = pCallScriptBase;
 
 		for( size_t i = 0; i < pInfo->m_vecChildRegist.size(); ++i )
 		{
@@ -172,11 +172,11 @@ namespace Gamma
 
     void CClassRegistInfo::InitVirtualTable( SFunctionTable* pNewTable ) const
 	{
-		for( int32 i = 0; i < (int32)m_vecNewFunction.size(); i++ )
+		for( int32 i = 0; i < (int32)m_vecOverridableFun.size(); i++ )
 		{
-			if( !m_vecNewFunction[i] )
+			if( !m_vecOverridableFun[i] )
 				continue;
-			CCallScriptBase* pCallInfo = m_vecNewFunction[i];
+			CCallScriptBase* pCallInfo = m_vecOverridableFun[i];
 			assert( pCallInfo->GetFunctionIndex() == i );
 			pNewTable->m_pFun[i] = pCallInfo->GetBootFun();
 		}
@@ -184,7 +184,7 @@ namespace Gamma
 
     int32 CClassRegistInfo::GetMaxRegisterFunctionIndex() const
     {        
-		return (int32)m_vecNewFunction.size();
+		return (int32)m_vecOverridableFun.size();
     }
 
     void CClassRegistInfo::Create( void* pObject ) const
@@ -221,7 +221,7 @@ namespace Gamma
 
     bool CClassRegistInfo::IsCallBack() const
     {
-		return !m_vecNewFunction.empty();
+		return !m_vecOverridableFun.empty();
     }
 
     int32 CClassRegistInfo::GetBaseOffset( const CClassRegistInfo* pRegist ) const
@@ -246,7 +246,7 @@ namespace Gamma
         SFunctionTable* pOldTable = pVObj->m_pTable;
         SFunctionTable* pNewTable = NULL;
 
-		if( !m_vecNewFunction.empty() )
+		if( !m_vecOverridableFun.empty() )
 		{
 			// 确保pOldTable是原始虚表，因为pVObj有可能已经被修改过了
 			pOldTable = pScript->GetOrgVirtualTable( pVObj );
@@ -274,7 +274,7 @@ namespace Gamma
     void CClassRegistInfo::RecoverVirtualTable( CScriptBase* pScript, void* pObj ) const
     {
         SFunctionTable* pOrgTable = NULL;
-        if( !m_vecNewFunction.empty() )
+        if( !m_vecOverridableFun.empty() )
             pOrgTable = pScript->GetOrgVirtualTable( pObj );
 
         for( size_t i = 0; i < m_vecBaseRegist.size(); i++ )

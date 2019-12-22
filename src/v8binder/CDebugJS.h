@@ -10,7 +10,6 @@
 #include "v8/v8-inspector.h"
 #include "v8/v8-platform.h"
 #include "core/CDebugBase.h"
-using namespace std;
 
 namespace Gamma
 {
@@ -27,7 +26,7 @@ namespace Gamma
 		bool				m_bLoopOnPause;
 		CInspectorPtr		m_Inspector;
 		CInsSessionPtr		m_Session;
-		string				m_strUtf8Buffer;
+		std::string			m_strUtf8Buffer;
 
 		virtual bool		CheckRemoteSocket( char(&szBuffer)[2048], int32 nCurSize );
 		virtual bool		ProcessCommand(CDebugCmd* pCmd);

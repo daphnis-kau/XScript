@@ -102,6 +102,7 @@ namespace Gamma
 		
 		int32				m_nCurFrame;
 		int32				m_nCurLine;
+		int32				m_nShowLine;
 		std::string			m_strLastVarName;
 
 		//=================================================================
@@ -115,7 +116,7 @@ namespace Gamma
 
 		void				AddBreakPoint( const char* szBuf );
 		void				PrintBreakInfo();
-		void				ShowFileLines( int32 nCurLine );
+		void				ShowFileLines( int32 nLineCount );
 
 		//=================================================================
 		// RemoteDebug

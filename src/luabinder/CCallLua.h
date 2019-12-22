@@ -10,8 +10,6 @@
 #include "core/CCallBase.h"
 #include "CTypeLua.h"
 
-using namespace std;
-
 namespace Gamma
 {
 	class CScriptLua;
@@ -42,9 +40,9 @@ namespace Gamma
 	{
 	public:
 		static bool	CallVM( CScriptLua* pScript, 
-			CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray );
+			const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray );
 		static void	DestrucVM( CScriptLua* pScript,
-			CCallScriptBase* pCallBase, SVirtualObj* pObject );
+			const CCallScriptBase* pCallBase, SVirtualObj* pObject );
 	};
 };
 

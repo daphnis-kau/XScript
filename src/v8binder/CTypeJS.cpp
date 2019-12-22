@@ -4,8 +4,6 @@
 #include "common/Help.h"
 #include <string>
 
-using namespace std;
-
 namespace Gamma
 {
 	//=====================================================================

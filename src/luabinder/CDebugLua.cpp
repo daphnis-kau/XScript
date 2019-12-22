@@ -17,16 +17,15 @@ extern "C"
 namespace Gamma
 {
 	#define LOCAL_VARIABLE_ID 1
+	#define LUA_MASKALL (LUA_MASKCALL|LUA_MASKRET|LUA_MASKLINE)
 	static void* s_szValue2ID = (void*)"v2i";
 	static void* s_szID2Value = (void*)"i2v";
 
     CDebugLua::CDebugLua( CScriptBase* pBase, uint16 nDebugPort )
         : CDebugBase( pBase, nDebugPort )
-		, m_pState(NULL)
-        , m_nCurStackDepth(-1)
-        , m_nTargetStackDepth(-1)
-        , m_bInCoroutine(false)
-		, m_bStop(false)
+		, m_pState( NULL )
+		, m_pPreState( NULL )
+        , m_nBreakFrame( MAX_INT32 )
 		, m_nValueID( LOCAL_VARIABLE_ID )
 	{
 		CScriptLua* pScript = static_cast<CScriptLua*>( pBase );
@@ -56,6 +55,7 @@ namespace Gamma
 	void CDebugLua::SetCurState( lua_State* pL )
 	{
 		m_pState = pL;
+		m_pPreState = NULL;
 	}
 
 	uint32 CDebugLua::GetFrameCount()
@@ -97,8 +97,8 @@ namespace Gamma
 
 	void CDebugLua::ReadFile( std::string& strBuffer, const char* szFileName )
 	{
-		static string szKey = "GammaScriptStringTrunk";
-		if( szKey == string( szFileName, szKey.size() ) )
+		static std::string szKey = "GammaScriptStringTrunk";
+		if( szKey == std::string( szFileName, szKey.size() ) )
 		{
 			uintptr_t address = 0;
 			std::stringstream( szFileName + szKey.size() ) >> address;
@@ -124,103 +124,45 @@ namespace Gamma
 
     void CDebugLua::DebugHook( lua_State *pState, lua_Debug* pDebug )
     {
-		CScriptLua* pScriptLua = CScriptLua::GetScript( pState );
-		CDebugBase* pDebugger = pScriptLua->GetDebugger();
-		static_cast<CDebugLua*>( pDebugger )->OnDebugHook( pState, pDebug );
-    }
+		auto pScriptLua = CScriptLua::GetScript( pState );
+		auto pDebugger = static_cast<CDebugLua*>( pScriptLua->GetDebugger() );
 
-    void CDebugLua::OnDebugHook( lua_State* pState, lua_Debug* pDebug )
-    {
-		bool bStop = false;
-		if( m_bStop && ( pDebug->event == LUA_HOOKLINE || pDebug->event == LUA_HOOKRET ) )
-		{
-			m_bStop = false;
-			bStop = true;
-		}
+		// always stop while step in or meet the breakpoint
+		if( pDebugger->m_nBreakFrame == MAX_INT32 ||
+			( lua_getinfo( pState, "lS", pDebug ) &&
+				pDebugger->GetBreakPoint( pDebug->source, pDebug->currentline ) ) )
+			return pDebugger->Debug( pState );
 
-		if( !bStop )
-		{
-			lua_getinfo ( pState, "lS", pDebug );
-			if( GetBreakPoint( pDebug->source, pDebug->currentline ) )
-				bStop = true;
-		}
-
-        if( pState != m_pState && !bStop )
-        {
-            if( m_bInCoroutine )
-                return;
-
-            //转换了coroutine
-            switch( pDebug->event )
-            {
-            case LUA_HOOKCALL:
-                //resume
-                if( m_nTargetStackDepth <= m_nCurStackDepth )
-                {
-                    //打开这个开关，在coroutine中运行的代码都不会触发任何调试器的状态变化
-                    m_bInCoroutine = true;
-                    return;
-                }
-                //step in
-                //fall down
-            case LUA_HOOKRET:
-                //yield or dead
-                m_pState = pState;
-                StepIn();
-                break;
-            default:
-                {
-                    ostringstream strm;
-                    strm << "Invalid hook event "<< pDebug->event << " when switching coroutine.";
-                    throw( strm.str() );
-                }
-            }
+		// no any frame is expected to be break
+		if( pDebugger->m_nBreakFrame < 0 )
 			return;
-        }
 
-		if( m_nTargetStackDepth != -1 )
+		// corroutine changed
+		if( pState != pDebugger->m_pState )
 		{
-			//单步执行是打开的
-			switch( pDebug->event )
-			{
-			case LUA_HOOKCALL:
-				//并不是每一次LUA_HOOKCALL都会增加堆栈深度，所以这里不得不每次遍历堆栈来获得深度，是不是安装了coco的原因呢
-				m_nCurStackDepth = GetFrameCount();
-				if( m_nTargetStackDepth < m_nCurStackDepth )	//step out或者step over
-					lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | (HaveBreakPoint()?LUA_MASKLINE:0), 0 );
-				return;
-			case LUA_HOOKRET:
-				if(m_bInCoroutine)
-					m_bInCoroutine=false;
-				//并不是每一次LUA_HOOKRETURN都会减少堆栈深度，所以这里不得不每次遍历堆栈来获得深度，是不是安装了coco的原因呢
-				m_nCurStackDepth = GetFrameCount()-1;
-				/*if(GetFrameCount()!=m_nRunningStackLevel--)
-				DebugBreak();*/
-				if( m_nTargetStackDepth>=m_nCurStackDepth )
-					lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
-				return;
-			case LUA_HOOKTAILRET:
-				break;
-			case LUA_HOOKLINE:
-				break;
-			default:
-				throw( L"Invalid event in lua hook function" );
-			}
-
-			if(  (!bStop) && (m_nTargetStackDepth>=0) && (m_nTargetStackDepth<m_nCurStackDepth)  )
-				return;
-
-			m_nCurStackDepth=m_nTargetStackDepth=-1;//关闭所有各类单步执行
-		}
-		else
-		{
-			if( !bStop || ( pDebug->event != LUA_HOOKLINE && pDebug->event != LUA_HOOKRET ) )
-				return;
+			if( pDebug->event == LUA_HOOKRET && 
+				pDebugger->m_pPreState == pDebugger->m_pState )
+				return pDebugger->Debug( pState );
+			pDebugger->m_pPreState = pState;
+			return;
 		}
 
+		// ignore the return event in same corroutine
+		if( pDebug->event == LUA_HOOKRET )
+			return;
+
+		// check break frame
+		if( (int32)pDebugger->GetFrameCount() > pDebugger->m_nBreakFrame )
+			return;
+
+		pDebugger->Debug( pState );
+	}
+
+	void CDebugLua::Debug( lua_State* pState )
+	{
 		m_pState = pState;
-        lua_sethook( pState, &CDebugLua::DebugHook, 0, 0 );
-        Debug();
+		lua_sethook( pState, &CDebugLua::DebugHook, 0, 0 );
+		CDebugBase::Debug();
 	}
 
 	uint32 CDebugLua::AddBreakPoint( const char* szFileName, int32 nLine )
@@ -228,10 +170,8 @@ namespace Gamma
 		uint32 nID = CDebugBase::AddBreakPoint( szFileName, nLine );
 		CScriptLua* pScriptLua = static_cast<CScriptLua*>( GetScriptBase() );
 		lua_State* pState = pScriptLua->GetLuaState();
-		if( !HaveBreakPoint() )
-			lua_sethook( pState, &CDebugLua::DebugHook, 0, 0 );
-		else
-			lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
+		if( HaveBreakPoint() )
+			lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKALL, 0 );
 		return nID;
 	}
 
@@ -240,46 +180,46 @@ namespace Gamma
 		CDebugBase::DelBreakPoint( nBreakPointID );
 		CScriptLua* pScriptLua = static_cast<CScriptLua*>( GetScriptBase() );
 		lua_State* pState = pScriptLua->GetLuaState();
-		if( !HaveBreakPoint() )
-			lua_sethook( pState, &CDebugLua::DebugHook, 0, 0 );
-		else
-			lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
+		if( HaveBreakPoint() || m_nBreakFrame >= 0 )
+			return;
+		lua_sethook( pState, &CDebugLua::DebugHook, 0, 0 );
 	}
 
 	void CDebugLua::Stop()
 	{
-		m_bStop = true;
 		CScriptLua* pScriptLua = static_cast<CScriptLua*>( GetScriptBase() );
-		lua_State* pState = pScriptLua->GetLuaState();
-		lua_sethook( pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
+		SetCurState( pScriptLua->GetLuaState() );
+		StepIn();
 	}
 
 	void CDebugLua::Continue()
 	{
 		if( !HaveBreakPoint() )
 			return;
-		lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE, 0 );
+		lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKALL, 0 );
+		m_nBreakFrame = -1;
+		m_pPreState = m_pState;
 	}
 
     void CDebugLua::StepNext()
     {
-        lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKLINE | LUA_MASKCALL | LUA_MASKRET, 0 );
-        m_nCurStackDepth = GetFrameCount();
-        m_nTargetStackDepth = m_nCurStackDepth;
+        lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKLINE, 0 );
+		m_nBreakFrame = GetFrameCount();
+		m_pPreState = m_pState;
     }
 
     void CDebugLua::StepIn()
     {
-        lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKLINE | LUA_MASKCALL | LUA_MASKRET, 0 );
-        m_nCurStackDepth = GetFrameCount();
-        m_nTargetStackDepth = INT_MAX;
+        lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKALL, 0 );
+		m_nBreakFrame = MAX_INT32;
+		m_pPreState = m_pState;
     }
 
     void CDebugLua::StepOut()
     {
-        lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKCALL | LUA_MASKRET | (HaveBreakPoint()?LUA_MASKLINE:0), 0 );
-        m_nCurStackDepth = GetFrameCount();
-        m_nTargetStackDepth = m_nCurStackDepth - 1; 
+        lua_sethook( m_pState, &CDebugLua::DebugHook, LUA_MASKLINE|LUA_MASKRET, 0 );
+		m_nBreakFrame = (int32)GetFrameCount() - 1;
+		m_pPreState = m_pState;
     }
 
 	int32 CDebugLua::SwitchFrame( int32 nCurFrame )
@@ -323,14 +263,14 @@ namespace Gamma
 
 		lua_pop( m_pState, 1 );
 
-		// 加入s_szValue2ID
+		// add to s_szValue2ID
 		nID = ++m_nValueID;
 		lua_pushvalue( m_pState, -2 );
 		lua_pushnumber( m_pState, nID );
 		lua_rawset( m_pState, -3 );   
 		lua_pop( m_pState, 1 );
 
-		// 加入s_szID2Value
+		// add to s_szID2Value
 		lua_pushlightuserdata( m_pState, s_szID2Value );
 		lua_rawget( m_pState, LUA_REGISTRYINDEX );	
 		lua_pushnumber( m_pState, nID );
@@ -348,7 +288,7 @@ namespace Gamma
 		if( !IsWordChar( szName[0] ) )
 			return INVALID_32BITID;
 		uint32 nIndex = 0;
-		string strValue;
+		std::string strValue;
 		while( szName[nIndex] == '_' ||
 			IsWordChar( szName[nIndex] ) || 
 			IsNumber( szName[nIndex] ) )
@@ -393,7 +333,7 @@ namespace Gamma
 			return Info;
 		}
 
-		// 加入s_szID2Value
+		// add to s_szID2Value
 		lua_pushlightuserdata( m_pState, s_szID2Value );
 		lua_rawget( m_pState, LUA_REGISTRYINDEX );	
 		lua_pushnumber( m_pState, nID );
@@ -407,7 +347,7 @@ namespace Gamma
 		Info.strValue = s ? s : "nil";
 		lua_pop( m_pState, 1 );
 
-		// [todo 获取属性]
+		// [todo get property]
 		lua_pop( m_pState, 1 );
 		return Info;
 	}

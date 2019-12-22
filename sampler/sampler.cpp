@@ -1,4 +1,5 @@
 ﻿#include "sampler.h"
+#include "common/CThread.h"
 #include "core/GammaScript.h"
 #include "../src/luabinder/CScriptLua.h"
 #include <string>
@@ -160,7 +161,7 @@ void TestLua()
 #ifdef JS
 	g_ScriptLua = new CScriptJS;
 #else
-	g_ScriptLua = new CScriptLua;
+	g_ScriptLua = new CScriptLua(5067);
 #endif
 
 	typedef decltype ( ( TestBase*( TestBase::* )( ) )nullptr ) aaa;
@@ -169,34 +170,13 @@ void TestLua()
 	int32 a[2];
 	g_ScriptLua->RunString( szLua );
 	//uint32 n = GetTickCount();
+	g_ScriptLua->AddSearchPath( "F:/GitHub/XScript/sampler/lua/" );
 	g_ScriptLua->RunFunction( NULL, "aaa", a, "sadfasdf" );
-	g_ScriptLua->RunString(
-		"a = Test_Base:new(); \n"
-
-		"function a:GetThis( v ) \n"
-		"	gdb()\n"
-		"	print( \"call GetThis\", v:x(), v:y() );\n"
-		"   return 3;\n"
-		"end\n"
-
-		"function a:NewThisLua() \n"
-		"   return self;\n"
-		"end\n"
-
-		"a:kkk():x(10)\n"
-		"print( a:x() )\n"
-		"a:kkk( CVector2f:new())\n"
-		"a:kkk():x(1000)\n"
-		"a:x(100)\n"
-
-		"r = a:GetNumber( CVector2f:new(), 10 )\n"
-		"print( r );\n"
-		"print( r:x(), r:y() );\n"
-		"print( Test_Base.GetCppName( a:kkk() ) );"
-		"print( a:TestRet64( \"asdfff\", \"9580\" ) );"
-	);
-
-	g_ScriptLua->RunString( " " );
+	while(true)
+	{
+		g_ScriptLua->RunFile( "./test.lua", true );
+		GammaSleep( 10 );
+	}
 	delete g_ScriptLua;
 }
 

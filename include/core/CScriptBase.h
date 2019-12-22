@@ -16,16 +16,14 @@
 #include <map>
 #include <set>
 
-using namespace std;
-
 namespace Gamma
 {
 	class CTypeBase;
 	class CDebugBase;
 	class CByScriptBase;
-	typedef pair<SFunctionTable*, uint32> CVMObjVTableInfo;
-	typedef map<const CClassRegistInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
-	typedef map<SFunctionTable*, SFunctionTable*> CFunctionTableMap;
+	typedef std::pair<SFunctionTable*, uint32> CVMObjVTableInfo;
+	typedef std::map<const CClassRegistInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
+	typedef std::map<SFunctionTable*, SFunctionTable*> CFunctionTableMap;
 
     class CScriptBase : public TList<CScriptBase>::CListNode
 	{
@@ -35,10 +33,10 @@ namespace Gamma
 		CCircelBuffer			m_UnlinkObjectBuffer;
 		CFunctionTableMap		m_mapVirtualTableOld2New;
 		CNewFunctionTableMap	m_mapNewVirtualTable;
-        list<string>			m_listSearchPath;
+		std::list<std::string>	m_listSearchPath;
 
-		virtual bool			CallVM( CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray ) = 0;
-		virtual void			DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject ) = 0;
+		virtual bool			CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray ) = 0;
+		virtual void			DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject ) = 0;
     public:
         CScriptBase(void);
 		virtual ~CScriptBase( void );

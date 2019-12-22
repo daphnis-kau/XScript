@@ -30,6 +30,7 @@ typedef struct linger		LINGER;
 #endif
 
 //#define LOG_REMOTE_COMMAND
+#define LINE_COUNT_ON_SHOW 16
 
 namespace Gamma
 {
@@ -190,7 +191,7 @@ namespace Gamma
 		CFileMap::iterator it = m_mapFileBuffer.find( strKey );
 		if( m_mapFileBuffer.end() == it )
 		{
-			string strBuffer;
+			std::string strBuffer;
 			ReadFile( strBuffer, szSource );
 			AddFileContent( szSource, strBuffer.c_str() );
 			it = m_mapFileBuffer.find( strKey );
@@ -206,6 +207,14 @@ namespace Gamma
 	//=================================================================
 	void CDebugBase::ListenRemote( uint16 nDebugPort )
 	{
+#ifdef _WIN32
+		WORD wVersion;
+		WSADATA wsaData;
+		wVersion = MAKEWORD( 2, 2 );
+		if( WSAStartup( wVersion, &wsaData ) )
+			return;
+#endif
+
 		//创建socket
 		m_nRemoteListener = (uint32)socket( AF_INET, SOCK_STREAM, 0 );
 		if( m_nRemoteListener == INVALID_SOCKET )
@@ -683,7 +692,7 @@ namespace Gamma
 		{
 			CJson* pArg = pCmd->GetChild( "arguments" );
 			uint32 nParentID = pArg->At<uint32>( "variablesReference" );
-			bool bIndex = pArg->At<string>( "filter" ) == "indexed";
+			bool bIndex = pArg->At<std::string>( "filter" ) == "indexed";
 			uint32 nStart = pArg->At<uint32>( "start" );
 			uint32 nCount = pArg->At<uint32>( "count" );
 			uint32* aryChild = (uint32*)alloca( sizeof(uint32)*nCount );
@@ -838,10 +847,12 @@ namespace Gamma
 			m_pBase->Output( pException->szException, -1 );
 			m_pBase->Output( "\n", -1 );
 		}
+
 		GetFrameInfo( m_nCurFrame, &m_nCurLine, &szCurFunction, &szCurSource );
 		if( m_bPrintFrame )
 			PrintFrame( m_nCurFrame, szCurFunction, szCurSource, m_nCurLine );
 		PrintLine( m_nCurFrame, szCurSource, m_nCurLine, true );
+		m_nShowLine = m_nCurLine - LINE_COUNT_ON_SHOW/2;
 		m_bPrintFrame = true;
 
 		for(;;)
@@ -853,37 +864,37 @@ namespace Gamma
 			if( !strcmp( szBuf, "help") )
 			{
 				const char* szHelp =
-					"continue/c                        run continue\n"
-					"next/n                            step next\n"
-					"step/s                            step in\n"
-					"out/o                             step out\n"
-					"list/l                            list current source\n"
 					"backtrace/bt                      back trace stack\n"
-					"frame/f n                         locate the stack frame\n"
-					"print/p v                         print valur of expression\n"
-					"load/lo file                      load the file\n"
 					"break/b file:line                 set break point on line in file\n"
+					"continue/c                        continue\n"
 					"del n                             delete break point\n"
-					"info                              list break point\n"
-					"enable                            enable all break point\n"
 					"disable                           disable all break point\n"
+					"enable                            enable all break point\n"
+					"frame/f n                         locate the stack frame\n"
 					"help                              print this infomation\n"
+					"info                              list break point\n"
+					"list/l                            list current source\n"
+					"load/lo file                      load the file\n"
+					"next/n                            step next\n"
+					"out/o                             step out\n"
+					"print/p v                         print valur of expression\n"
+					"step/s                            step in\n"
 					;
 				m_pBase->Output( szHelp, -1 );
 			}
-			else if( !strcmp( szBuf, "continue") || !strcmp( szBuf, "c" ) )
+			else if( !strcmp( szBuf, "continue" ) || !strcmp( szBuf, "c" ) )
 			{
 				Continue();
 				break;
 			}
-			else if( !strcmp( szBuf, "del") )
+			else if( !strcmp( szBuf, "del" ) )
 			{
-				szBuf = ReadWord();        //获取del后面的参数
+				szBuf = ReadWord();        
 				DelBreakPoint( szBuf && IsNumber( *szBuf ) ? atoi( szBuf ) : INVALID_32BITID );
 			}
 			else if( !strcmp( szBuf, "break" ) || !strcmp( szBuf, "b" ) )
 			{
-				szBuf = ReadWord();    //获取break后面的参数
+				szBuf = ReadWord();
 				AddBreakPoint( szBuf );
 			}
 			else if( !strcmp( szBuf, "info" ) )
@@ -916,9 +927,9 @@ namespace Gamma
 			else if( !strcmp( szBuf, "list") || !strcmp( szBuf, "l") )
 			{
 				szBuf = ReadWord();
-				uint32 nLine = INVALID_32BITID;
-				if( szBuf )
-					nLine = IsNumber( *szBuf ) ? atoi( szBuf ) : 0;
+				uint32 nLine = szBuf && IsNumber( *szBuf ) ? atoi( szBuf ) : 0;
+				if( !nLine )
+					nLine = LINE_COUNT_ON_SHOW;
 				ShowFileLines( nLine );
 			}
 			else if( !strcmp( szBuf, "backtrace" ) || !strcmp( szBuf, "bt" ) )
@@ -939,6 +950,7 @@ namespace Gamma
 				GetFrameInfo( nFrame, &m_nCurLine, &szCurFunction, &szCurSource );
 				PrintFrame( m_nCurFrame, szCurFunction, szCurSource, m_nCurLine );
 				PrintLine( m_nCurFrame, szCurSource, m_nCurLine, true );
+				m_nShowLine = m_nCurLine - LINE_COUNT_ON_SHOW/2;
 			}
 			else if( !strcmp( szBuf, "print") || !strcmp( szBuf, "p" ) )
 			{
@@ -1030,34 +1042,20 @@ namespace Gamma
 		}
 	}
 
-	void CDebugBase::ShowFileLines( int32 nCurLine )
+	void CDebugBase::ShowFileLines( int32 nLineCount )
 	{
-		int32 nLineCount = 15;            //一次显示代码的行数
-		if( nCurLine != INVALID_32BITID )
-		{
-			if( nCurLine )
-				m_nCurLine = nCurLine;
-			else
-				m_nCurLine = Max( m_nCurLine - nLineCount*2, nLineCount/2 );
-		}
+		if( m_nShowLine < 1 )
+			m_nShowLine = 1;
 
-		int nShowBeginLine = Max( m_nCurLine - nLineCount/2, 0 );    //显示代码的起始位置
-		int nShowCounter = 0;
+		int32 nLine = 0;
+		const char* szCurSource = NULL;
+		if( !GetFrameInfo( m_nCurFrame, &nLine, NULL, &szCurSource ) )
+			return;
 
-		for( nShowCounter = 0; nShowCounter < nLineCount; nShowCounter++ )
-		{
-			int nShowLine = nShowBeginLine + nShowCounter;
-			if( nShowLine > 0 )
-			{
-				int32 nLine = m_nCurLine;
-				const char* szCurSource = NULL; 
-				GetFrameInfo( m_nCurFrame, &nLine, NULL, &szCurSource );
-				bool bCurLine = nShowLine == nLine;
-				if( !PrintLine( m_nCurFrame, szCurSource, nShowLine, bCurLine ) )
-					break;
-			}
-		}
-		m_nCurLine += nShowCounter;
+		int32 nShowEndLine = m_nShowLine + LINE_COUNT_ON_SHOW;
+		while( m_nShowLine < nShowEndLine &&
+			PrintLine( m_nCurFrame, szCurSource, m_nShowLine, m_nShowLine == nLine ) )
+			m_nShowLine++;
 	}
 
 	//===============================================================

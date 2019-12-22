@@ -95,7 +95,7 @@ namespace Gamma
 		EHttpReadState eState = State.CheckHttpBuffer(szBuffer, nCurSize);
 		if (eState != eHRS_Ok)
 			return false;
-		string strPage = string(State.GetPageStart(), State.GetPageLength());
+		std::string strPage = std::string(State.GetPageStart(), State.GetPageLength());
 		if (strPage == "json/version")
 		{
 			const char* szContent =
@@ -141,7 +141,7 @@ namespace Gamma
 			return false;
 		}
 
-		string strBuffer;
+		std::string strBuffer;
 		strBuffer.append( szBuffer, nCurSize );
 		while( true )
 		{
@@ -170,7 +170,7 @@ namespace Gamma
 			break;
 		}
 
-		string strCmd;
+		std::string strCmd;
 		while( m_eAttachType )
 		{
 			while( strBuffer.size() >= sizeof(SWebSocketProtocal) )
