@@ -18,15 +18,15 @@ namespace Gamma
 	//==================================================================
 	// 检查是否Utf8字符串
 	//==================================================================
-	GAMMA_COMMON_API bool IsUtf8( const char* pUtf8, uint32 nLen = -1 );
-	GAMMA_COMMON_API int32 GetCharacterCount( const char* pUtf8, uint32 nLen = -1 );
+	bool IsUtf8( const char* pUtf8, uint32 nLen = -1 );
+	int32 GetCharacterCount( const char* pUtf8, uint32 nLen = -1 );
 
 	//========================================================================================
 	// 将utf8转为unicode, pBuf为空返回装载Unicode字符的个数, nSize为wchar_t或uint16的个数
 	//========================================================================================
-	GAMMA_COMMON_API uint32 Utf8ToUcs( wchar_t* pUnicode, uint32 nSize, const char* pUtf8, uint32 nLen = -1 );
-	GAMMA_COMMON_API uint32 Utf8ToUcs2( uint16* pUnicode, uint32 nSize, const char* pUtf8, uint32 nLen = -1 );
-	GAMMA_COMMON_API const char* GetUnicode( uint32& cUnicode, const char* pUtf8 );
+	uint32 Utf8ToUcs( wchar_t* pUnicode, uint32 nSize, const char* pUtf8, uint32 nLen = -1 );
+	uint32 Utf8ToUcs2( uint16* pUnicode, uint32 nSize, const char* pUtf8, uint32 nLen = -1 );
+	const char* GetUnicode( uint32& cUnicode, const char* pUtf8 );
 
 	inline const std::wstring Utf8ToUcs( const char* pUtf8, uint32 nLen = -1 )
 	{
@@ -48,8 +48,8 @@ namespace Gamma
 	//==================================================================
 	// 将Unicode转为utf8, pBuf为空返回装载char的字符个数
 	//==================================================================
-	GAMMA_COMMON_API uint32 UcsToUtf8( char* pUtf8, uint32 nSize, const wchar_t* pUnicode, uint32 nLen = -1 );
-	GAMMA_COMMON_API uint32 Ucs2ToUtf8( char* pUtf8, uint32 nSize, const uint16* pUnicode, uint32 nLen = -1 );
+	uint32 UcsToUtf8( char* pUtf8, uint32 nSize, const wchar_t* pUnicode, uint32 nLen = -1 );
+	uint32 Ucs2ToUtf8( char* pUtf8, uint32 nSize, const uint16* pUnicode, uint32 nLen = -1 );
 
 	inline const std::string UcsToUtf8( const wchar_t* pUnicode, uint32 nLen = -1 )
 	{
@@ -71,7 +71,7 @@ namespace Gamma
 	//==================================================================
 	// 将Uint8转为Base16, pBuf为空返回装载char的字符个数
 	//==================================================================
-	GAMMA_COMMON_API uint32 Uint82Base16( const uint8* pUint8, char* pBase16, uint32 sizeBuf );
+	uint32 Uint82Base16( const uint8* pUint8, char* pBase16, uint32 sizeBuf );
 
 	//======================================================================
 	// 转换wchar_t字符串为Uint8格式
@@ -84,7 +84,7 @@ namespace Gamma
 	//==================================================================
 	// URLEncode
 	//==================================================================
-	GAMMA_COMMON_API uint32 URLEncode( const uint8* pUint8, char* pEncode, uint32 sizeBuf );
+	uint32 URLEncode( const uint8* pUint8, char* pEncode, uint32 sizeBuf );
 
 	inline const std::string URLEncode( const uint8* pUint8 )
 	{
@@ -99,7 +99,7 @@ namespace Gamma
 	//==================================================================
 	// URLDecode
 	//==================================================================
-	GAMMA_COMMON_API uint32 URLDecode( const char* pEncode, uint8* pUint8, uint32 sizeBuf );
+	uint32 URLDecode( const char* pEncode, uint8* pUint8, uint32 sizeBuf );
 
 	inline const std::string URLDecode( const char* pEncode )
 	{
@@ -114,25 +114,25 @@ namespace Gamma
 	//==================================================================
 	// Base64Encode
 	//==================================================================
-	GAMMA_COMMON_API int32 Base64Encode( char* pBase64Buffer, 
+	int32 Base64Encode( char* pBase64Buffer, 
 		uint32 nOutLen, const void* pSrcBuffer, uint32 nSrcLen );
 
 	//==================================================================
 	// Base64Decode
 	//==================================================================
-	GAMMA_COMMON_API int32 Base64Decode( void* pDesBuffer, 
+	int32 Base64Decode( void* pDesBuffer, 
 		uint32 nOutLen, const char* pBase64Buffer, uint32 nSrcLen );
 
 	//==================================================================
 	// Base64UrlEncode +变为- /变为_ =变为.
 	//==================================================================
-	GAMMA_COMMON_API int32 Base64UrlEncode( char* pBase64Buffer, 
+	int32 Base64UrlEncode( char* pBase64Buffer, 
 		uint32 nOutLen, const void* pSrcBuffer, uint32 nSrcLen );
 
 	//==================================================================
 	// Base64UrlDecode
 	//==================================================================
-	GAMMA_COMMON_API int32 Base64UrlDecode( void* pDesBuffer, 
+	int32 Base64UrlDecode( void* pDesBuffer, 
 		uint32 nOutLen, const char* pBase64Buffer, uint32 nSrcLen );
 
 	//========================================================================

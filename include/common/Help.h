@@ -459,12 +459,12 @@ namespace Gamma
 		return vecStr;
 	}
 
-	GAMMA_COMMON_API int32 GammaA2I( const wchar_t* szStr );
-	GAMMA_COMMON_API int32 GammaA2I( const char* szStr );
-	GAMMA_COMMON_API int64 GammaA2I64( const wchar_t* szStr );
-	GAMMA_COMMON_API int64 GammaA2I64( const char* szStr );
-	GAMMA_COMMON_API double GammaA2F( const wchar_t* szStr );
-	GAMMA_COMMON_API double GammaA2F( const char* szStr );
+	int32 GammaA2I( const wchar_t* szStr );
+	int32 GammaA2I( const char* szStr );
+	int64 GammaA2I64( const wchar_t* szStr );
+	int64 GammaA2I64( const char* szStr );
+	double GammaA2F( const wchar_t* szStr );
+	double GammaA2F( const char* szStr );
 
     template< class _CharType, class _intType >
     inline std::vector<_intType> SeparateStringToIntArray( const _CharType* szSrc, _CharType nSeparator )

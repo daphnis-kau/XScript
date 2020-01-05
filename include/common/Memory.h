@@ -19,27 +19,27 @@ namespace Gamma
 	//========================================================================
 	// 获取内存页大小
 	//========================================================================
-	GAMMA_COMMON_API uint32 GetVirtualPageSize();
+	uint32 GetVirtualPageSize();
 
 	//========================================================================
 	// 保留一段内存
 	//========================================================================
-	GAMMA_COMMON_API void* ReserveMemoryPage( void* pAddress, size_t nSize );
+	void* ReserveMemoryPage( void* pAddress, size_t nSize );
 
 	//========================================================================
 	// 释放保留区域保留一段内存
 	//========================================================================
-	GAMMA_COMMON_API bool FreeMemoryPage( void* pAddress, size_t nSize );
+	bool FreeMemoryPage( void* pAddress, size_t nSize );
 
 	//========================================================================
 	// 提交一段内存
 	//========================================================================
-	GAMMA_COMMON_API bool CommitMemoryPage( void* pAddress, size_t nSize, uint32 nProtectFlag );
+	bool CommitMemoryPage( void* pAddress, size_t nSize, uint32 nProtectFlag );
 
 	//========================================================================
 	// 取消提交的一段内存
 	//========================================================================
-	GAMMA_COMMON_API bool DecommitMemoryPage( void* pAddress, size_t nSize );
+	bool DecommitMemoryPage( void* pAddress, size_t nSize );
 
 	//========================================================================
 	// 页分配器

@@ -233,11 +233,6 @@ namespace Gamma
 
 	typedef TConstString<char>		gammacstring;
 	typedef TConstString<wchar_t>	wgammacstring;
-
-#ifdef _WIN32
-	template class GAMMA_COMMON_API TConstString<char>;
-	template class GAMMA_COMMON_API TConstString<wchar_t>;
-#endif
 }
 
 #endif

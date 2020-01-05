@@ -459,7 +459,7 @@ namespace Gamma
 		return (uint32)ssShakeHand.GetCurPos();
 	}
 
-	GAMMA_COMMON_API uint32 WebSocketShakeHandCheck( const char* pBuffer, size_t nSize, 
+	uint32 WebSocketShakeHandCheck( const char* pBuffer, size_t nSize, 
 		bool bServer, const char*& szWebSocketKey, uint32& nWebSocketKeyLen )
 	{
 		uint32 nReadCount = 0;
@@ -546,7 +546,7 @@ namespace Gamma
 		return nReadCount;
 	}
 
-	GAMMA_COMMON_API uint32 MakeWebSocketServerShakeHandResponese( char* szBuffer, 
+	uint32 MakeWebSocketServerShakeHandResponese( char* szBuffer, 
 		uint32 nBufferSize, const char* szWebSocketKey, uint32 nWebSocketKeyLen )
 	{
 		// 填充http响应头信息  
@@ -569,7 +569,7 @@ namespace Gamma
 		return (uint32)ssBuffer.GetCurPos();
 	}
 
-	GAMMA_COMMON_API uint64 GetWebSocketProtocolLen( 
+	uint64 GetWebSocketProtocolLen( 
 		const SWebSocketProtocal* pProtocol, uint64 nSize )
 	{
 		union{ uint64 u64; uint8 u8[sizeof(uint64)]; } Size;
@@ -600,7 +600,7 @@ namespace Gamma
 		return (pAppend - pStart) + Size.u64 + (pProtocol->m_bMask ? 4 : 0);
 	}
 
-	GAMMA_COMMON_API uint64 DecodeWebSocketProtocol( 
+	uint64 DecodeWebSocketProtocol( 
 		const SWebSocketProtocal* pProtocol, char*& pExtraBuffer, uint64& nSize )
 	{
 		uint64 nLen = pProtocol->m_nLen;
@@ -634,7 +634,7 @@ namespace Gamma
 		return ( pAppend - pStart ) + nLen; 
 	}
 
-	GAMMA_COMMON_API uint32 EncodeWebSocketProtocol(
+	uint32 EncodeWebSocketProtocol(
 		SWebSocketProtocal& Protocol, char* pExtraBuffer, uint64 nSize )
 	{
 		union { uint64 u64; uint8 u8[sizeof(uint64)]; } Size;

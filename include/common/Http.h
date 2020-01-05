@@ -68,7 +68,7 @@ namespace Gamma
 		bool			bHttps; 
 	};
 
-	class GAMMA_COMMON_API CHttpRecvState
+	class CHttpRecvState
 	{
 		uint32			m_nHttpLength;
 	public:
@@ -81,7 +81,7 @@ namespace Gamma
 		void			Reset();
 	}; 
 
-	class GAMMA_COMMON_API CHttpRequestState
+	class CHttpRequestState
 	{
 		uint32			m_nKeepAlive;
 		const char*		m_szDataStart;
@@ -111,40 +111,40 @@ namespace Gamma
 	//==============================================================================
 	// 从url获取szHost和端口
 	//==============================================================================
-	GAMMA_COMMON_API SUrlInfo GetHostAndPortFromUrl( const char* szUrl );
+	SUrlInfo GetHostAndPortFromUrl( const char* szUrl );
 
 	//==============================================================================
 	// 组装httprequest
 	// nBufferSize必须大于HTTP_REQUEST_HEAD_SIZE + strlen( szUrl ) + nDataSize
 	//==============================================================================
-	GAMMA_COMMON_API uint32 MakeHttpRequest( char* szBuffer, uint32 nBufferSize,
+	uint32 MakeHttpRequest( char* szBuffer, uint32 nBufferSize,
 		bool bPost, const char* szUrl, const void* pData, uint32 nDataSize);
 
 	//==============================================================================
 	// 组装WebSocket request
 	// nBufferSize必须大于HTTP_REQUEST_HEAD_SIZE + strlen( szUrl )
 	//==============================================================================
-	GAMMA_COMMON_API uint32 MakeWebSocketShakeHand( char* szBuffer, 
+	uint32 MakeWebSocketShakeHand( char* szBuffer, 
 		uint32 nBufferSize, uint8 (&aryBinKey)[16], const char* szUrl );
 	
 	//==============================================================================
 	// WebSocket shakehandchec
 	// 返回值 0：buffer不够，-1：解析错误，szWebSocketKey包含错误信息 > 0:使用掉的大小
 	//==============================================================================
-	GAMMA_COMMON_API uint32 WebSocketShakeHandCheck( const char* pBuffer, size_t nSize, 
+	uint32 WebSocketShakeHandCheck( const char* pBuffer, size_t nSize, 
 		bool bServer, const char*& szWebSocketKey, uint32& nWebSocketKeyLen );
 
 	//==============================================================================
 	// 组装WebSocket服务端回应消息
 	// nBufferSize必须大于HTTP_REQUEST_HEAD_SIZE
 	//==============================================================================
-	GAMMA_COMMON_API uint32 MakeWebSocketServerShakeHandResponese( char* szBuffer,
+	uint32 MakeWebSocketServerShakeHandResponese( char* szBuffer,
 		uint32 nBufferSize, const char* szWebSocketKey, uint32 nWebSocketKeyLen);
 
 	//==============================================================================
 	// 获取WebSocket Protocol消息长度
 	//==============================================================================
-	GAMMA_COMMON_API uint64 GetWebSocketProtocolLen( 
+	uint64 GetWebSocketProtocolLen( 
 		const SWebSocketProtocal* pProtocol, uint64 nSize );
 
 	//==============================================================================
@@ -153,14 +153,14 @@ namespace Gamma
 	// char*& pExtraBuffer 返回解码后的数据
 	// uint64& nSize 返回解码后的数据大小
 	//==============================================================================
-	GAMMA_COMMON_API uint64 DecodeWebSocketProtocol( 
+	uint64 DecodeWebSocketProtocol( 
 		const SWebSocketProtocal* pProtocol, char*& pExtraBuffer, uint64& nSize );
 
 	//==============================================================================
 	// 编码WebSocket Protocol
 	// 返回值：返回编码的Mask，MsgHead.m_bMask = true有效
 	//==============================================================================
-	GAMMA_COMMON_API uint32 EncodeWebSocketProtocol( 
+	uint32 EncodeWebSocketProtocol( 
 		SWebSocketProtocal& Protocol, char* pExtraBuffer, uint64 nSize );
 
 }

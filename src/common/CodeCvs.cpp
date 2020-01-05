@@ -263,7 +263,7 @@ namespace Gamma
 		return 2 * nPos + 1;
 	}
 
-	GAMMA_COMMON_API uint32 URLEncode( const uint8* pUint8, char* pEncode, uint32 sizeBuf )
+	uint32 URLEncode( const uint8* pUint8, char* pEncode, uint32 sizeBuf )
 	{
 		uint32 i = 0;
 		static unsigned char hexchars[] = "0123456789ABCDEF";
@@ -292,7 +292,7 @@ namespace Gamma
 		return i;
 	}
 
-	GAMMA_COMMON_API uint32 URLDecode( const char* pEncode, uint8* pUint8, uint32 sizeBuf )
+	uint32 URLDecode( const char* pEncode, uint8* pUint8, uint32 sizeBuf )
 	{
 		uint32 i = 0;
 
@@ -419,7 +419,7 @@ namespace Gamma
 		return nDes;
 	}
 
-	GAMMA_COMMON_API int32 Base64Decode( 
+	int32 Base64Decode( 
 		void* pDesBuffer, uint32 nOutLen, const char* pBase64Buffer, uint32 nSrcLen )
 	{
 		static int8 map64[] =
@@ -435,7 +435,7 @@ namespace Gamma
 			'+', '=', pDesBuffer, nOutLen, pBase64Buffer, nSrcLen );
 	}
 
-	GAMMA_COMMON_API int32 Base64Encode( 
+	int32 Base64Encode( 
 		char* pBase64Buffer, uint32 nOutLen, const void* pSrcBuffer, uint32 nSrcLen )
 	{
 		static char alphabet64[64] =
@@ -452,7 +452,7 @@ namespace Gamma
 		return Base64Encode( alphabet64, '=', pBase64Buffer, nOutLen, pSrcBuffer, nSrcLen );
 	}
 
-	GAMMA_COMMON_API int32 Base64UrlDecode( 
+	int32 Base64UrlDecode( 
 		void* pDesBuffer, uint32 nOutLen, const char* pBase64Buffer, uint32 nSrcLen )
 	{
 		static int8 map64[] =
@@ -468,7 +468,7 @@ namespace Gamma
 			'-', '.', pDesBuffer, nOutLen, pBase64Buffer, nSrcLen );
 	}
 
-	GAMMA_COMMON_API int32 Base64UrlEncode( 
+	int32 Base64UrlEncode( 
 		char* pBase64Buffer, uint32 nOutLen, const void* pSrcBuffer, uint32 nSrcLen )
 	{
 		static char alphabet64[64] =

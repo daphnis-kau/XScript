@@ -20,7 +20,7 @@ namespace Gamma
 	//        --------------     
 	//                             
 	//
-	struct GAMMA_COMMON_API SFunctionTable
+	struct SFunctionTable
 	{
 		SFunctionTable();
 		int32 GetFunctionCount();
@@ -35,7 +35,7 @@ namespace Gamma
 
 	// 获取虚表索引导出函数
 	typedef void( *VirtualFunCallback )( void*, void* );
-	GAMMA_COMMON_API uint32 FindVirtualFunction( uint32 nSize,
+	uint32 FindVirtualFunction( uint32 nSize,
 		VirtualFunCallback funCallback, void* pContext );
 
 	// 获取普通函数虚表索引

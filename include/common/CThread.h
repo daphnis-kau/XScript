@@ -33,47 +33,47 @@ namespace Gamma
 	//======================================================================
 	// Process
 	//======================================================================
-	GAMMA_COMMON_API uint32		GammaGetCurrentProcessID();
-	GAMMA_COMMON_API void		GammaGetCurrentProcessPath( char* szBuffer, size_t nCount );
-	GAMMA_COMMON_API bool		GammaCheckProcessExist( uint32 nProcessID );
-	GAMMA_COMMON_API uint64		GammaGetProcessMemCost();
-	GAMMA_COMMON_API float		GammaGetProcessCpuCost();
+	uint32		GammaGetCurrentProcessID();
+	void		GammaGetCurrentProcessPath( char* szBuffer, size_t nCount );
+	bool		GammaCheckProcessExist( uint32 nProcessID );
+	uint64		GammaGetProcessMemCost();
+	float		GammaGetProcessCpuCost();
 
     //======================================================================
     // Sleep
     //======================================================================
-    GAMMA_COMMON_API void		GammaSleep( uint32 uMilliSecond );
+    void		GammaSleep( uint32 uMilliSecond );
 
     //======================================================================
     // Gamma Thread
     //======================================================================
-    GAMMA_COMMON_API bool		GammaCreateThread( HTHREAD* phThread, uint32 nStackSize, THREADPROC pThreadFun, void* pParam );
-    GAMMA_COMMON_API void		GammaDetachThread( HTHREAD hThread );
-    GAMMA_COMMON_API void		GammaExitThread( uint32 uExitCode );
-    GAMMA_COMMON_API bool		GammaTerminateThread( HTHREAD hThread, uint32 uExitCode );
-	GAMMA_COMMON_API uint64		GammmaGetCurrentThreadID();
-    GAMMA_COMMON_API bool		GammaIsCurrentThread( uint64 nThreadID );
-    GAMMA_COMMON_API bool		GammaJoinThread( HTHREAD hThread );//相当于等待hThread退出
-    GAMMA_COMMON_API bool		GammaSetThreadPriority( HTHREAD hThread, int32 nPriority );
+    bool		GammaCreateThread( HTHREAD* phThread, uint32 nStackSize, THREADPROC pThreadFun, void* pParam );
+    void		GammaDetachThread( HTHREAD hThread );
+    void		GammaExitThread( uint32 uExitCode );
+    bool		GammaTerminateThread( HTHREAD hThread, uint32 uExitCode );
+	uint64		GammmaGetCurrentThreadID();
+    bool		GammaIsCurrentThread( uint64 nThreadID );
+    bool		GammaJoinThread( HTHREAD hThread );
+    bool		GammaSetThreadPriority( HTHREAD hThread, int32 nPriority );
 
     //======================================================================
     // Gamma Lock
     //======================================================================
-    GAMMA_COMMON_API HLOCK       GammaCreateLock();
-    GAMMA_COMMON_API bool        GammaDestroyLock( HLOCK hLock );
-    GAMMA_COMMON_API void        GammaLock( HLOCK hLock );
-    GAMMA_COMMON_API void        GammaUnlock( HLOCK hLock );
+    HLOCK       GammaCreateLock();
+    bool        GammaDestroyLock( HLOCK hLock );
+    void        GammaLock( HLOCK hLock );
+    void        GammaUnlock( HLOCK hLock );
 
 
 	//======================================================================
 	// Semaphore 
 	//======================================================================
-	GAMMA_COMMON_API HSEMAPHORE GammaCreateSemaphore( int nInitCount, int nMaxCount );
-	GAMMA_COMMON_API HSEMAPHORE GammaCreateSemaphore();
-	GAMMA_COMMON_API void		GammaPutSemaphore( HSEMAPHORE hSemaphore );
-	GAMMA_COMMON_API bool		GammaGetSemaphore( HSEMAPHORE hSemaphore );
-	GAMMA_COMMON_API int32		GammaGetSemaphore( HSEMAPHORE hSemaphore, uint32 nMilliSecs );
-	GAMMA_COMMON_API int32		GammaDestroySemaphore( HSEMAPHORE hSemaphore );
+	HSEMAPHORE GammaCreateSemaphore( int nInitCount, int nMaxCount );
+	HSEMAPHORE GammaCreateSemaphore();
+	void		GammaPutSemaphore( HSEMAPHORE hSemaphore );
+	bool		GammaGetSemaphore( HSEMAPHORE hSemaphore );
+	int32		GammaGetSemaphore( HSEMAPHORE hSemaphore, uint32 nMilliSecs );
+	int32		GammaDestroySemaphore( HSEMAPHORE hSemaphore );
 
     class CLock
     {

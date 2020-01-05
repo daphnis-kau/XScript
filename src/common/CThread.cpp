@@ -42,7 +42,7 @@ namespace Gamma
 		return (uint32)getpid();
 	}
 
-	GAMMA_COMMON_API void GammaGetCurrentProcessPath( char* szBuffer, size_t nCount )
+	void GammaGetCurrentProcessPath( char* szBuffer, size_t nCount )
 	{
 #ifdef _WIN32
 		wchar_t szTemp[2048] = { 0 };

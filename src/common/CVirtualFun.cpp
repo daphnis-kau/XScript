@@ -165,7 +165,7 @@ namespace Gamma
 		{ pChechFun[nStart] = (void*)&TSetFuntion<nStart, 1>::GetIndex; }
 	};
 
-	GAMMA_COMMON_API uint32 FindVirtualFunction( uint32 nSize,
+	uint32 FindVirtualFunction( uint32 nSize,
 		VirtualFunCallback funCallback, void* pContext )
 	{
 		static SFunctionTable FunctionTable;

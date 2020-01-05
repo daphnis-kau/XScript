@@ -1,7 +1,6 @@
 ﻿//=====================================================================
 // CJson.h 
-// 解释Json格式
-// 柯达昭
+// daphnis kau
 // 2007-09-15
 //=======================================================================
 #ifndef _JSON_H_
@@ -14,14 +13,7 @@
 
 namespace Gamma
 {
-	class CJson;
-
-#ifdef _WIN32
-	template class GAMMA_COMMON_API TList<CJson>::CListNode;
-	template class GAMMA_COMMON_API TList<CJson>;
-#endif
-
-	class GAMMA_COMMON_API CJson
+	class CJson
 		: private TList<CJson>
 		, private TList<CJson>::CListNode
 	{
