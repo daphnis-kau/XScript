@@ -31,7 +31,7 @@ namespace Gamma
 	static void** s_aryFuctionTable = (void**)ReserveMemoryPage( NULL, RESERVED_SIZE );
 	static void** s_aryFuctionTableEnd = s_aryFuctionTable;
 
-	SFunctionTableHead* AllocFunArray( size_t nArraySize )
+	static SFunctionTableHead* AllocFunArray( size_t nArraySize )
 	{
 		static CLock s_Lock;
 		static uint32 s_nFuctionTableUseCount = 0;
@@ -65,6 +65,11 @@ namespace Gamma
 		s_nFuctionTableUseCount += (uint32)nArraySize;
 		s_Lock.Unlock();
 		return (SFunctionTableHead*)aryFun;
+	}
+
+	static bool IsAllocVirtualTable( void* pVirtualTable )
+	{
+		return pVirtualTable >= s_aryFuctionTable && pVirtualTable < s_aryFuctionTableEnd;
 	}
 
 	//==================================================================
@@ -190,15 +195,10 @@ namespace Gamma
 
 	bool CScriptBase::IsVirtualTableValid( SVirtualObj* pVObj )
 	{
-		if( !IsAllocVirtualTable( pVObj ) )
+		if( !IsAllocVirtualTable( pVObj->m_pTable ) )
 			return true;
 		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVObj->m_pTable ) - 1;
 		return pFunTableHead->m_pScript == this;
-	}
-
-	bool CScriptBase::IsAllocVirtualTable( void* pVirtualTable )
-	{
-		return pVirtualTable >= s_aryFuctionTable && pVirtualTable < s_aryFuctionTableEnd;
 	}
 
     SFunctionTable* CScriptBase::GetOrgVirtualTable( void* pObj )
@@ -207,7 +207,7 @@ namespace Gamma
 		// 那么，应该会在m_mapVirtualTableNew2Old中找到相应的虚表
 		// 否则说明pObj的虚表没有被修改过，直接返回他自己的虚表
         SVirtualObj* pVObj = (SVirtualObj*)pObj;
-		if( !CScriptBase::IsAllocVirtualTable( pVObj->m_pTable ) )
+		if( !IsAllocVirtualTable( pVObj->m_pTable ) )
 			return pVObj->m_pTable;
 		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVObj->m_pTable ) - 1;
 		return pFunTableHead->m_pOldFunTable;
@@ -216,7 +216,7 @@ namespace Gamma
     SFunctionTable* CScriptBase::CheckNewVirtualTable( SFunctionTable* pOldFunTable, 
 		const CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth )
 	{
-		assert( !CScriptBase::IsAllocVirtualTable( pOldFunTable ) );
+		assert( !IsAllocVirtualTable( pOldFunTable ) );
 
 		// 如果是由脚本建立的类，不需要进行类型提升，   
 		// 也就是不需要通过原始的虚表匹配继承树上更深一层的虚表  
@@ -317,7 +317,7 @@ namespace Gamma
 	void CScriptBase::CallBack( int32 nIndex, void* pRetBuf, void** pArgArray )
 	{
 		SVirtualObj* pVirtualObj = *(SVirtualObj**)pArgArray[0];
-		assert( CScriptBase::IsAllocVirtualTable( pVirtualObj->m_pTable ) );
+		assert( IsAllocVirtualTable( pVirtualObj->m_pTable ) );
 		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVirtualObj->m_pTable ) - 1;
 		assert( pFunTableHead->m_pClassInfo && pFunTableHead->m_pOldFunTable );
 		const CClassRegistInfo* pClassInfo = pFunTableHead->m_pClassInfo;

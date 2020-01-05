@@ -55,7 +55,6 @@ namespace Gamma
 		static bool				RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue);
 		static bool				RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize );
 
-        static bool				IsAllocVirtualTable( void* pVirtualTable );
 		static void				UnlinkCppObj( void* pObj );
 		static void				CallBack( int32 nIndex, void* pRetBuf, void** pArgArray );
 

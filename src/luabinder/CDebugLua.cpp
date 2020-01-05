@@ -163,10 +163,8 @@ namespace Gamma
 	void CDebugLua::Debug( lua_State* pState )
 	{
 		m_pState = pState;
-		int32 nTop = lua_gettop( m_pState );
 		lua_sethook( pState, &CDebugLua::DebugHook, 0, 0 );
 		CDebugBase::Debug();
-		assert( nTop == lua_gettop( m_pState ) );
 
 		ClearVariables();
 
@@ -241,7 +239,6 @@ namespace Gamma
 		lua_Debug ld;
 		if( !lua_getstack( m_pState, nCurFrame, &ld ) )
 			return -1;
-		int32 nTop = lua_gettop( m_pState );
 
 		ClearVariables();
 
@@ -263,7 +260,6 @@ namespace Gamma
 		m_nValueID = ePDVID_Scopes;
 		lua_getglobal( m_pState, "_G" );
 		TouchVariable( "Global", ePDVID_Scopes, false );
-		assert( lua_gettop( m_pState ) == nTop );
 
 		// local value
 		lua_newtable( m_pState );
@@ -288,9 +284,7 @@ namespace Gamma
 			nCurCount--;
 		}
 
-		assert( nTop + 1 == lua_gettop( m_pState ) );
 		TouchVariable( "Local", ePDVID_Scopes, false );
-		assert( lua_gettop( m_pState ) == nTop );
 		return nCurFrame;
 	}
 
@@ -308,7 +302,6 @@ namespace Gamma
 		if( pField )
 			return static_cast<SVariableNode*>( pField )->m_nVariableID;
 
-		int32 nTop = lua_gettop( m_pState );
 		lua_pushlightuserdata( m_pState, s_szValue2ID );
 		lua_rawget( m_pState, LUA_REGISTRYINDEX );			//2[value,value2ID]
 		lua_pushvalue( m_pState, -2 );						//3[value,value2ID,value]
@@ -317,7 +310,6 @@ namespace Gamma
 		if( nRegisterID )
 		{
 			lua_pop( m_pState, 3 );
-			assert( nTop - 1 == lua_gettop( m_pState ) );
 			SVariableNode* pNode = new SVariableNode;
 			pNode->m_strField = szField;
 			pNode->m_nRegisterID = nRegisterID;
@@ -334,7 +326,6 @@ namespace Gamma
 		lua_pushnumber( m_pState, nID );					//4[value,value2ID,value,id]
 		lua_rawset( m_pState, -3 );   						//2[value,value2ID]
 		lua_pop( m_pState, 1 );   							//1[value]
-		assert( nTop == lua_gettop( m_pState ) );
 
 		// add to s_szID2Value
 		lua_pushlightuserdata( m_pState, s_szID2Value );
@@ -343,7 +334,6 @@ namespace Gamma
 		lua_pushvalue( m_pState, -3 );						//4[value,ID2Value,id,value]
 		lua_rawset( m_pState, -3 );   						//2[value,ID2Value]
 		lua_pop( m_pState, 2 );
-		assert( nTop - 1 == lua_gettop( m_pState ) );
 
 		SVariableNode* pNode = new SVariableNode;
 		pNode->m_strField = szField;
@@ -393,7 +383,6 @@ namespace Gamma
 		Info.strName = pNode->m_strField.c_str();
 		Info.strValue = Info.strName;
 
-		int32 nTop = lua_gettop( m_pState );
 		if( nID != ePDVID_Global && nID != ePDVID_Local )
 		{
 			lua_pushlightuserdata( m_pState, s_szID2Value );
@@ -401,17 +390,14 @@ namespace Gamma
 			lua_pushnumber( m_pState, pNode->m_nRegisterID );
 			lua_rawget( m_pState, -2 );
 			lua_remove( m_pState, -2 );
-			assert( nTop + 1 == lua_gettop( m_pState ) );
 			CScriptLua::ToString( m_pState );
 			const char* s = lua_tostring( m_pState, -1 );
 			Info.strValue = s ? s : "nil";
 			lua_pop( m_pState, 1 );
 		}
-		assert( nTop == lua_gettop( m_pState ) );
 
 		Info.nIndexValues = GetChildrenID( nID, true, 0 );
 		Info.nNameValues = GetChildrenID( nID, false, 0 );
-		assert( nTop == lua_gettop( m_pState ) );
 		return Info;
 	}
 
