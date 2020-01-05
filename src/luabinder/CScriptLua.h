@@ -68,7 +68,6 @@ namespace Gamma
 		void					BuildRegisterInfo();
 		bool					LoadFile( lua_State* pL, const char* szFileName, bool bReload );
 		int32					LoadSingleFile( lua_State* pL, const char* szFileName, bool bReload );
-		bool					RunString( lua_State* pL, const char* szStr );
         void					AddLoader();
 		void					IO_Replace();
 
@@ -87,7 +86,6 @@ namespace Gamma
 
         // 预定义字符串
 		static void*			ms_pGlobObjectTableKey;
-		static void*			ms_pGlobReferenceTableKey;
 		static void*			ms_pRegistScriptLuaKey;
 		static void*			ms_pErrorHandlerKey;
 		static void*			ms_pClassInfoKey;
@@ -108,8 +106,6 @@ namespace Gamma
 		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize );
 		virtual bool        	RunString( const char* szString );
 		virtual bool        	RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg );
-        virtual void            RefScriptObj( void* pObj );
-        virtual void            UnrefScriptObj( void* pObj );
 		virtual void            UnlinkCppObjFromScript( void* pObj );
 		virtual void        	GC();
 		virtual void        	GCAll();

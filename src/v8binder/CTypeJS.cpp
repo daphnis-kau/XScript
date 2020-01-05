@@ -95,8 +95,7 @@ namespace Gamma
 		if (bCopy)
 		{
 			Script.BindObj(NULL, NewObj, pClassInfo, pObj);
-			pClassInfo->Release( pObj );
-			Script.CheckUnlinkCppObj();
+			pClassInfo->Release( &Script, pObj );
 		}
 		else
 			Script.BindObj(pObj, NewObj, pClassInfo);
@@ -144,8 +143,7 @@ namespace Gamma
 		assert(nOffset >= 0);
 
 		pObject = ((char*)pObject) + nOffset;
-		pCurClassInfo->Assign( pDataBuf, pObject );
-		Script.CheckUnlinkCppObj();
+		pCurClassInfo->Assign( &Script, pDataBuf, pObject );
 	}
 
 	Gamma::LocalValue CJSValueObject::ToVMValue(DataType eType, 

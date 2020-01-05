@@ -64,13 +64,13 @@ namespace Gamma
 		static const CByScriptBase*		RegisterCallBack( const char* szTypeInfoName, uint32 nIndex, CCallScriptBase* pCallScriptBase );
 		static const CTypeIDNameMap&	GetAllRegisterInfo();
 
-		void							Create( void * pObject ) const;
-		void							Assign( void* pDest, void* pSrc ) const;
-		void                        	Release( void * pObject ) const;
+		void							Create( CScriptBase* pScript, void * pObject ) const;
+		void							Assign( CScriptBase* pScript, void* pDest, void* pSrc ) const;
+		void                        	Release( CScriptBase* pScript, void * pObject ) const;
 		void							InitVirtualTable( SFunctionTable* pNewTable ) const;
 		int32							GetMaxRegisterFunctionIndex() const;
         void                            ReplaceVirtualTable( CScriptBase* pScript, void* pObj, bool bNewByVM, uint32 nInheritDepth ) const;
-		void                            RecoverVirtualTable(CScriptBase* pScript, void* pObj) const;
+		void                            RecoverVirtualTable( CScriptBase* pScript, void* pObj ) const;
 		bool                            IsCallBack() const;
 		int32                       	GetBaseOffset( const CClassRegistInfo* pRegist ) const;
 		const CByScriptBase*			GetCallBase( const gammacstring& strFunName ) const;

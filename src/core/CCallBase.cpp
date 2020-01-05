@@ -32,7 +32,8 @@ namespace Gamma
 	
 	void CByScriptBase::Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const
 	{
-		m_funWrap->Call(pRetBuf, pArgArray, m_funOrg);
+		m_funWrap->Call( pRetBuf, pArgArray, m_funOrg );
+		Script.CheckDebugCmd();
 	}
 
 	//=====================================================================

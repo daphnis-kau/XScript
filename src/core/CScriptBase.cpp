@@ -175,19 +175,8 @@ namespace Gamma
 		return CClassRegistInfo::RegisterClass( szEnumName, szTypeIDName, nTypeSize, true ) != nullptr;
 	}
 
-	void CScriptBase::CheckUnlinkCppObj()
+	void CScriptBase::CheckDebugCmd()
 	{
-		void* pObject[1024];
-		auto funRead = [&]( CCircelBuffer::CAtomRead& Reader )->bool
-		{ return Reader.Read( pObject, sizeof( pObject ) );	};
-
-		uint32 nReadSize = 0;
-		while( ( nReadSize = m_UnlinkObjectBuffer.PopBuffer( funRead ) ) != 0 )
-		{
-			for( uint32 i = 0; i < nReadSize/sizeof( void* ); i++ )
-				UnlinkCppObjFromScript( pObject[i] );
-		}
-
 		if( !m_pDebugger || !m_pDebugger->RemoteCmdValid() )
 			return;
 		m_pDebugger->CheckRemoteCmd();
@@ -302,18 +291,6 @@ namespace Gamma
 		return nCount;
 	}
 
-	void CScriptBase::UnlinkCppObj( void* pObj )
-	{
-		s_ScriptListLock.Lock();
-		CScriptBase* pScript = s_listAllScript.GetFirst();
-		while( pScript )
-		{
-			pScript->m_UnlinkObjectBuffer.Push( pObj );
-			pScript = pScript->TList<CScriptBase>::CListNode::GetNext();
-		}
-		s_ScriptListLock.Unlock();
-	}
-
 	void CScriptBase::CallBack( int32 nIndex, void* pRetBuf, void** pArgArray )
 	{
 		SVirtualObj* pVirtualObj = *(SVirtualObj**)pArgArray[0];
@@ -323,7 +300,7 @@ namespace Gamma
 		const CClassRegistInfo* pClassInfo = pFunTableHead->m_pClassInfo;
 		const CCallScriptBase* pCallScript = pClassInfo->GetOverridableFunction( nIndex );
 		CScriptBase* pScriptBase = pFunTableHead->m_pScript;
-		pScriptBase->CheckUnlinkCppObj();
+		pScriptBase->CheckDebugCmd();
 		auto& strFunctionName = pCallScript->GetFunctionName();
 		try
 		{

@@ -161,8 +161,7 @@ namespace Gamma
 		void* pObject = NULL;
 		auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
 		CLuaObject::GetFromVM( eType, pL, (char*)&pObject, nStkId );
-		pClassInfo->Assign( pDataBuf, pObject );
-		CScriptLua::GetScript( pL )->CheckUnlinkCppObj();
+		pClassInfo->Assign( CScriptLua::GetScript( pL ), pDataBuf, pObject );
 	}
 
 	void CLuaValueObject::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
@@ -177,8 +176,7 @@ namespace Gamma
 
 		CScriptLua::NewLuaObj( pL, pClassInfo, pDataBuf );
 		ConstructLua( pL );
-		pClassInfo->Release( pDataBuf );
-		CScriptLua::GetScript(pL)->CheckUnlinkCppObj();
+		pClassInfo->Release( CScriptLua::GetScript( pL ), pDataBuf );
 	}
 
 	//=====================================================================

@@ -30,7 +30,6 @@ namespace Gamma
 		friend class CCallScriptBase;
 	protected:
 		CDebugBase*				m_pDebugger;
-		CCircelBuffer			m_UnlinkObjectBuffer;
 		CFunctionTableMap		m_mapVirtualTableOld2New;
 		CNewFunctionTableMap	m_mapNewVirtualTable;
 		std::list<std::string>	m_listSearchPath;
@@ -55,11 +54,10 @@ namespace Gamma
 		static bool				RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue);
 		static bool				RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize );
 
-		static void				UnlinkCppObj( void* pObj );
 		static void				CallBack( int32 nIndex, void* pRetBuf, void** pArgArray );
 
 		CDebugBase*				GetDebugger() const { return m_pDebugger; }
-		void					CheckUnlinkCppObj();
+		void					CheckDebugCmd();
 		bool					IsVirtualTableValid( SVirtualObj* pVObj );
         SFunctionTable*			GetOrgVirtualTable( void* pObj );
 		SFunctionTable*     	CheckNewVirtualTable( SFunctionTable* pOldFunTable, const CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth );
@@ -71,8 +69,6 @@ namespace Gamma
 		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize ) = 0;
 		virtual bool        	RunString( const char* szString ) = 0;
 		virtual bool        	RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg ) = 0;
-        virtual void			RefScriptObj( void* pObj ) = 0;
-        virtual void			UnrefScriptObj( void* pObj ) = 0;
 		virtual void			UnlinkCppObjFromScript( void* pObj ) = 0;
 		virtual void        	GC() = 0;
 		virtual void        	GCAll() = 0;

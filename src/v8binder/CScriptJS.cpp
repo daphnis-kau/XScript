@@ -545,7 +545,7 @@ namespace Gamma
 		SObjInfo* pObjectInfo = (SObjInfo*)pCppBind->Value();
 		if (!pObjectInfo)
 			return;
-		Script.UnbindObj(pObjectInfo, false);
+		Script.UnbindObj( pObjectInfo, false );
 	}
 
 	void CScriptJS::GCCallback(const v8::WeakCallbackInfo<SObjInfo>& data)
@@ -586,13 +586,9 @@ namespace Gamma
 		if (!pObject)
 		{
 			pObject = new tbyte[pInfo->GetClassSize()];
-			pInfo->Create( pObject );
-			CheckUnlinkCppObj();
+			pInfo->Create( this, pObject );
 			if( pSrc )
-			{
-				pInfo->Assign( pObject, pSrc );
-				CheckUnlinkCppObj();
-			}
+				pInfo->Assign( this, pObject, pSrc );
 			ObjectInfo.m_bRecycle = true;
 		}
 
@@ -613,13 +609,12 @@ namespace Gamma
 		ObjectInfo.m_Object.SetWeak(&ObjectInfo, &CScriptJS::GCCallback, WeakCallbackType::kParameter);
 	}
 
-	void CScriptJS::UnbindObj(SObjInfo* pObjectInfo, bool bFromGC)
+	void CScriptJS::UnbindObj( SObjInfo* pObjectInfo, bool bFromGC )
 	{
 		void* pObject = pObjectInfo->m_pObject;
 		bool bRecycle = pObjectInfo->m_bRecycle;
 		const CClassRegistInfo* pInfo = pObjectInfo->m_pClassInfo->m_pClassInfo;
-		CScriptJS* pScript = pObjectInfo->m_pClassInfo->m_pScript;
-		Isolate* isolate = pScript->GetIsolate();
+		Isolate* isolate = GetIsolate();
 		v8::HandleScope handle_scope(isolate);
 		v8::TryCatch try_catch(isolate);
 
@@ -637,14 +632,13 @@ namespace Gamma
 		pObjectInfo->m_pObject = NULL;
 		pObjectInfo->m_Object.Reset();
 
-		pScript->FreeObjectInfo(pObjectInfo);
+		FreeObjectInfo(pObjectInfo);
 		if (!pObject)
 			return;
-		pInfo->RecoverVirtualTable(pScript, pObject);
+		pInfo->RecoverVirtualTable( this, pObject );
 		if (!bRecycle)
 			return;
-		pInfo->Release( pObject );
-		CheckUnlinkCppObj();
+		pInfo->Release( this, pObject );
 		delete[](tbyte*)pObject;
 	}
 	
@@ -696,7 +690,6 @@ namespace Gamma
     //==================================================================================================================================//
     bool CScriptJS::RunFile( const char* szFileName, bool /*bReload*/ )
 	{
-		CheckUnlinkCppObj();
 		FILE* iFile = NULL;
 		std::string sFileName;
 		if( szFileName[0] == '/' || ::strchr( szFileName, ':' ) )
@@ -763,15 +756,12 @@ namespace Gamma
 	
 	bool CScriptJS::RunBuffer( const void* pBuffer, size_t nSize )
 	{
-		CheckUnlinkCppObj();
 		std::string strSource((const char*)pBuffer, nSize);
 		return RunString(strSource.c_str());
 	}
 
     bool CScriptJS::RunString( const char* szString )
 	{
-		CheckUnlinkCppObj();
-
 		HandleScope handle_scope(m_pIsolate);
 		v8::TryCatch try_catch(m_pIsolate);
 
@@ -809,7 +799,6 @@ namespace Gamma
 
 	bool CScriptJS::RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg )
 	{
-		CheckUnlinkCppObj();
 		HandleScope handle_scope(m_pIsolate);
 		// Enter the context for compiling and running the hello world script.
 		Local<Context> context = m_Context.Get(m_pIsolate);
@@ -956,16 +945,6 @@ namespace Gamma
 	int32 CScriptJS::Compiler( int32 nArgc, char** szArgv )
     {
         return -1;
-    }
-
-    void CScriptJS::RefScriptObj( void* pObj )
-	{
-		//[todo]                     // nStk = 0
-    }
-
-    void CScriptJS::UnrefScriptObj( void* pObj )
-	{
-		//[todo]
     }
 
     void CScriptJS::UnlinkCppObjFromScript( void* pObj )

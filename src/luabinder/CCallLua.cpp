@@ -55,7 +55,6 @@ namespace Gamma
 		uint32 nTop = lua_gettop( pL );
 
 		CScriptLua* pScript = CScriptLua::GetScript(pL);
-		pScript->CheckUnlinkCppObj();
 		pScript->PushLuaState( pL );
 
 		try
@@ -88,14 +87,12 @@ namespace Gamma
 			if( pCallBase->GetFunctionIndex() == eCT_MemberFunction )
 			{
 				pCallBase->Call( nTop > 1 ? NULL : pResultBuf, pArgArray, *pScript );
-				pScript->CheckUnlinkCppObj();
 				if( nResultType && nTop <= 1 )
 					GetTypeBase(nResultType)->PushToVM( nResultType, pL, pResultBuf );
 			}
 			else
 			{
 				pCallBase->Call( pResultBuf, pArgArray, *pScript );
-				pScript->CheckUnlinkCppObj();
 				if(nResultType)
 					GetTypeBase(nResultType)->PushToVM( nResultType, pL, pResultBuf );
 			}
@@ -185,5 +182,45 @@ namespace Gamma
 	void CCallBackLua::DestrucVM( CScriptLua* pScript,
 		const CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
+		lua_State* pL = pScript->GetLuaState();
+
+		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
+		lua_rawget( pL, LUA_REGISTRYINDEX );
+		int32 nErrFunIndex = lua_gettop( pL );		// 1
+
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_rawget( pL, LUA_REGISTRYINDEX );		// 2	
+
+		lua_pushlightuserdata( pL, pObject );
+		lua_gettable( pL, -2 );						// 3
+
+		if( lua_isnil( pL, -1 ) )
+		{
+			lua_pop( pL, 3 );            //Error occur
+			return;                //*******表不存在时，此代码有问题************
+		}
+
+		lua_getfield( pL, -1, "Deconstruction" ); // 4
+
+		if( lua_tocfunction( pL, -1 ) == &CByScriptLua::CallByLua )
+		{
+			lua_getupvalue( pL, -1, 1 );
+			if( pCallBase == lua_touserdata( pL, -1 ) )
+			{
+				// call self
+				lua_pop( pL, 5 );
+				return;
+			}
+		}
+		else if( lua_isnil( pL, -1 ) )
+		{
+			//Error occur
+			lua_pop( pL, 4 );
+			return;
+		}
+
+		lua_insert( pL, -2 );
+		lua_pcall( pL, 1, 0, nErrFunIndex );
+		lua_settop( pL, nErrFunIndex - 1 );
 	}
 };

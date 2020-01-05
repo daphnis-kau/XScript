@@ -187,8 +187,9 @@ namespace Gamma
 		return (int32)m_vecOverridableFun.size();
     }
 
-    void CClassRegistInfo::Create( void* pObject ) const
-    {
+    void CClassRegistInfo::Create( CScriptBase* pScript, void* pObject ) const
+	{
+		pScript->CheckDebugCmd();
 		//声明性质的类不可创建
 		assert( m_nSizeOfClass );
 		assert( m_pObjectConstruct );
@@ -197,16 +198,18 @@ namespace Gamma
 		m_pObjectConstruct->Construct( pObject );
 	}
 
-	void CClassRegistInfo::Assign( void* pDest, void* pSrc ) const
+	void CClassRegistInfo::Assign( CScriptBase* pScript, void* pDest, void* pSrc ) const
 	{
+		pScript->CheckDebugCmd();
 		assert( m_pObjectConstruct );
 		if( !m_pObjectConstruct )
 			return;
 		m_pObjectConstruct->Assign( pDest, pSrc );
 	}
 
-    void CClassRegistInfo::Release( void* pObject ) const
+    void CClassRegistInfo::Release( CScriptBase* pScript, void* pObject ) const
 	{
+		pScript->CheckDebugCmd();
 		//声明性质的类不可销毁
 		assert( m_pObjectConstruct );
 		if( !m_pObjectConstruct )

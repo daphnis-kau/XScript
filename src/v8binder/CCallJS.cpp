@@ -53,8 +53,7 @@ namespace Gamma
 				pDataBuf += aryParamSize[nParamIndex];
 			}
 
-			pCallBase->Call(pResultBuf, pArgArray, Script);
-			Script.CheckUnlinkCppObj();
+			pCallBase->Call( pResultBuf, pArgArray, Script );
 			if (!nResultType )
 				return;
 			CJSTypeBase* pReturnType = GetTypeBase( nResultType );
@@ -81,7 +80,6 @@ namespace Gamma
 			char* pResultBuf = (char*)alloca( nReturnSize);
 			void* aryArg[] = { &pObject, nullptr };
 			pByScript->Call( pResultBuf, aryArg, Script );
-			Script.CheckUnlinkCppObj();
 			if (!nResultType )
 				return;
 			CJSTypeBase* pReturnType = GetTypeBase( nResultType );
@@ -110,8 +108,7 @@ namespace Gamma
 			CJSTypeBase* pParamType = GetTypeBase( nType );
 			pParamType->FromVMValue(nType, Script, pDataBuf, arg);
 			void* aryArg[] = { &pObject, pDataBuf, nullptr };
-			pByScript->Call(NULL, aryArg, Script);
-			Script.CheckUnlinkCppObj();
+			pByScript->Call( NULL, aryArg, Script );
 		}
 		catch (...)
 		{

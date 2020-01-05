@@ -28,7 +28,6 @@ namespace Gamma
     // CScriptLua
     //====================================================================================
 	void* CScriptLua::ms_pGlobObjectTableKey	= (void*)"__global_object_table";
-	void* CScriptLua::ms_pGlobReferenceTableKey	= (void*)"__global_reference_table";
 	void* CScriptLua::ms_pRegistScriptLuaKey	= (void*)"__regist_cscript_lua";
 	void* CScriptLua::ms_pErrorHandlerKey		= (void*)"__error_handler";
 	void* CScriptLua::ms_pClassInfoKey			= (void*)"__class_info";
@@ -261,11 +260,7 @@ namespace Gamma
         lua_pushstring( pL, "v");
         lua_setfield( pL, -2, "__mode");
         lua_setmetatable( pL, -2 );
-		lua_rawset( pL, LUA_REGISTRYINDEX );
-
-		lua_pushlightuserdata( pL, ms_pGlobReferenceTableKey );
-		lua_newtable( pL );
-		lua_rawset( pL, LUA_REGISTRYINDEX );    
+		lua_rawset( pL, LUA_REGISTRYINDEX );   
 
 		lua_pushlightuserdata( pL, ms_pErrorHandlerKey );
 		lua_pushcfunction( pL, &CScriptLua::ErrorHandler );
@@ -436,10 +431,9 @@ namespace Gamma
 
 		CScriptLua* pScriptLua = GetScript(pL);
 		pScriptLua->PushLuaState( pL );
-		pInfo->Create( pObj );                //userdata为对象指针的指针
+		pInfo->Create( pScriptLua, pObj );                //userdata为对象指针的指针
 		if( pSrc )
-			pInfo->Assign( pObj, pSrc );
-		pScriptLua->CheckUnlinkCppObj();
+			pInfo->Assign( pScriptLua, pObj, pSrc );
 		pScriptLua->PopLuaState();
 		
 		//stack top = 2, 对象指针在栈顶,保存对象的表在下面
@@ -521,8 +515,7 @@ namespace Gamma
 		// 调用UnRegisterObject反而会导致gc问题（table[obj] = nil 会crash）
 		CScriptLua* pScriptLua = GetScript(pL);
 		pInfo->RecoverVirtualTable( pScriptLua, pObject );
-		pInfo->Release( pObject );
-		pScriptLua->CheckUnlinkCppObj();
+		pInfo->Release( pScriptLua, pObject );
         lua_pop( pL, 3 );
         return 0;
     }
@@ -989,47 +982,6 @@ namespace Gamma
 		return szStr;
 	}
 
-	bool CScriptLua::RunString( lua_State* pL, const char* szStr )
-	{
-		CheckUnlinkCppObj();
-		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
-		lua_rawget( pL, LUA_REGISTRYINDEX ); //1
-		int32 nErrFunIndex = lua_gettop( pL );
-
-		auto ib = m_setRuningString.insert( szStr );
-		std::stringstream name;
-		name << "@GammaScriptStringTrunk"<< (uintptr_t)(void*)( ib.first->c_str() );
-		std::string strName = name.str();
-		const char* szName = strName.c_str();
-
-		// 通过_ReadString装载字符串的代码块
-		if( GetGlobObject( pL, szName ) ||
-			( !lua_load( pL, &_ReadString, &szStr, szName ) && SetGlobObject( pL, szName ) ) )
-		{
-			bool re = !lua_pcall( pL, 0, LUA_MULTRET, nErrFunIndex );
-			lua_remove( pL, nErrFunIndex );
-			return re;
-		}
-		else
-		{
-			// 装载失败时移走错误函数，并且从s_setRuningString删除字符串
-			lua_remove( pL, nErrFunIndex );
-			if( ib.second )
-				m_setRuningString.erase( ib.first );
-
-			const char* szError = lua_tostring( pL, -1 );
-			if( szError )
-			{
-				Output( szError, -1 );
-				Output( "\n", -1 );
-				lua_remove( pL, 1 );
-			}
-
-			return false;
-		}
-
-	}
-
 	struct SFileLoadInfo
 	{
 		SFileLoadInfo(const char* szFileName)
@@ -1282,7 +1234,6 @@ namespace Gamma
     //==================================================================================================================================//
     bool CScriptLua::RunFile( const char* szFileName, bool bReload )
 	{
-		CheckUnlinkCppObj();
 		lua_State* pL = GetLuaState();
 		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX ); //1
@@ -1308,7 +1259,6 @@ namespace Gamma
 
 	bool CScriptLua::RunBuffer( const void* pBuffer, size_t nSize )
 	{
-		CheckUnlinkCppObj();
 		lua_State* pL = GetLuaState();
 		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX ); //1
@@ -1343,12 +1293,46 @@ namespace Gamma
 
     bool CScriptLua::RunString( const char* szString )
 	{
-        return RunString( GetLuaState(), szString );
+		lua_State* pL = GetLuaState();
+		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
+		lua_rawget( pL, LUA_REGISTRYINDEX ); //1
+		int32 nErrFunIndex = lua_gettop( pL );
+
+		auto ib = m_setRuningString.insert( szString );
+		std::stringstream name;
+		name << "@GammaScriptStringTrunk"<< (uintptr_t)(void*)( ib.first->c_str() );
+		std::string strName = name.str();
+		const char* szName = strName.c_str();
+
+		// 通过_ReadString装载字符串的代码块
+		if( GetGlobObject( pL, szName ) ||
+			( !lua_load( pL, &_ReadString, &szString, szName ) && SetGlobObject( pL, szName ) ) )
+		{
+			bool re = !lua_pcall( pL, 0, LUA_MULTRET, nErrFunIndex );
+			lua_remove( pL, nErrFunIndex );
+			return re;
+		}
+		else
+		{
+			// 装载失败时移走错误函数，并且从s_setRuningString删除字符串
+			lua_remove( pL, nErrFunIndex );
+			if( ib.second )
+				m_setRuningString.erase( ib.first );
+
+			const char* szError = lua_tostring( pL, -1 );
+			if( szError )
+			{
+				Output( szError, -1 );
+				Output( "\n", -1 );
+				lua_remove( pL, 1 );
+			}
+
+			return false;
+		}
 	}
 	
 	bool CScriptLua::RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg )
 	{
-		CheckUnlinkCppObj();
 		lua_State* pL = GetLuaState();
 		lua_pushlightuserdata( pL, ms_pErrorHandlerKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
@@ -1380,63 +1364,6 @@ namespace Gamma
 		lua_pop( pL, 1 );
 		return true;
 	}
-
-    void CScriptLua::RefScriptObj( void* pObj )
-	{
-		lua_State* pL = GetLuaState();
-		// 从全局对象表查找pObj对应的table，table必须存在
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
-		lua_rawget( pL, LUA_REGISTRYINDEX );						           // nStk = 1
-        assert( !lua_isnil( pL, -1 ) );    
-
-        lua_pushlightuserdata( pL, pObj );                                // nStk = 2
-        lua_gettable( pL, -2 );                                        // nStk = 2
-        assert( !lua_isnil( pL, -1 ) );
-
-		// 根据table在全局对象引用计数表中查询对象的引用计数值，使其增加1
-		lua_pushlightuserdata( pL, ms_pGlobReferenceTableKey );
-        lua_rawget( pL, LUA_REGISTRYINDEX );								// nStk = 3
-        lua_pushvalue( pL, -2 );                                        // nStk = 4
-        lua_rawget( pL, -2 );                                            // nStk = 4
-        int32 nRef = lua_isnil( pL, -1 ) ? 0 : (int32)lua_tointeger( pL, -1 );
-        lua_pop( pL, 1 );                                                // nStk = 3
-        lua_pushvalue( pL, -2 );                                        // nStk = 4
-        lua_pushinteger( pL, nRef + 1 );                                // nStk = 5
-        lua_rawset( pL, -3 );                                            // nStk = 3
-        lua_pop( pL, 3 );                                                // nStk = 0
-    }
-
-    void CScriptLua::UnrefScriptObj( void* pObj )
-	{
-		lua_State* pL = GetLuaState();
-		// 从全局对象表查找pObj对应的table，table必须存在
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
-		lua_rawget( pL, LUA_REGISTRYINDEX );					      // nStk = 1
-        assert( !lua_isnil( pL, -1 ) );    
-
-        lua_pushlightuserdata( pL, pObj );                            // nStk = 2
-        lua_gettable( pL, -2 );                                    // nStk = 2
-        assert( !lua_isnil( pL, -1 ) );
-
-        // 根据table在全局对象引用计数表中查询对象的引用计数值，
-        // 引用必须存在，引用值而且必须大于1，然后使引用值减1，
-		// 如果减到0，则在全局对象引用计数表中删除该引用
-		lua_pushlightuserdata( pL, ms_pGlobReferenceTableKey );
-		lua_rawget( pL, LUA_REGISTRYINDEX );						   // nStk = 3
-        lua_pushvalue( pL, -2 );                                    // nStk = 4
-        lua_rawget( pL, -2 );                                        // nStk = 4
-        assert( !lua_isnil( pL, -1 ) );
-        int32 nRef = (int32)lua_tointeger( pL, -1 );
-        assert( nRef );
-        lua_pop( pL, 1 );                                            // nStk = 3
-        lua_pushvalue( pL, -2 );                                    // nStk = 4
-        if( nRef > 1 )
-            lua_pushinteger( pL, nRef - 1 );                        // nStk = 5
-        else
-            lua_pushnil( pL );                                        // nStk = 5
-        lua_rawset( pL, -3 );                                        // nStk = 3
-        lua_pop( pL, 3 );                                            // nStk = 0
-    }
 
     void CScriptLua::UnlinkCppObjFromScript( void* pObj )
 	{

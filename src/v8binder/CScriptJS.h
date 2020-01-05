@@ -143,8 +143,6 @@ namespace Gamma
 										void* pResultBuf, const char* szFunction, void** aryArg );
 		
 		virtual int32				Compiler( int32 nArgc, char** szArgv );
-        virtual void				RefScriptObj( void* pObj );
-        virtual void				UnrefScriptObj( void* pObj );
 		virtual void				UnlinkCppObjFromScript( void* pObj );
 
 		virtual void        		GC();
