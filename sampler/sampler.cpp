@@ -174,7 +174,7 @@ void TestLua()
 	g_ScriptLua->RunFunction( NULL, "aaa", a, "sadfasdf" );
 	while(true)
 	{
-		g_ScriptLua->RunFile( "./test.lua", true );
+		g_ScriptLua->RunFile( "./test.lua" );
 		GammaSleep( 10 );
 	}
 	delete g_ScriptLua;

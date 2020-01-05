@@ -84,27 +84,6 @@ namespace Gamma
 		return true;
 	}
 
-	void CDebugLua::ReadFile( std::string& strBuffer, const char* szFileName )
-	{
-		static std::string szKey = "GammaScriptStringTrunk";
-		if( szKey == std::string( szFileName, szKey.size() ) )
-		{
-			uintptr_t address = 0;
-			std::stringstream( szFileName + szKey.size() ) >> address;
-			if( !address )
-				return;
-			strBuffer.assign( (const char*)address );
-			return;
-		}
-
-		CDebugBase::ReadFile( strBuffer, szFileName );
-		if( strBuffer.empty() )
-			return;
-		if( strBuffer[0] != '#' && strBuffer[0] != LUA_SIGNATURE[0] )
-			return;
-		strBuffer.clear();
-	}
-
 	uint32 CDebugLua::GenBreakPointID( const char* szFileName, int32 nLine )
 	{
 		static uint32 s_nBreakPointID = 1;

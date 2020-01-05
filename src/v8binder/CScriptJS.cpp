@@ -754,7 +754,7 @@ namespace Gamma
 		return true;
 	}
 	
-	bool CScriptJS::RunBuffer( const void* pBuffer, size_t nSize )
+	bool CScriptJS::RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName )
 	{
 		std::string strSource((const char*)pBuffer, nSize);
 		return RunString(strSource.c_str());

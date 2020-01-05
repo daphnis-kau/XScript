@@ -139,7 +139,6 @@ namespace Gamma
 
 	protected:
 		CScriptBase*		GetScriptBase() const { return m_pBase; }
-		virtual void		ReadFile( std::string& strBuffer, const char* szFileName );
 		virtual uint32		GenBreakPointID( const char* szFileName, int32 nLine ) = 0;
 		bool				HaveBreakPoint() const { return !m_setBreakPoint.empty(); }
 

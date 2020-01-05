@@ -33,9 +33,13 @@ namespace Gamma
 		CFunctionTableMap		m_mapVirtualTableOld2New;
 		CNewFunctionTableMap	m_mapNewVirtualTable;
 		std::list<std::string>	m_listSearchPath;
+		std::set<gammacstring>	m_setRuningString;
 
 		virtual bool			CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray ) = 0;
 		virtual void			DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject ) = 0;
+
+		virtual bool        	RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg ) = 0;
+		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName ) = 0;
     public:
         CScriptBase(void);
 		virtual ~CScriptBase( void );
@@ -62,13 +66,17 @@ namespace Gamma
         SFunctionTable*			GetOrgVirtualTable( void* pObj );
 		SFunctionTable*     	CheckNewVirtualTable( SFunctionTable* pOldFunTable, const CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth );
         void                	AddSearchPath( const char* szPath );
-		virtual int				Input( char* szBuffer, int nCount );
-		virtual int				Output( const char* szBuffer, int nCount );
 
-		virtual bool        	RunFile( const char* szFileName, bool bReload ) = 0;
-		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize ) = 0;
-		virtual bool        	RunString( const char* szString ) = 0;
-		virtual bool        	RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg ) = 0;
+		virtual int32			Input( char* szBuffer, int nCount );
+		virtual int32			Output( const char* szBuffer, int nCount );
+
+		virtual void*			OpenFile( const char* szFileName );
+		virtual int32			ReadFile( void* pContext, char* szBuffer, int32 nCount );
+		virtual void			CloseFile( void* pContext );
+
+		virtual bool        	RunFile( const char* szFileName );
+		virtual bool        	RunString( const char* szString );
+
 		virtual void			UnlinkCppObjFromScript( void* pObj ) = 0;
 		virtual void        	GC() = 0;
 		virtual void        	GCAll() = 0;
@@ -77,11 +85,14 @@ namespace Gamma
 		bool					RunFunction( RetType* pRetBuf, const char* szFun, Param ... p );
 		template<typename... Param>
 		bool					RunFunction( nullptr_t, const char* szFun, Param ... p );
+
+		std::string				ReadEntirFile( const char* szFileName );
 	};
 
 	template<typename RetType, typename... Param>
 	bool CScriptBase::RunFunction( RetType* pRetBuf, const char* szFun, Param ... p )
 	{
+		CheckDebugCmd();
 		void* aryParam[sizeof...( p ) + 1] = { &p ... };
 		static STypeInfo aryInfo[] = { GetTypeInfo<Param>()..., GetTypeInfo<RetType>() };
 		static STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
@@ -91,12 +102,26 @@ namespace Gamma
 	template<typename... Param>
 	bool CScriptBase::RunFunction( nullptr_t, const char* szFun, Param ... p )
 	{
+		CheckDebugCmd();
 		void* aryParam[sizeof...( p ) + 1] = { &p ... };
 		static STypeInfo aryInfo[] = { GetTypeInfo<Param>()..., GetTypeInfo<void>() };
 		static STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
 		return RunFunction( TypeInfo, nullptr, szFun, aryParam );
 	}
-
+	
+	inline std::string CScriptBase::ReadEntirFile( const char* szFileName )
+	{
+		std::string strBuffer;
+		void* pContext = OpenFile( szFileName );
+		if( !pContext )
+			return strBuffer;
+		char szBuffer[1024];
+		int32 nReadSize = 0;
+		while( ( nReadSize = ReadFile( pContext, szBuffer, 1024 ) ) > 0 )
+			strBuffer.append( szBuffer, nReadSize );
+		CloseFile( pContext );
+		return strBuffer;
+	}
 }
 
 #endif

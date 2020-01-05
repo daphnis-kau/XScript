@@ -137,7 +137,7 @@ namespace Gamma
 		SObjInfo*					FindExistObjInfo( void* pObj );
 							
 		virtual bool				RunFile( const char* szFileName, bool bReload );
-		virtual bool        		RunBuffer( const void* pBuffer, size_t nSize );
+		virtual bool        		RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName );
 		virtual bool        		RunString( const char* szString );
 		virtual bool        		RunFunction( const STypeInfoArray& aryTypeInfo, 
 										void* pResultBuf, const char* szFunction, void** aryArg );

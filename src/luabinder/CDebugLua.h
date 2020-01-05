@@ -53,7 +53,6 @@ namespace Gamma
 
 		void				ClearVariables();
 		uint32				TouchVariable( const char* szField, uint32 nParentID, bool bIndex );
-		virtual void		ReadFile( std::string& strBuffer, const char* szFileName );
 		virtual uint32		GenBreakPointID( const char* szFileName, int32 nLine );
     public:
         CDebugLua( CScriptBase* pBase, uint16 nDebugPort );

@@ -15,12 +15,20 @@ namespace Gamma
 		const CClassRegistInfo*	m_pClassInfo;
 	};
 
+	struct SFileContext
+	{
+		uint32					m_nCacheSize;
+		char*					m_pFile;
+	};
+
 	enum{ eFunctionTableHeadSize = sizeof(SFunctionTableHead)  };
 	enum{ ePointerCount = eFunctionTableHeadSize/sizeof(void*) };
 	enum{ eFunctionTableHeadAligSize = ePointerCount*sizeof(void*) };
 	#if( eFunctionTableHeadAligSize != eFunctionTableHeadSize )
 	#error "CScriptBase::SFunctionTableHead size invalid"
 	#endif
+
+	static std::string g_CacheTruckPrefix = "CacheTruck_";
 
 	//==================================================================
 	// 虚函数分配
@@ -289,6 +297,104 @@ namespace Gamma
 	{
 		std::cout << szBuffer;
 		return nCount;
+	}
+
+	void* CScriptBase::OpenFile( const char* szFileName )
+	{
+		size_t nNameLen = strlen( szFileName );
+		size_t nKeyLen = g_CacheTruckPrefix.size();
+		if( nNameLen > g_CacheTruckPrefix.size() &&
+			!memcmp( szFileName, g_CacheTruckPrefix.c_str(), nKeyLen ) )
+		{
+			uintptr_t address = 0;
+			std::stringstream( szFileName + nKeyLen ) >> address;
+			if( !address )
+				return nullptr;
+			SFileContext* pContext = new SFileContext;
+			pContext->m_nCacheSize = strlen( (const char*)address );
+			pContext->m_pFile = (char*)address;
+			return pContext;
+		}
+
+		FILE* fp = fopen( szFileName, "rb" );
+		if( nullptr == fp )
+			return nullptr;
+		SFileContext* pContext = new SFileContext;
+		pContext->m_nCacheSize = INVALID_32BITID;
+		pContext->m_pFile = (char*)fp;
+		return pContext;
+	}
+
+	int32 CScriptBase::ReadFile( void* pContext, char* szBuffer, int32 nCount )
+	{
+		if( !pContext )
+			return -1;
+		SFileContext* pFileContext = (SFileContext*)pContext;
+		if( pFileContext->m_nCacheSize == INVALID_32BITID )
+			return fread( szBuffer, 1, nCount, (FILE*)( pFileContext->m_pFile ) );
+		if( pFileContext->m_nCacheSize == 0 )
+			return 0;
+		if( nCount > pFileContext->m_nCacheSize )
+			nCount = pFileContext->m_nCacheSize;
+		memcpy( szBuffer, pFileContext->m_pFile, nCount );
+		pFileContext->m_pFile += nCount;
+		pFileContext->m_nCacheSize -= nCount;
+		return nCount;
+	}
+
+	void CScriptBase::CloseFile( void* pContext )
+	{
+		delete pContext;
+	}
+
+	bool CScriptBase::RunFile( const char* szFileName )
+	{
+		CheckDebugCmd();
+		if( !szFileName )
+			return false;
+
+		if( szFileName[0] == '/' || ::strchr( szFileName, ':' ) )
+		{
+			std::string strFileContent = ReadEntirFile( szFileName );
+			if( strFileContent.empty() )
+				return false;
+			if( !RunBuffer( strFileContent.c_str(), strFileContent.size(), szFileName ) )
+				return false;
+			if( GetDebugger() && GetDebugger()->RemoteDebugEnable() )
+				GetDebugger()->AddFileContent( szFileName, strFileContent.c_str() );
+			return true;
+		}
+
+		for( auto it = m_listSearchPath.begin(); it != m_listSearchPath.end(); ++it )
+		{
+			int32 nResult;
+			std::string sFileName = *it + szFileName;
+			std::string strFileContent = ReadEntirFile( sFileName.c_str() );
+			if( strFileContent.empty() )
+				continue;
+			if( !RunBuffer( strFileContent.c_str(), strFileContent.size(), sFileName.c_str() ) )
+				return false;
+			if( GetDebugger() && GetDebugger()->RemoteDebugEnable() )
+				GetDebugger()->AddFileContent( szFileName, strFileContent.c_str() );
+			return true;
+		}
+		return false;
+	}
+
+	bool CScriptBase::RunString( const char* szString )
+	{
+		CheckDebugCmd();
+
+		gammacstring strKey( szString, true );
+		auto itPre = m_setRuningString.find( strKey );
+		if( itPre == m_setRuningString.end() )
+			itPre = m_setRuningString.insert( szString ).first;
+
+		std::stringstream name;
+		name << g_CacheTruckPrefix << (uintptr_t)(void*)( itPre->c_str() );
+		std::string strName = name.str();
+		const char* szName = strName.c_str();
+		return RunBuffer( itPre->c_str(), itPre->size(), szName );
 	}
 
 	void CScriptBase::CallBack( int32 nIndex, void* pRetBuf, void** pArgArray )

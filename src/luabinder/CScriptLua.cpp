@@ -34,6 +34,7 @@ namespace Gamma
 
     CScriptLua::CScriptLua( uint16 nDebugPort )
         : m_pAllAllocBlock( NULL )
+		, m_bPreventExeInRunBuffer( false )
 	{
 		memset( m_aryBlock, 0, sizeof(m_aryBlock) );
 		lua_State* pL = lua_newstate( &CScriptLua::Realloc, this );
@@ -1035,79 +1036,34 @@ namespace Gamma
 		*pSize = pInfo->pBuffer->size();
 		return (const char* )( &( (*pInfo->pBuffer)[0] ) );
 	}
-
-    bool CScriptLua::LoadFile( lua_State* pL, const char* szFileName, bool bReload )
-    {
-		if( !szFileName )
-			return false;
-
-		if( szFileName[0] == '/' || ::strchr( szFileName, ':' ) )
-			return LoadSingleFile( pL, szFileName, bReload ) > 0;
-
-		for( auto it = m_listSearchPath.begin(); it != m_listSearchPath.end(); ++it )
-		{
-			int32 nResult;
-			std::string sFileName = *it + szFileName;
-			if( !GetFileExtend( szFileName ) )
-				sFileName.append( ".lua" );
-			if( 0 == ( nResult = LoadSingleFile( pL, sFileName.c_str(), bReload ) ) )
-				continue;
-			return nResult > 0;
-        }
-        return false;
-    }
     
     int32 CScriptLua::LoadFile( lua_State* pL )
     {
         const char* szFileName = lua_tostring( pL, 1 );
         lua_pop( pL, 1 );
-        if( CScriptLua::GetScript( pL )->LoadFile( pL, szFileName, true ) )
-            return 1;
+		CScriptLua* pScript = CScriptLua::GetScript( pL );
+		pScript->PushLuaState( pL );
+		pScript->m_bPreventExeInRunBuffer = true;
+		bool bResult = pScript->RunFile( szFileName );
+		pScript->m_bPreventExeInRunBuffer = false;
+		pScript->PopLuaState();
+		if( bResult )
+			return 1;
         std::string szError = std::string( "Cannot find the file ") + szFileName;
         lua_pushstring( pL, szError.c_str() );
         return 1;
     }
 
-	int32 CScriptLua::LoadSingleFile( lua_State* pL, const char* szFileName, bool bReload )
-	{
-		char szBuf[1024] = "@";
-		strcat2array_safe( szBuf, szFileName );
-		if( !bReload && GetGlobObject( pL, szFileName ) )
-			return 1;
-
-		SFileLoadInfo LoadInfo(szFileName);
-		if( !LoadInfo.fileBuff.size() )
-			return 0;
-
-		LoadInfo.bFinished = false;
-		if( !lua_load( pL, &_ReadFile, &LoadInfo, szBuf ) )
-		{
-			SetGlobObject( pL, szFileName );
-			if( GetDebugger() && GetDebugger()->RemoteDebugEnable() )
-			{
-				const char* szBuffer = LoadInfo.fileBuff.c_str();
-				GetDebugger()->AddFileContent( szFileName, szBuffer );
-			}
-			return 1;
-		}
-
-		const char* szError = lua_tostring( pL, -1 );
-		if( szError )
-		{
-			Output( szError, -1 );
-			Output( "\n", -1 );
-			lua_remove( pL, 1 );
-		}
-		return -1;
-	}
-
 	 int32 CScriptLua::DoFile( lua_State* pL )
 	 {
 		 const char* szFileName = luaL_optstring( pL, 1, NULL );
 		 int n = lua_gettop( pL );
-		 if( !CScriptLua::GetScript( pL )->LoadFile( pL, szFileName, true ) ) 
+		 CScriptLua* pScript = CScriptLua::GetScript( pL );
+		 pScript->PushLuaState( pL );
+		 bool bResult = pScript->RunFile( szFileName );
+		 pScript->PopLuaState();
+		 if( !bResult )
 			 lua_error( pL );
-		 lua_call( pL, 0, LUA_MULTRET );
 		 return lua_gettop( pL ) - n;
 	 }
 
@@ -1232,53 +1188,51 @@ namespace Gamma
     //==================================================================================================================================//
     //                                                        对C++提供的功能性函数                                                     //
     //==================================================================================================================================//
-    bool CScriptLua::RunFile( const char* szFileName, bool bReload )
+    bool CScriptLua::RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName )
 	{
-		lua_State* pL = GetLuaState();
-		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
-		lua_rawget( pL, LUA_REGISTRYINDEX ); //1
-		int32 nErrFunIndex = lua_gettop( pL );
-		if( !LoadFile( pL, szFileName, false ) )
+		struct SReadContext
 		{
-			lua_pop( pL, 1 );
-			return false;
+			const void* m_pBuffer;
+			size_t		m_nSize;
+
+			static const char* Read( lua_State*, void* pContext, size_t* pSize )
+			{
+				auto pThis = (SReadContext*)pContext;
+				*pSize = pThis->m_nSize;
+				pThis->m_nSize = 0;
+				return *pSize ? (const char*)pThis->m_pBuffer : NULL;
+			}
+		};
+
+		int32 nErrFunIndex = -1;
+		lua_State* pL = GetLuaState();
+
+		if( !m_bPreventExeInRunBuffer )
+		{
+			lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
+			lua_rawget( pL, LUA_REGISTRYINDEX ); //1
+			nErrFunIndex = lua_gettop( pL );
 		}
 
-		bool re = !lua_pcall( pL, 0, LUA_MULTRET, nErrFunIndex );
-		lua_remove( pL, nErrFunIndex );
-        return re;
-	}
-
-	const char* _ReadBuffer( lua_State* /*pL*/, void* pContext, size_t* pSize )
-	{
-		auto pairBuffer = ( std::pair<const void*, size_t>* )pContext;
-		*pSize = pairBuffer->second;
-		pairBuffer->second = 0;
-		return *pSize ? (const char*)pairBuffer->first : NULL;
-	}
-
-	bool CScriptLua::RunBuffer( const void* pBuffer, size_t nSize )
-	{
-		lua_State* pL = GetLuaState();
-		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
-		lua_rawget( pL, LUA_REGISTRYINDEX ); //1
-		int32 nErrFunIndex = lua_gettop( pL );
-
-		char szBuf[1024];
-		static uint32 s_nBufferIndex = 0;
-		sprintf( szBuf, "@GammaScriptBufferTrunk%x", s_nBufferIndex );
-		std::pair<const void*, size_t> context( pBuffer, nSize );
+		char szBuf[2048];
+		sprintf( szBuf, "@%s", szFileName );
+		SReadContext Context = { pBuffer, nSize };
 
 		// 通过_ReadString装载字符串的代码块
-		if( !lua_load( pL, &_ReadBuffer, &context, szBuf ) )
+		if( GetGlobObject( pL, szFileName ) ||
+			( !lua_load( pL, &SReadContext::Read, &Context, szBuf ) && 
+				SetGlobObject( pL, szFileName ) ) )
 		{
+			if( m_bPreventExeInRunBuffer )
+				return true;
 			bool re = !lua_pcall( pL, 0, LUA_MULTRET, nErrFunIndex );
 			lua_remove( pL, nErrFunIndex );
 			return re;
 		}
 
 		// 装载失败时移走错误函数，并且从s_setRuningString删除字符串
-		lua_remove( pL, nErrFunIndex );
+		if( !m_bPreventExeInRunBuffer )
+			lua_remove( pL, nErrFunIndex );
 
 		const char* szError = lua_tostring( pL, -1 );
 		if( szError )
@@ -1289,46 +1243,6 @@ namespace Gamma
 		}
 
 		return false;
-	}
-
-    bool CScriptLua::RunString( const char* szString )
-	{
-		lua_State* pL = GetLuaState();
-		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
-		lua_rawget( pL, LUA_REGISTRYINDEX ); //1
-		int32 nErrFunIndex = lua_gettop( pL );
-
-		auto ib = m_setRuningString.insert( szString );
-		std::stringstream name;
-		name << "@GammaScriptStringTrunk"<< (uintptr_t)(void*)( ib.first->c_str() );
-		std::string strName = name.str();
-		const char* szName = strName.c_str();
-
-		// 通过_ReadString装载字符串的代码块
-		if( GetGlobObject( pL, szName ) ||
-			( !lua_load( pL, &_ReadString, &szString, szName ) && SetGlobObject( pL, szName ) ) )
-		{
-			bool re = !lua_pcall( pL, 0, LUA_MULTRET, nErrFunIndex );
-			lua_remove( pL, nErrFunIndex );
-			return re;
-		}
-		else
-		{
-			// 装载失败时移走错误函数，并且从s_setRuningString删除字符串
-			lua_remove( pL, nErrFunIndex );
-			if( ib.second )
-				m_setRuningString.erase( ib.first );
-
-			const char* szError = lua_tostring( pL, -1 );
-			if( szError )
-			{
-				Output( szError, -1 );
-				Output( "\n", -1 );
-				lua_remove( pL, 1 );
-			}
-
-			return false;
-		}
 	}
 	
 	bool CScriptLua::RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg )

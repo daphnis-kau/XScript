@@ -175,24 +175,13 @@ namespace Gamma
 		vecLines.push_back( std::string( pStart, pCur - pStart ) );
 	}
 
-	void CDebugBase::ReadFile( std::string& strBuffer, const char* szFileName )
-	{
-		//[todo]
-		//CPkgFile File( szFileName );
-		//if( !File.IsValid() )
-		//	return;
-		//strBuffer.resize( File.Size() );
-		//File.Read( &strBuffer[0], (uint32)strBuffer.size() );
-	}
-
 	const char* CDebugBase::ReadFileLine( const char* szSource, int32 nLine )
 	{
 		gammacstring strKey( szSource, true );
 		CFileMap::iterator it = m_mapFileBuffer.find( strKey );
 		if( m_mapFileBuffer.end() == it )
 		{
-			std::string strBuffer;
-			ReadFile( strBuffer, szSource );
+			std::string strBuffer = m_pBase->ReadEntirFile( szSource );
 			AddFileContent( szSource, strBuffer.c_str() );
 			it = m_mapFileBuffer.find( strKey );
 		}
@@ -915,7 +904,7 @@ namespace Gamma
 				szBuf = ReadWord();
 				if( !szBuf )
 					GetFrameInfo( m_nCurFrame, NULL, NULL, &szBuf );
-				m_pBase->RunFile( szBuf, true );
+				m_pBase->RunFile( szBuf );
 			}
 			else if( !strcmp( szBuf, "next" ) || !strcmp( szBuf, "n" ) )
 			{

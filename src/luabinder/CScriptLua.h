@@ -25,10 +25,10 @@ namespace Gamma
 		std::vector<lua_State*>	m_vecLuaState;
 		std::wstring			m_szTempUcs2;
 		std::string				m_szTempUtf8;
-		std::set<std::string>	m_setRuningString;
 
 		SMemoryBlock*			m_pAllAllocBlock;
 		SMemoryBlock*			m_aryBlock[eMaxManageMemoryCount];
+		bool					m_bPreventExeInRunBuffer;
 
         //==============================================================================
         // 对Lua提供的功能性函数
@@ -66,8 +66,6 @@ namespace Gamma
 		static bool				SetGlobObject( lua_State* pL, const char* szKey );
 
 		void					BuildRegisterInfo();
-		bool					LoadFile( lua_State* pL, const char* szFileName, bool bReload );
-		int32					LoadSingleFile( lua_State* pL, const char* szFileName, bool bReload );
         void					AddLoader();
 		void					IO_Replace();
 
@@ -102,9 +100,7 @@ namespace Gamma
 		void					SetDebugLine();
 
         static  CScriptLua*     GetScript( lua_State* pL );
-		virtual bool            RunFile( const char* szFileName, bool bReload );
-		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize );
-		virtual bool        	RunString( const char* szString );
+		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName );
 		virtual bool        	RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg );
 		virtual void            UnlinkCppObjFromScript( void* pObj );
 		virtual void        	GC();
