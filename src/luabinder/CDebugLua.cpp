@@ -26,7 +26,7 @@ namespace Gamma
 
 	#define LUA_MASKALL (LUA_MASKCALL|LUA_MASKRET|LUA_MASKLINE)
 	static void* s_szValue2ID = (void*)"v2i";
-	static void* s_szID2Value = (void*)"i2v";
+	static void* s_szID2Value = ( void* )"i2v";
 
     CDebugLua::CDebugLua( CScriptBase* pBase, uint16 nDebugPort )
         : CDebugBase( pBase, nDebugPort )
@@ -35,27 +35,9 @@ namespace Gamma
         , m_nBreakFrame( MAX_INT32 )
 		, m_nValueID( ePDVID_Count )
 	{
-		CScriptLua* pScript = static_cast<CScriptLua*>( pBase );
-		lua_State* pL = pScript->GetLuaState();
-
-		lua_pushlightuserdata( pL, s_szValue2ID );
-		lua_newtable( pL );
-		lua_newtable( pL );
-		lua_pushstring( pL, "k");
-		lua_setfield( pL, -2, "__mode");
-		lua_setmetatable( pL, -2 );
-		lua_rawset( pL, LUA_REGISTRYINDEX );
-
-		lua_pushlightuserdata( pL, s_szID2Value );
-		lua_newtable( pL );
-		lua_newtable( pL );
-		lua_pushstring( pL, "v");
-		lua_setfield( pL, -2, "__mode");
-		lua_setmetatable( pL, -2 );
-		lua_rawset( pL, LUA_REGISTRYINDEX );
     }
 
-    CDebugLua::~CDebugLua(void)
+	CDebugLua::~CDebugLua( void )
     {
 	}
 
@@ -129,7 +111,7 @@ namespace Gamma
 		return s_nBreakPointID++;
 	}
 
-    void CDebugLua::DebugHook( lua_State *pState, lua_Debug* pDebug )
+	void CDebugLua::DebugHook( lua_State *pState, lua_Debug* pDebug )
     {
 		auto pScriptLua = CScriptLua::GetScript( pState );
 		auto pDebugger = static_cast<CDebugLua*>( pScriptLua->GetDebugger() );
@@ -165,11 +147,36 @@ namespace Gamma
 		pDebugger->Debug( pState );
 	}
 
+	void CDebugLua::ClearVariables()
+	{
+		while( m_mapVariable.GetFirst() )
+		{
+			auto pNode = static_cast<SVariableNode*>( m_mapVariable.GetFirst() );
+			while( pNode->m_mapFields[0].GetFirst() )
+				pNode->m_mapFields[0].GetFirst()->Remove();
+			while( pNode->m_mapFields[1].GetFirst() )
+				pNode->m_mapFields[1].GetFirst()->Remove();
+			delete pNode;
+		}
+	}
+
 	void CDebugLua::Debug( lua_State* pState )
 	{
 		m_pState = pState;
+		int32 nTop = lua_gettop( m_pState );
 		lua_sethook( pState, &CDebugLua::DebugHook, 0, 0 );
 		CDebugBase::Debug();
+		assert( nTop == lua_gettop( m_pState ) );
+
+		ClearVariables();
+
+		lua_pushlightuserdata( m_pState, s_szValue2ID );
+		lua_pushnil( m_pState );
+		lua_rawset( m_pState, LUA_REGISTRYINDEX );
+
+		lua_pushlightuserdata( m_pState, s_szID2Value );
+		lua_pushnil( m_pState );
+		lua_rawset( m_pState, LUA_REGISTRYINDEX );
 	}
 
 	uint32 CDebugLua::AddBreakPoint( const char* szFileName, int32 nLine )
@@ -232,58 +239,118 @@ namespace Gamma
 	int32 CDebugLua::SwitchFrame( int32 nCurFrame )
 	{
 		lua_Debug ld;
-		return lua_getstack( m_pState, nCurFrame, &ld ) ? nCurFrame : -1;
-	}
+		if( !lua_getstack( m_pState, nCurFrame, &ld ) )
+			return -1;
+		int32 nTop = lua_gettop( m_pState );
 
-	uint32 CDebugLua::GetVariableField( const char* szField )
-	{
-		if( szField && szField[0] )
-		{
-			lua_pushlightuserdata( m_pState, CScriptLua::ms_pErrorHandlerKey );
-			lua_rawget( m_pState, LUA_REGISTRYINDEX );
-			int32 nErrFunIndex = lua_gettop( m_pState );
-			const char* szFun = "return function( a ) return a%s end";
-			char szFuncBuf[256];
-			sprintf( szFuncBuf, szFun, szField );
-			if( luaL_loadstring( m_pState, szFuncBuf ) )
-			{
-				lua_pop( m_pState, 2 );
-				return INVALID_32BITID;
-			}
-			lua_pcall( m_pState, 0, 1, 0 );
-			lua_pushvalue( m_pState, -3 );
-			lua_pcall( m_pState, 1, 1, nErrFunIndex );
-			lua_remove( m_pState, -2 );
-			lua_remove( m_pState, -2 );
-		}
+		ClearVariables();
 
 		lua_pushlightuserdata( m_pState, s_szValue2ID );
-		lua_rawget( m_pState, LUA_REGISTRYINDEX );	
-		lua_pushvalue( m_pState, -2 );	
-		lua_rawget( m_pState, -2 ); 
-		uint32 nID = (uint32)lua_tonumber( m_pState, -1 );
-		if( nID )
+		lua_newtable( m_pState );
+		lua_rawset( m_pState, LUA_REGISTRYINDEX );
+
+		lua_pushlightuserdata( m_pState, s_szID2Value );
+		lua_newtable( m_pState );
+		lua_rawset( m_pState, LUA_REGISTRYINDEX );
+
+		SVariableNode* pNode = new SVariableNode;
+		pNode->m_strField = "Scope";
+		pNode->m_nRegisterID = ePDVID_Scopes;
+		pNode->m_nVariableID = ePDVID_Scopes;
+		m_mapVariable.Insert( *pNode );
+
+		// global value
+		m_nValueID = ePDVID_Scopes;
+		lua_getglobal( m_pState, "_G" );
+		TouchVariable( "Global", ePDVID_Scopes, false );
+		assert( lua_gettop( m_pState ) == nTop );
+
+		// local value
+		lua_newtable( m_pState );
+		const char* name = NULL;
+		for( int n = 1; ( name = lua_getlocal( m_pState, &ld, n ) ) != NULL; n++ )
 		{
-			lua_pop( m_pState, 3 );
-			return nID;
+			if( lua_equal( m_pState, -1, -2 ) )
+				lua_pop( m_pState, 1 );
+			else
+				lua_setfield( m_pState, -2, name[0] ? name : "(anonymous local)" );
 		}
 
-		lua_pop( m_pState, 1 );
+		int32 nCurCount = GetFrameCount() - 1;
+		while( nCurCount >= 0 )
+		{
+			if( !lua_getstack( m_pState, nCurCount, &ld ) )
+				break;
+			lua_getinfo( m_pState, "f", &ld );
+			for( int n = 1; ( name = lua_getupvalue( m_pState, -1, n ) ) != NULL; n++ )
+				lua_setfield( m_pState, -3, name[0] ? name : "(anonymous upvalue)" );
+			lua_pop( m_pState, 1 );
+			nCurCount--;
+		}
+
+		assert( nTop + 1 == lua_gettop( m_pState ) );
+		TouchVariable( "Local", ePDVID_Scopes, false );
+		assert( lua_gettop( m_pState ) == nTop );
+		return nCurFrame;
+	}
+
+	uint32 CDebugLua::TouchVariable( const char* szField, uint32 nParentID, bool bIndex )
+	{
+		SVariableInfo* pInfo = m_mapVariable.Find( nParentID );
+		if( pInfo == nullptr )
+		{
+			lua_pop( m_pState, 1 );
+			return INVALID_32BITID;
+		}
+
+		CFieldMap& mapFields = pInfo->m_mapFields[bIndex];
+		SFieldInfo* pField = mapFields.Find( gammacstring( szField, true ) );
+		if( pField )
+			return static_cast<SVariableNode*>( pField )->m_nVariableID;
+
+		int32 nTop = lua_gettop( m_pState );
+		lua_pushlightuserdata( m_pState, s_szValue2ID );
+		lua_rawget( m_pState, LUA_REGISTRYINDEX );			//2[value,value2ID]
+		lua_pushvalue( m_pState, -2 );						//3[value,value2ID,value]
+		lua_rawget( m_pState, -2 );							//3[value,value2ID,id]
+		uint32 nRegisterID = (uint32)lua_tonumber( m_pState, -1 );
+		if( nRegisterID )
+		{
+			lua_pop( m_pState, 3 );
+			assert( nTop - 1 == lua_gettop( m_pState ) );
+			SVariableNode* pNode = new SVariableNode;
+			pNode->m_strField = szField;
+			pNode->m_nRegisterID = nRegisterID;
+			pNode->m_nVariableID = ++m_nValueID;
+			mapFields.Insert( *pNode );
+			m_mapVariable.Insert( *pNode );
+			return pNode->m_nVariableID;
+		}
+		lua_pop( m_pState, 1 );								//2[value,value2ID]
 
 		// add to s_szValue2ID
-		nID = ++m_nValueID;
-		lua_pushvalue( m_pState, -2 );
-		lua_pushnumber( m_pState, nID );
-		lua_rawset( m_pState, -3 );   
-		lua_pop( m_pState, 1 );
+		uint32 nID = ++m_nValueID;
+		lua_pushvalue( m_pState, -2 );						//3[value,value2ID,value]
+		lua_pushnumber( m_pState, nID );					//4[value,value2ID,value,id]
+		lua_rawset( m_pState, -3 );   						//2[value,value2ID]
+		lua_pop( m_pState, 1 );   							//1[value]
+		assert( nTop == lua_gettop( m_pState ) );
 
 		// add to s_szID2Value
 		lua_pushlightuserdata( m_pState, s_szID2Value );
-		lua_rawget( m_pState, LUA_REGISTRYINDEX );	
-		lua_pushnumber( m_pState, nID );
-		lua_pushvalue( m_pState, -3 );
-		lua_rawset( m_pState, -3 );   
+		lua_rawget( m_pState, LUA_REGISTRYINDEX );			//2[value,ID2Value]
+		lua_pushnumber( m_pState, nID );					//3[value,ID2Value,id]
+		lua_pushvalue( m_pState, -3 );						//4[value,ID2Value,id,value]
+		lua_rawset( m_pState, -3 );   						//2[value,ID2Value]
 		lua_pop( m_pState, 2 );
+		assert( nTop - 1 == lua_gettop( m_pState ) );
+
+		SVariableNode* pNode = new SVariableNode;
+		pNode->m_strField = szField;
+		pNode->m_nRegisterID = nID;
+		pNode->m_nVariableID = nID;
+		mapFields.Insert( *pNode );
+		m_mapVariable.Insert( *pNode );
 		return nID;
 	}
 
@@ -291,42 +358,20 @@ namespace Gamma
 	{
 		if( szName == NULL )
 			return ePDVID_Scopes;
+		gammacstring strKey( szName, true );
 
-		if( !IsWordChar( szName[0] ) )
-			return INVALID_32BITID;
-		uint32 nIndex = 0;
-		std::string strValue;
-		while( szName[nIndex] == '_' ||
-			IsWordChar( szName[nIndex] ) || 
-			IsNumber( szName[nIndex] ) )
-			strValue.push_back( szName[nIndex++] );
-
-		lua_Debug _ar;
-		if( !lua_getstack ( m_pState, nCurFrame, &_ar ) )
-			return INVALID_32BITID;
-
-		int n = 1;
-		const char* name = NULL;
-		while( ( name = lua_getlocal( m_pState, &_ar, n++ ) ) != NULL ) 
+		uint32 aryID[] = { ePDVID_Local, ePDVID_Global };
+		for( uint32 i = 0; i < ELEM_COUNT(aryID); i++ )
 		{
-			if( strValue == name )
-				return GetVariableField( szName + nIndex );
-			lua_pop( m_pState, 1 ); 
-		}			
+			SVariableInfo* pInfo = m_mapVariable.Find( aryID[i] );
+			if( !pInfo )
+				continue;
+			SFieldInfo* pField = pInfo->m_mapFields[0].Find( strKey );
+			if( !pField )
+				continue;
+			return static_cast<SVariableNode*>( pField )->m_nVariableID;
+		}
 
-		n = 1;
-		lua_getinfo( m_pState, "f", &_ar );
-		while( ( name = lua_getupvalue( m_pState, -1, n++ ) ) != NULL ) 
-		{
-			if( strValue == name )
-				return GetVariableField( szName + nIndex );
-			lua_pop( m_pState, 1 ); 
-		}			
-
-		lua_getglobal( m_pState, strValue.c_str() );
-		if( ( lua_type( m_pState, -1 ) != LUA_TNIL ) )
-			return GetVariableField( szName + nIndex );
-		lua_pop( m_pState, 1 ); 
 		return INVALID_32BITID;
 	}
 
@@ -341,44 +386,108 @@ namespace Gamma
 			return Info;
 		}
 
-		if( nID == ePDVID_Global )
-		{
-			Info.strName = "_G";
-			Info.strValue = "Global";
-		}
-		else if( nID == ePDVID_Local )
-		{
-			Info.strName = "Local";
-			Info.strValue = "Local";
-		}
-		else
+		SVariableInfo* pInfo = m_mapVariable.Find( nID );
+		assert( pInfo );
+
+		auto pNode = static_cast<SVariableNode*>( pInfo );
+		Info.strName = pNode->m_strField.c_str();
+		Info.strValue = Info.strName;
+
+		int32 nTop = lua_gettop( m_pState );
+		if( nID != ePDVID_Global && nID != ePDVID_Local )
 		{
 			lua_pushlightuserdata( m_pState, s_szID2Value );
 			lua_rawget( m_pState, LUA_REGISTRYINDEX );
-			lua_pushnumber( m_pState, nID );
+			lua_pushnumber( m_pState, pNode->m_nRegisterID );
 			lua_rawget( m_pState, -2 );
 			lua_remove( m_pState, -2 );
+			assert( nTop + 1 == lua_gettop( m_pState ) );
 			CScriptLua::ToString( m_pState );
 			const char* s = lua_tostring( m_pState, -1 );
 			Info.strValue = s ? s : "nil";
 			lua_pop( m_pState, 1 );
 		}
+		assert( nTop == lua_gettop( m_pState ) );
 
 		Info.nIndexValues = GetChildrenID( nID, true, 0 );
 		Info.nNameValues = GetChildrenID( nID, false, 0 );
+		assert( nTop == lua_gettop( m_pState ) );
 		return Info;
 	}
 
 	uint32 CDebugLua::GetChildrenID( uint32 nParentID, bool bIndex, 
 		uint32 nStart, uint32* aryChild, uint32 nCount )
 	{
-		if( nParentID == ePDVID_Scopes && !bIndex && nCount >= 2 )
+		if( nParentID == ePDVID_Scopes )
 		{
-			aryChild[0] = ePDVID_Global;
-			aryChild[1] = ePDVID_Local;
+			if( bIndex )
+				return 0;
+			if( aryChild )
+			{
+				aryChild[0] = ePDVID_Global;
+				aryChild[1] = ePDVID_Local;
+			}
 			return 2;
 		}
 
-		return 0;
+		SVariableInfo* pInfo = m_mapVariable.Find( nParentID );
+		if( pInfo == nullptr )
+			return 0;
+		auto pNode = static_cast<SVariableNode*>( pInfo );
+		CFieldMap& mapFields = pInfo->m_mapFields[bIndex];
+
+		if( mapFields.IsEmpty() )
+		{
+			int32 nTop = lua_gettop( m_pState );
+			lua_pushlightuserdata( m_pState, s_szID2Value );
+			lua_rawget( m_pState, LUA_REGISTRYINDEX );
+			lua_pushnumber( m_pState, pNode->m_nRegisterID );
+			lua_rawget( m_pState, -2 );
+			if( !lua_istable( m_pState, -1 ) )
+			{
+				lua_pop( m_pState, 2 );
+				assert( nTop == lua_gettop( m_pState ) );
+				return 0;
+			}
+
+			if( bIndex )
+			{
+				int nLen = lua_objlen( m_pState, -1 );
+				for( int32 i = 1; i <= nLen; i++ )
+				{
+					char szName[256];
+					sprintf( szName, "%d", i );
+					lua_rawgeti( m_pState, -1, i );  /* 2nd argument */
+					TouchVariable( szName, nParentID, true );
+				}
+			}
+			else
+			{
+				lua_pushnil( m_pState );
+				while( lua_next( m_pState, -2 ) )
+				{
+					const char* szName = lua_tostring( m_pState, -2 );
+					TouchVariable( szName, nParentID, false );
+				}
+			}
+			lua_settop( m_pState, nTop );
+			assert( nTop == lua_gettop( m_pState ) );
+		}
+
+		uint32 nIndex = 0, nCurCount = 0;
+		for( auto pField = mapFields.GetFirst(); pField;
+			pField = pField->GetNext(), nIndex++ )
+		{
+			auto pNode = static_cast<SVariableNode*>( pField );
+			if( nIndex < nStart )
+				continue;
+			if( nCurCount >= nCount )
+				break;
+			if( aryChild )
+				aryChild[nCurCount] = pNode->m_nVariableID;
+			nCurCount++;
+		}
+		return nCurCount;
 	}
+
 }

@@ -153,7 +153,7 @@ namespace Gamma
 		void				AddFileContent( const char* szSource, const char* szData );
 		bool				RemoteDebugEnable() const;
 		bool				RemoteCmdValid() const { return m_bRemoteCmdValid; }
-		bool				CheckRemoteCmd();
+		bool				CheckRemoteCmd( bool bForceLoop = false );
 
 		virtual uint32		AddBreakPoint( const char* szFileName, int32 nLine );
 		virtual void		DelBreakPoint( uint32 nBreakPointID );

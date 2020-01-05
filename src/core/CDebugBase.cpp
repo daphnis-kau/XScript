@@ -133,8 +133,8 @@ namespace Gamma
 
 	void CDebugBase::Debug()
 	{
-		m_nCurFrame = 0;
 		m_bEnterDebug = true;
+		m_nCurFrame = SwitchFrame( 0 );
 		if( m_nRemoteConnecter == INVALID_SOCKET )
 			ConsoleDebug( NULL );
 		else
@@ -400,9 +400,11 @@ namespace Gamma
 		CmdUnLock();
 	}
 
-	bool CDebugBase::CheckRemoteCmd()
+	bool CDebugBase::CheckRemoteCmd( bool bForceLoop )
 	{
 		if( m_nRemoteConnecter == -1 )
+			return false;
+		if( !bForceLoop && m_bEnterDebug )
 			return false;
 
 		bool bContinue = true;
@@ -453,7 +455,7 @@ namespace Gamma
 
 		while( true )
 		{
-			if( !CheckRemoteCmd() )
+			if( !CheckRemoteCmd( true ) )
 				break;
 			GammaGetSemaphore( m_hSemaphore );
 		}
@@ -678,7 +680,8 @@ namespace Gamma
 			const char* szExpression = pArg->At<const char*>( "expression" );
 			//CJson* pFormat = pArg->GetChild( "format" );
 			//bool bHex = pFormat && pFormat->At<bool>( "hex" );
-			SValueInfo Value = GetVariable( GetVariableID( nFrame, szExpression ) );
+			uint32 nID = GetVariableID( nFrame, szExpression );
+			SValueInfo Value = nID == INVALID_32BITID ? SValueInfo() : GetVariable( nID );
 			CJson* pBody = new CJson( "body" );
 			const char* szValue = Value.strValue.c_str();
 			pBody->AddChild( "result", szValue )->ForceString( true );

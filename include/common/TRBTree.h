@@ -717,6 +717,7 @@ namespace Gamma
 		TGammaRBMapNode( const KeyType& Key, const DataType& Data ) : m_Key( Key ), m_Data( Data ){}
 		operator const KeyType&() { return m_Key; }
 		bool operator< ( const KeyType& r ) { return m_Key < r; }
+		DataType& GetData() { return m_Data; }
 		const KeyType& GetKey() const { return m_Key; }
 		const DataType& GetData() const { return m_Data; }
 		void SetData( const DataType& Data ) { m_Data = Data; }

@@ -811,9 +811,13 @@ namespace Gamma
 
 	int32 CScriptLua::ToString( lua_State* pL )
 	{
+		int32 nTop = lua_gettop( pL );
 		luaL_checkany( pL, -1 );
 		if( luaL_callmeta( pL, -1, "__tostring" ) )
-			return 1;  
+		{
+			assert( nTop == lua_gettop( pL ) );
+			return 1;
+		}
 
 		int type = lua_type( pL, -1 );
 		const char* s = nullptr;
@@ -830,6 +834,7 @@ namespace Gamma
 		{
 			lua_pop( pL, 1 );
 			lua_pushstring( pL, s );
+			assert( nTop == lua_gettop( pL ) );
 			return 1;
 		}
 
@@ -839,14 +844,15 @@ namespace Gamma
 		{
 			lua_pop( pL, 1 );
 			lua_pushfstring( pL, "%s: %p", name, ptr );
+			assert( nTop == lua_gettop( pL ) );
 			return 1;
 		}
 
-		lua_getmetatable( pL, -1 );
-		if( lua_isnil( pL, -1 ) )
+		if( !lua_getmetatable( pL, -1 ) )
 		{
-			lua_pop( pL, 2 );
+			lua_pop( pL, 1 );
 			lua_pushfstring( pL, "table: %p", ptr );
+			assert( nTop == lua_gettop( pL ) );
 			return 1;
 		}
 
@@ -856,6 +862,7 @@ namespace Gamma
 		{
 			lua_pop( pL, 3 );
 			lua_pushfstring( pL, "table: %p", ptr );
+			assert( nTop == lua_gettop( pL ) );
 			return 1;
 		}
 
@@ -865,6 +872,7 @@ namespace Gamma
 		const void* pObject = lua_touserdata( pL, -1 );
 		lua_pop( pL, 4 );
 		lua_pushfstring( pL, "%s: %p->%p", pInfo->GetClassName().c_str(), ptr, pObject );
+		assert( nTop == lua_gettop( pL ) );
 		return 1;
 	}
 
