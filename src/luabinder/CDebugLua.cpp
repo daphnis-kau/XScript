@@ -32,7 +32,7 @@ namespace Gamma
         : CDebugBase( pBase, nDebugPort )
 		, m_pState( NULL )
 		, m_pPreState( NULL )
-        , m_nBreakFrame( MAX_INT32 )
+        , m_nBreakFrame( -1 )
 		, m_nValueID( ePDVID_Count )
 	{
     }

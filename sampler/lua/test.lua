@@ -9,10 +9,6 @@ function a:NewThisLua()
    return self;
 end
 
-for i, v in pairs(_G) do
-    print("_G->", i)
-end 
-
 a:kkk():x(10)
 print( a:x(), ddd )
 a:kkk( CVector2f:new())
