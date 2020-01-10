@@ -22,8 +22,10 @@ namespace Gamma
 	inline const CClassRegistInfo* CJSObject::_FromVMValue(DataType eType,
 		CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj )
 	{
+		SV8Context& Context = Script.GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
 		auto pClassInfo = (const CClassRegistInfo*)((eType >> 1) << 1);
-		if( obj == v8::Null( Script.GetIsolate() ) ||	!obj->IsObject() )
+		if( obj == v8::Null(isolate) ||	!obj->IsObject() )
 		{
 			*(void**)( pDataBuf ) = NULL;
 			return NULL;
@@ -35,8 +37,8 @@ namespace Gamma
 			pCppBind = v8::External::Cast( *pScriptObject->GetInternalField( 0 ) );
 		else
 		{
-			v8::Local<v8::Value> key = Script.m_CppField.Get( Script.GetIsolate() );
-			v8::Local<v8::Context> context = Script.GetIsolate()->GetCurrentContext();
+			v8::Local<v8::Value> key = Context.m_CppField.Get(isolate);
+			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 			v8::MaybeLocal<v8::Value> field = pScriptObject->Get( context, key );
 			if( field.IsEmpty() )
 				return NULL;
@@ -46,7 +48,7 @@ namespace Gamma
 			pCppBind = v8::External::Cast( *extenalField );
 		}
 
-		const CScriptJS::SObjInfo* pInfo = ( const CScriptJS::SObjInfo* )pCppBind->Value();
+		const SObjInfo* pInfo = ( const SObjInfo* )pCppBind->Value();
 		if( !pInfo || !pInfo->m_pObject )
 		{
 			*(void**)( pDataBuf ) = NULL;
@@ -74,31 +76,34 @@ namespace Gamma
 		CScriptJS& Script, void* pObj, bool bCopy )
 	{
 		auto pClassInfo = (const CClassRegistInfo*)((eType >> 1) << 1);
-		v8::Isolate* isolate = Script.GetIsolate();
+		SV8Context& Context = Script.GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
 		if( pObj == NULL )
 			return v8::Null( isolate );
 
-		const CScriptJS::SObjInfo* pObjInfo = NULL;
+		const SObjInfo* pObjInfo = NULL;
 		if( !bCopy && ( pObjInfo = Script.FindExistObjInfo( pObj ) ) != NULL )
-			return pObjInfo->m_Object.Get( Script.GetIsolate() );
+			return pObjInfo->m_Object.Get(isolate);
 
-		PersistentFunTmplt& persistentTemplate = Script.GetPersistentFunTemplate(pClassInfo);
+		static PersistentFunTmplt s_Instance;
+		SClassInfo* classInfo = Script.m_mapClassInfo.Find((const void*)pClassInfo);
+		PersistentFunTmplt& persistentTemplate = classInfo ? classInfo->m_FunctionTemplate : s_Instance;
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 		v8::Local<v8::FunctionTemplate> funTemplate = persistentTemplate.Get(isolate);
 		v8::Local<v8::Function> JSClass = funTemplate->GetFunction(context).ToLocalChecked();
 		v8::Local<v8::ObjectTemplate> objTemplate = funTemplate->InstanceTemplate();
 		v8::Local<v8::Object> NewObj = objTemplate->NewInstance(context).ToLocalChecked();
-		v8::Local<v8::String> __proto__ = Script.m___proto__.Get(isolate);
-		v8::Local<v8::String> Prototype = Script.m_Prototype.Get(isolate);
+		v8::Local<v8::String> __proto__ = Context.m___proto__.Get(isolate);
+		v8::Local<v8::String> Prototype = Context.m_Prototype.Get(isolate);
 		NewObj->Set(context, __proto__, JSClass->Get(context, Prototype).ToLocalChecked() );
 
 		if (bCopy)
 		{
-			Script.BindObj(NULL, NewObj, pClassInfo, pObj);
+			Context.BindObj(NULL, NewObj, pClassInfo, pObj);
 			pClassInfo->Release( &Script, pObj );
 		}
 		else
-			Script.BindObj(pObj, NewObj, pClassInfo);
+			Context.BindObj(pObj, NewObj, pClassInfo);
 		return NewObj;
 	}
 
@@ -113,7 +118,7 @@ namespace Gamma
 	{
 		void* pObj = *(void**)(pDataBuf);
 		if (!pObj)
-			return v8::Null(Script.GetIsolate());
+			return v8::Null(Script.GetV8Context().m_pIsolate);
 		return _ToVMValue(eType, Script, pObj, false);
 	}
 
@@ -151,7 +156,7 @@ namespace Gamma
 	{
 		void* pObj = *(void**)(pDataBuf);
 		if (!pObj)
-			return v8::Null(Script.GetIsolate());
+			return v8::Null(Script.GetV8Context().m_pIsolate);
 		return _ToVMValue(eType, Script, pObj, true);
 	}
 }

@@ -36,7 +36,9 @@ namespace Gamma
 
 			int32 nFunctionIndex = pCallBase->GetFunctionIndex();
 			int32 nArgCount = args.Length();
-			LocalValue undefined = Undefined( Script.GetIsolate() );
+			SV8Context& Context = Script.GetV8Context();
+			v8::Isolate* isolate = Context.m_pIsolate;
+			LocalValue undefined = Undefined(isolate);
 			int32 nArgIndex = nFunctionIndex >= eCT_ClassFunction ? -1 : 0;
 			for( uint32 nParamIndex = 0; nParamIndex < nParamCount; nParamIndex++, nArgIndex++ )
 			{
@@ -104,7 +106,9 @@ namespace Gamma
 			DataType nType = pByScript->GetParamList()[0];
 			size_t nParamSize = GetAligenSizeOfType( nType );
 			char* pDataBuf = (char*)alloca( nParamSize );
-			LocalValue undefined = Undefined( Script.GetIsolate() );
+			SV8Context& Context = Script.GetV8Context();
+			v8::Isolate* isolate = Context.m_pIsolate;
+			LocalValue undefined = Undefined(isolate);
 			CJSTypeBase* pParamType = GetTypeBase( nType );
 			pParamType->FromVMValue(nType, Script, pDataBuf, arg);
 			void* aryArg[] = { &pObject, pDataBuf, nullptr };
@@ -123,12 +127,13 @@ namespace Gamma
 	{
 		Script.CallJSStatck(true);
 
-		v8::Isolate* isolate = Script.GetIsolate();
+		SV8Context& Context = Script.GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
 		v8::HandleScope handle_scope(isolate);
 		v8::TryCatch try_catch(isolate);
 
 		// Enter the context for compiling and running the hello world script.
-		v8::Local<v8::Context> context = Script.GetContext().Get(isolate);
+		v8::Local<v8::Context> context = Context.m_Context.Get(isolate);
 		v8::Context::Scope context_scope(context);
 
 		DataType nThisType = pCallBase->GetParamList()[0];
@@ -173,7 +178,7 @@ namespace Gamma
 		Script.CallJSStatck(false);
 		if (result.IsEmpty())
 		{
-			Script.ReportException(&try_catch, context);
+			Context.ReportException(&try_catch, context);
 			return false;
 		}
 
@@ -187,12 +192,13 @@ namespace Gamma
 		const CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
 		Script.CallJSStatck(true);
-		v8::Isolate* isolate = Script.GetIsolate();
+		SV8Context& Context = Script.GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
 		v8::HandleScope handle_scope(isolate);
 		v8::TryCatch try_catch(isolate);
 
 		// Enter the context for compiling and running the hello world script.
-		v8::Local<v8::Context> context = Script.GetContext().Get(isolate);
+		v8::Local<v8::Context> context = Context.m_Context.Get(isolate);
 		v8::Context::Scope context_scope(context);
 
 		DataType nThisType = pCallBase->GetParamList()[0];
@@ -209,6 +215,6 @@ namespace Gamma
 		Script.CallJSStatck(false);
 		if (!result.IsEmpty())
 			return;
-		Script.ReportException(&try_catch, context);
+		Context.ReportException(&try_catch, context);
 	}
 };

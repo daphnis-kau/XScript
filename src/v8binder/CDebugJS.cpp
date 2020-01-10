@@ -3,6 +3,7 @@
 #include "common/TStrStream.h"
 #include "CDebugJS.h"
 #include "CScriptJS.h"
+#include "V8Context.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -48,7 +49,8 @@ namespace Gamma
 		if (!nDebugPort)
 			return;
 		CScriptJS* pScript = (CScriptJS*)pBase;
-		v8::Isolate* isolate = pScript->GetIsolate();
+		SV8Context& Context = pScript->GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
 
 		// create a v8 inspector instance.
 		m_Inspector = v8_inspector::V8Inspector::create(isolate, this);
@@ -284,12 +286,16 @@ namespace Gamma
 
 	v8::Local<v8::Context> CDebugJS::ensureDefaultContextInGroup(int context_group_id)
 	{
-		return ((CScriptJS*)GetScriptBase())->GetIsolate()->GetCurrentContext();
+		CScriptJS* pScript = (CScriptJS*)GetScriptBase();
+		SV8Context& Context = pScript->GetV8Context();
+		return Context.m_pIsolate->GetCurrentContext();
 	}
 
 	double CDebugJS::currentTimeMS()
 	{
-		return ((CScriptJS*)GetScriptBase())->GetPlatform()->CurrentClockTimeMillis();
+		CScriptJS* pScript = (CScriptJS*)GetScriptBase();
+		SV8Context& Context = pScript->GetV8Context();
+		return Context.m_platform->CurrentClockTimeMillis();
 	}
 
 	void CDebugJS::sendResponse(int callId, std::unique_ptr<v8_inspector::StringBuffer> message)

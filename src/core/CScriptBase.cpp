@@ -311,7 +311,7 @@ namespace Gamma
 			if( !address )
 				return nullptr;
 			SFileContext* pContext = new SFileContext;
-			pContext->m_nCacheSize = strlen( (const char*)address );
+			pContext->m_nCacheSize = (uint32)strlen( (const char*)address );
 			pContext->m_pFile = (char*)address;
 			return pContext;
 		}
@@ -331,10 +331,10 @@ namespace Gamma
 			return -1;
 		SFileContext* pFileContext = (SFileContext*)pContext;
 		if( pFileContext->m_nCacheSize == INVALID_32BITID )
-			return fread( szBuffer, 1, nCount, (FILE*)( pFileContext->m_pFile ) );
+			return (int32)fread( szBuffer, 1, nCount, (FILE*)( pFileContext->m_pFile ) );
 		if( pFileContext->m_nCacheSize == 0 )
 			return 0;
-		if( nCount > pFileContext->m_nCacheSize )
+		if( (uint32)nCount > pFileContext->m_nCacheSize )
 			nCount = pFileContext->m_nCacheSize;
 		memcpy( szBuffer, pFileContext->m_pFile, nCount );
 		pFileContext->m_pFile += nCount;
@@ -344,6 +344,11 @@ namespace Gamma
 
 	void CScriptBase::CloseFile( void* pContext )
 	{
+		if (!pContext)
+			return;
+		SFileContext* pFileContext = (SFileContext*)pContext;
+		if (pFileContext->m_nCacheSize == INVALID_32BITID)
+			fclose((FILE*)(pFileContext->m_pFile));
 		delete pContext;
 	}
 
@@ -367,7 +372,6 @@ namespace Gamma
 
 		for( auto it = m_listSearchPath.begin(); it != m_listSearchPath.end(); ++it )
 		{
-			int32 nResult;
 			std::string sFileName = *it + szFileName;
 			std::string strFileContent = ReadEntirFile( sFileName.c_str() );
 			if( strFileContent.empty() )

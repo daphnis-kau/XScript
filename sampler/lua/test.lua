@@ -1,10 +1,17 @@
 
+function aaa( a, b ) 
+	print( a, b ) 
+end
+
+run_cpp_lua( 1234, 3456, 98765, "122" );
+
 local a = Test_Base:new();
 local ddd = "sfasdfsdf"; 
 function a:GetThis( v ) 
 	print( "call GetThis", v:x(), v:y(), ddd );
    return 3;
 end
+
 function a:NewThisLua() 
    return self;
 end

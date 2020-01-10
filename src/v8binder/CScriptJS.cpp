@@ -5,6 +5,7 @@
 #include "CTypeJS.h"
 #include "CDebugJS.h"
 #include "CCallJS.h"
+#include "V8Context.h"
 
 #ifdef _WIN32
 #pragma warning(disable: 4345)
@@ -39,19 +40,13 @@
 
 namespace Gamma
 {
-	#define MAX_STRING_BUFFER_SIZE	65536
-	using namespace v8;
 
 	//====================================================================================
     // CScriptJS
 	//====================================================================================
     CScriptJS::CScriptJS( uint16 nDebugPort )
-		: m_nStringID(0)
-		, m_pTempStrBuffer64K(new tbyte[MAX_STRING_BUFFER_SIZE])
-		, m_nCurUseSize(0)
-		, m_nStrBufferStack(0)
-		, m_pIsolate( NULL )
-		, m_pFreeObjectInfo( NULL )
+		: m_pFreeObjectInfo( NULL )
+		, m_pV8Context(new SV8Context)
 	{
 		struct SV8Init
 		{
@@ -83,37 +78,43 @@ namespace Gamma
 			}
 		};
 		static SV8Init s_Init;
-		m_platform = s_Init.m_platform;
+		m_pV8Context->m_platform = s_Init.m_platform;
 
 		// Create a new Isolate and make it the current one.
-		m_pIsolate = v8::Isolate::New(s_Init.m_create_params);
-		m_pIsolate->Enter();
+		v8::Isolate* pIsolate = v8::Isolate::New(s_Init.m_create_params);
+		m_pV8Context->m_pIsolate = pIsolate;
+		m_pV8Context->m_pIsolate->Enter();
 		
 		// Create a stack-allocated handle scope.
-		v8::HandleScope handle_scope(m_pIsolate);
+		v8::HandleScope handle_scope(m_pV8Context->m_pIsolate);
 
 		// Create a new context.
-		v8::Local<v8::Context> context = v8::Context::New(m_pIsolate);
-		m_Context.Reset(m_pIsolate, context);
+		v8::Local<v8::Context> context = v8::Context::New(m_pV8Context->m_pIsolate);
+		m_pV8Context->m_Context.Reset(pIsolate, context);
 
 		v8::Context::Scope context_scope(context);
 		v8::Local<v8::Object> globalObj = context->Global();
-		globalObj->Set(v8::String::NewFromUtf8(m_pIsolate, "window"), globalObj);
+		globalObj->Set(v8::String::NewFromUtf8(pIsolate, "window"), globalObj);
 
-		LocalValue console = globalObj->Get(String::NewFromUtf8(m_pIsolate, "console")); 
-		v8::Local<v8::Object> consoleObj = console->ToObject(m_pIsolate);
-		v8::Local<v8::Function> funLog = v8::Function::New(m_pIsolate, &CScriptJS::Log);
-		consoleObj->Set(context, v8::String::NewFromUtf8(m_pIsolate, "log"), funLog);
+		LocalValue console = globalObj->Get(v8::String::NewFromUtf8(pIsolate, "console")); 
+		v8::Local<v8::Object> consoleObj = console->ToObject(pIsolate);
+		v8::Local<v8::Function> funLog = v8::Function::New(pIsolate, &SV8Context::Log);
+		consoleObj->Set(context, v8::String::NewFromUtf8(pIsolate, "log"), funLog);
 
-		v8::Local<v8::External> ScriptContext = v8::External::New(m_pIsolate, this);
-		v8::Local<v8::Function> funDebug = Function::New(m_pIsolate, &CScriptJS::Break, ScriptContext);
-		consoleObj->Set( context, v8::String::NewFromUtf8( m_pIsolate, "gsd" ), funDebug );
+		v8::Local<v8::External> ScriptContext = v8::External::New(pIsolate, this);
+		v8::Local<v8::Function> funDebug = 
+			v8::Function::New(pIsolate, &SV8Context::Break, ScriptContext);
+		consoleObj->Set( context, v8::String::NewFromUtf8(pIsolate, "gsd" ), funDebug );
 		m_pDebugger = new CDebugJS( this, nDebugPort );
 
-		m_CppField.Reset( m_pIsolate, v8::String::NewFromUtf8( m_pIsolate, "__cpp_obj_info__" ) );
-		m_Prototype.Reset( m_pIsolate, String::NewFromUtf8( m_pIsolate, "prototype" ) );
-		m_Deconstruction.Reset( m_pIsolate, String::NewFromUtf8( m_pIsolate, "Deconstruction" ) );
-		m___proto__.Reset( m_pIsolate, v8::String::NewFromUtf8( m_pIsolate, "__proto__" ) );
+		m_pV8Context->m_CppField.Reset(pIsolate, 
+			v8::String::NewFromUtf8(pIsolate, "__cpp_obj_info__" ) );
+		m_pV8Context->m_Prototype.Reset(pIsolate, 
+			v8::String::NewFromUtf8(pIsolate, "prototype" ) );
+		m_pV8Context->m_Deconstruction.Reset(pIsolate, 
+			v8::String::NewFromUtf8(pIsolate, "Deconstruction" ) );
+		m_pV8Context->m___proto__.Reset(pIsolate, 
+			v8::String::NewFromUtf8(pIsolate, "__proto__" ) );
 
 		RunString(	
 			"var Gamma = {};\n"
@@ -204,21 +205,21 @@ namespace Gamma
 			"})()"
 		);
 
-		LocalValue nsGamma = globalObj->Get(String::NewFromUtf8(m_pIsolate, "Gamma"));
-		Local<Object> nsGammaObject = nsGamma->ToObject(m_pIsolate);
-		LocalValue GammaClass = nsGammaObject->Get(String::NewFromUtf8(m_pIsolate, "class"));
-		m_GammaClass.Reset(m_pIsolate, Local<Function>::Cast(GammaClass));
-		m_GammaNameSpace.Reset(m_pIsolate, nsGammaObject);
+		LocalValue nsGamma = globalObj->Get(v8::String::NewFromUtf8(pIsolate, "Gamma"));
+		v8::Local<v8::Object> nsGammaObject = nsGamma->ToObject(pIsolate);
+		LocalValue GammaClass = nsGammaObject->Get(v8::String::NewFromUtf8(pIsolate, "class"));
+		m_pV8Context->m_GammaClass.Reset(pIsolate, v8::Local<v8::Function>::Cast(GammaClass));
+		m_pV8Context->m_GammaNameSpace.Reset(m_pIsolate, nsGammaObject);
     }
 
     CScriptJS::~CScriptJS(void)
 	{
 		SAFE_DELETE( m_pDebugger );
-		ClearCppString((void*)(uintptr_t)(-1));
-		m_Context.Reset();
-		m_pIsolate->Exit();
-		m_pIsolate->Dispose();
-		m_pIsolate = NULL;
+		m_pV8Context->ClearCppString((void*)(uintptr_t)(-1));
+		m_pV8Context->m_Context.Reset();
+		m_pV8Context->m_pIsolate->Exit();
+		m_pV8Context->m_pIsolate->Dispose();
+		m_pV8Context->m_pIsolate = NULL;
 
 		while( m_mapClassInfo.GetFirst() )
 			delete m_mapClassInfo.GetFirst();
@@ -226,30 +227,7 @@ namespace Gamma
 			delete m_mapCallBase.GetFirst();
 		while( m_mapObjInfo.GetFirst() )
 			delete m_mapObjInfo.GetFirst();
-	}
-
-	PersistentFunTmplt& CScriptJS::GetPersistentFunTemplate( const CClassRegistInfo* pInfo )
-	{
-		SClassInfo* pClassInfo = m_mapClassInfo.Find( (const void*)pInfo );
-		static PersistentFunTmplt s_Instance;
-		return pClassInfo ? pClassInfo->m_FunctionTemplate : s_Instance;
-	}
-
-	void CScriptJS::ClearCppString( void* pStack )
-	{
-		uint32 nIndex = (uint32)m_vecStringInfo.size();
-		while (nIndex && m_vecStringInfo[nIndex - 1].m_pStack < pStack)
-			delete[] m_vecStringInfo[--nIndex].m_pBuffer;
-		if (nIndex < m_vecStringInfo.size())
-			m_vecStringInfo.erase(m_vecStringInfo.begin() + nIndex, m_vecStringInfo.end());
-
-		while (m_nCurUseSize >= sizeof(SStringFixed))
-		{
-			SStringFixed* pFixeString = ((SStringFixed*)(m_pTempStrBuffer64K + m_nCurUseSize)) - 1;
-			if (pFixeString->m_pStack >= pStack)
-				break;
-			m_nCurUseSize -= (uint32)(sizeof(SStringFixed) + pFixeString->m_nLen);
-		}
+		delete m_pV8Context;
 	}
 
 	void CScriptJS::CallJSStatck(bool bAdd)

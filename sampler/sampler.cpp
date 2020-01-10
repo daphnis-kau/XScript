@@ -2,6 +2,7 @@
 #include "common/CThread.h"
 #include "core/GammaScript.h"
 #include "../src/luabinder/CScriptLua.h"
+#include "../src/v8binder/CScriptJS.h"
 #include <string>
 
 using namespace std;
@@ -9,41 +10,10 @@ using namespace Gamma;
 
 //#define JS 1
 
-const char* szLua =
-	"function aaa( a, b ) print( a, b ) end\n"
-	"run_cpp_lua( 1234, 3456, 98765, \"122\" );\n";
-const char* szJS =
-	"function aaa( a, b ) Console.Log( a, b ) end\n"
-	"run_cpp_lua( 1234, 3456, 98765, \"122\" );\n";
-
-CScriptBase* g_ScriptLua;
-
 enum ETestEnum
 {
 	eTE_0,
 	eTE_1,
-};
-
-class A
-{
-	uint32 n;
-public:
-	A() : n( 0 ) {}
-};
-
-class B : public A
-{
-	uint32 m;
-public:
-	B() : m( 1 ) {}
-	virtual ~B() {}
-};
-
-class C : public B
-{
-	uint32 o;
-public:
-	C() : o( 2 ) {}
 };
 
 struct CVector2f 
@@ -115,13 +85,7 @@ public:
 	}
 };
 
-typedef void( TestBase::*FunType )( void );
-
-template<int a>
-class CCC
-{
-};
-
+CScriptBase* g_ScriptLua = nullptr;
 void run_cpp_lua( int a, const int& b, int c, int d )
 {
 	g_ScriptLua->RunFunction( NULL, "aaa", a, "qqqqqq" );
@@ -158,23 +122,13 @@ REGIST_GLOBALFUNCTION( run_cpp_lua );
 
 void TestLua()
 {
-#ifdef JS
-	g_ScriptLua = new CScriptJS;
-#else
-	g_ScriptLua = new CScriptLua(5067);
-#endif
-
-	typedef decltype ( ( TestBase*( TestBase::* )( ) )nullptr ) aaa;
-	typedef decltype ( ( decltype ( &TestBase::NewThis ) )nullptr ) bbbb;
-
 	int32 a[2];
-	g_ScriptLua->RunString( szLua );
-	//uint32 n = GetTickCount();
-	g_ScriptLua->AddSearchPath( "F:/GitHub/XScript/sampler/lua/" );
-	g_ScriptLua->RunFunction( NULL, "aaa", a, "sadfasdf" );
+	g_ScriptLua = new CScriptJS(5067);
+	g_ScriptLua->AddSearchPath( "D:/GitHub/XScript/sampler/js/" );
 	while(true)
 	{
-		g_ScriptLua->RunFile( "./test.lua" );
+		g_ScriptLua->RunFile( "./test.js" );
+		g_ScriptLua->RunFunction( NULL, "aaa", a, "sadfasdf" );
 		GammaSleep( 10 );
 	}
 	delete g_ScriptLua;
