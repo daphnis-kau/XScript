@@ -101,6 +101,7 @@ namespace Gamma
 		const char*					StringToUtf8(v8::Local<v8::Value> obj);
 		const wchar_t*				StringToUcs(v8::Local<v8::Value> obj);
 		void						ClearCppString(void* pStack);
+		void						CallJSStatck(bool bAdd);
 
 		void						ReportException( v8::TryCatch* try_catch, v8::Local<v8::Context> context );
 

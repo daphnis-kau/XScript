@@ -40,8 +40,6 @@ namespace Gamma
 		~CScriptJS(void);
 
 		SV8Context&					GetV8Context() { return *m_pV8Context; }
-
-		void						CallJSStatck(bool bAdd);
 		SObjInfo*					FindExistObjInfo( void* pObj );
 							
 		virtual bool				RunFile( const char* szFileName, bool bReload );
