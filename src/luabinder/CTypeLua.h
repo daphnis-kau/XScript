@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include "common/Help.h"
 #include "core/CTypeBase.h"
+#include "CScriptLua.h"
 
 struct lua_State;
 namespace Gamma
@@ -92,15 +93,12 @@ namespace Gamma
 
 	inline const wchar_t* GetWStrFromLua( lua_State* pL, int32 nStkId )
 	{
-		return (const wchar_t*)lua_tostring( pL, AbsStackIdx( pL, nStkId ) );
+		return CScriptLua::ConvertUtf8ToUcs2( pL, AbsStackIdx( pL, nStkId ) );
 	}
 
 	inline void PushWStrToLua( lua_State* pL, const wchar_t* szStr )
 	{
-		if( szStr == NULL )
-			return lua_pushnil( pL );		
-		size_t nLen = (wcslen(szStr) + 1) * sizeof(wchar_t);
-		lua_pushlstring( pL, (const char*)szStr, nLen );
+		CScriptLua::NewUnicodeString( pL, szStr );
 	}
 
     //=====================================================================

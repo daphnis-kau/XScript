@@ -14,6 +14,29 @@
 
 namespace Gamma
 {
+	CJSTypeBase* s_aryJSType[eDT_count] =
+	{
+		0,
+		&CJSChar::GetInst(),
+		&CJSInt8::GetInst(),
+		&CJSInt16::GetInst(),
+		&CJSInt32::GetInst(),
+		&CJSInt64::GetInst(),
+		&CJSLong::GetInst(),
+		&CJSUint8::GetInst(),
+		&CJSUint16::GetInst(),
+		&CJSUint32::GetInst(),
+		&CJSUint64::GetInst(),
+		&CJSUlong::GetInst(),
+		&CJSWChar::GetInst(),
+		&CJSBool::GetInst(),
+		&CJSFloat::GetInst(),
+		&CJSDouble::GetInst(),
+		&CJSString::GetInst(),
+		&CJSWString::GetInst(),
+		&CJSPointer::GetInst()
+	};
+
 	//=====================================================================
 	// JS脚本调用C++的接口
 	//=====================================================================
@@ -24,7 +47,7 @@ namespace Gamma
 		{
 			auto& listParam = pCallBase->GetParamList();
 			size_t nParamCount = listParam.size();
-			const DataType* aryParam = &listParam[0];
+			const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
 			size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
 			size_t nParamSize = CalBufferSize(aryParam, nParamCount, aryParamSize );
 			DataType nResultType = pCallBase->GetResultType();
@@ -123,11 +146,12 @@ namespace Gamma
 	// C++调用JS脚本的接口
 	//=====================================================================
 	bool CCallBackJS::CallVM( CScriptJS& Script, v8::Persistent<v8::String>& strName,
-		const CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
+		const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray )
 	{
-		Script.CallJSStatck(true);
-
 		SV8Context& Context = Script.GetV8Context();
+		Context.CallJSStatck(true);
+
+		void* pObject = *(void**)pArgArray[0];
 		v8::Isolate* isolate = Context.m_pIsolate;
 		v8::HandleScope handle_scope(isolate);
 		v8::TryCatch try_catch(isolate);
@@ -157,7 +181,7 @@ namespace Gamma
 		{
 			for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 				args[nArgIndex].~LocalValue();				
-			Script.CallJSStatck(false);
+			Context.CallJSStatck(false);
 			return false;
 		}
 
@@ -166,7 +190,7 @@ namespace Gamma
 		{
 			for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 				args[nArgIndex].~LocalValue();
-			Script.CallJSStatck(false);
+			Context.CallJSStatck(false);
 			return false;
 		}
 
@@ -175,7 +199,7 @@ namespace Gamma
 		for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 			args[nArgIndex].~LocalValue();
 
-		Script.CallJSStatck(false);
+		Context.CallJSStatck(false);
 		if (result.IsEmpty())
 		{
 			Context.ReportException(&try_catch, context);
@@ -191,8 +215,9 @@ namespace Gamma
 	void CCallBackJS::DestrucVM( CScriptJS& Script, v8::Persistent<v8::String>& strName,
 		const CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
-		Script.CallJSStatck(true);
 		SV8Context& Context = Script.GetV8Context();
+		Context.CallJSStatck(true);
+
 		v8::Isolate* isolate = Context.m_pIsolate;
 		v8::HandleScope handle_scope(isolate);
 		v8::TryCatch try_catch(isolate);
@@ -206,13 +231,13 @@ namespace Gamma
 		v8::Local<v8::Object> object = pThis->ToObject( isolate );
 		v8::MaybeLocal<v8::Value> fun = object->Get(context, strName.Get(isolate));
 		if (fun.IsEmpty())
-			return Script.CallJSStatck(true);
+			return Context.CallJSStatck(true);
 		LocalValue funField = fun.ToLocalChecked();
 		if (!funField->IsFunction())
-			return Script.CallJSStatck(true);
+			return Context.CallJSStatck(true);
 		v8::Local<v8::Function> funCallback = v8::Local<v8::Function>::Cast(funField);
 		LocalValue result = funCallback->Call(object, 0, &result);
-		Script.CallJSStatck(false);
+		Context.CallJSStatck(false);
 		if (!result.IsEmpty())
 			return;
 		Context.ReportException(&try_catch, context);

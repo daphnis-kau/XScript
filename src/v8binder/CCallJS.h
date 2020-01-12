@@ -45,7 +45,7 @@ namespace Gamma
 	{
 	public:
 		static bool CallVM( CScriptJS& Script, v8::Persistent<v8::String>& strName,
-			const CCallScriptBase* pCallBase, SVirtualObj* pObject, void* pRetBuf, void** pArgArray );
+			const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray );
 		static void DestrucVM( CScriptJS& Script, v8::Persistent<v8::String>& strName,
 			const CCallScriptBase* pCallBase, SVirtualObj* pObject );
 	};

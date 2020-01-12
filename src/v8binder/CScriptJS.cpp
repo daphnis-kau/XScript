@@ -6,6 +6,7 @@
 #include "CDebugJS.h"
 #include "CCallJS.h"
 #include "V8Context.h"
+#include <functional>
 
 #ifdef _WIN32
 #pragma warning(disable: 4345)
@@ -46,7 +47,7 @@ namespace Gamma
 	//====================================================================================
     CScriptJS::CScriptJS( uint16 nDebugPort )
 		: m_pFreeObjectInfo( NULL )
-		, m_pV8Context(new SV8Context)
+		, m_pV8Context( new SV8Context( this ) )
 	{
 		struct SV8Init
 		{
@@ -230,20 +231,21 @@ namespace Gamma
 		delete m_pV8Context;
 	}
 
-	CScriptJS::SCallInfo* CScriptJS::GetCallInfo( CByScriptBase* pCallBase )
+	SCallInfo* CScriptJS::GetCallInfo( const CByScriptBase* pCallBase )
 	{
+		v8::Isolate* isolate = GetV8Context().m_pIsolate;
 		SCallInfo* pCallInfo = m_mapCallBase.Find( (const void*)pCallBase );
 		if( pCallInfo )
 			return pCallInfo;
-		pCallInfo = new CScriptJS::SCallInfo;
+		pCallInfo = new SCallInfo;
 		pCallInfo->m_pCallBase = pCallBase;
 		pCallInfo->m_pScript = this;
-		pCallInfo->m_strName.Reset( m_pIsolate, String::NewFromUtf8
-			( m_pIsolate, pCallBase->GetFunctionName().c_str() ) );
+		pCallInfo->m_strName.Reset( isolate, v8::String::NewFromUtf8
+			( isolate, pCallBase->GetFunctionName().c_str() ) );
 		return pCallInfo;
 	}
 
-	CScriptJS::SObjInfo* CScriptJS::AllocObjectInfo()
+	SObjInfo* CScriptJS::AllocObjectInfo()
 	{
 		if( !m_pFreeObjectInfo )
 		{
@@ -263,7 +265,7 @@ namespace Gamma
 		return pObjectInfo;
 	}
 
-	void CScriptJS::FreeObjectInfo(CScriptJS::SObjInfo* pObjectInfo)
+	void CScriptJS::FreeObjectInfo( SObjInfo* pObjectInfo )
 	{
 		pObjectInfo->m_Object.Reset();
 		pObjectInfo->m_pObject = m_pFreeObjectInfo;
@@ -273,201 +275,23 @@ namespace Gamma
 	//===================================================================================
 	//
 	//===================================================================================
-	void CScriptJS::Log(const v8::FunctionCallbackInfo<v8::Value>& args)
-	{
-		Local<External> wrap = Local<External>::Cast( args.Data() );
-		CScriptJS* pScript = (CScriptJS*)wrap->Value();
-		Isolate* isolate = args.GetIsolate();
-		HandleScope scope( isolate );
-		for (int32 i = 0; i < args.Length(); i++)
-		{
-			Local<Value> arg = args[i];
-			String::Utf8Value value( isolate, arg );
-			const char* szValue = *value;
-			pScript->Output( szValue, -1 );
-			pScript->Output( " ", -1 );
-		}
-		pScript->Output( "\n", -1 );
-	}
-
-	void CScriptJS::Break(const v8::FunctionCallbackInfo<v8::Value>& args)
-	{
-		Local<External> wrap = Local<External>::Cast(args.Data());
-		CScriptJS* pScript = (CScriptJS*)wrap->Value();
-		((CDebugJS*)pScript->m_pDebugger)->Break();
-	}
-
-	void CScriptJS::Callback(const FunctionCallbackInfo<Value>& args)
-	{
-		Local<External> wrap = Local<External>::Cast(args.Data());
-		SCallInfo* pCallInfo = (SCallInfo*)wrap->Value();
-		if (!pCallInfo )
-			return;
-		Isolate* isolate = args.GetIsolate();
-		HandleScope scope(isolate);
-		CByScriptJS::CallByJS(*pCallInfo->m_pScript, pCallInfo->m_pCallBase, args);
-	}
-
-	void CScriptJS::NewObject(const FunctionCallbackInfo<Value>& args)
-	{
-		SClassInfo* pInfo = (SClassInfo*)External::Cast(*args.Data())->Value();
-		if (pInfo == NULL)
-			return;
-
-		CScriptJS& Script = *static_cast<CScriptJS*>(pInfo->m_pScript);
-		Local<Object> ScriptObj = args.This();
-		v8::External* pCppBind = NULL;
-		if (ScriptObj->InternalFieldCount())
-			pCppBind = v8::External::Cast(*ScriptObj->GetInternalField(0));
-		else
-		{
-			v8::Local<v8::Value> key = Script.m_CppField.Get(Script.GetIsolate());
-			v8::Local<v8::Context> context = Script.GetIsolate()->GetCurrentContext();
-			v8::MaybeLocal<v8::Value> field = ScriptObj->Get(context, key);
-			pCppBind = v8::External::Cast(*(field.ToLocalChecked()));
-		}
-		if (pCppBind->Value())
-		{
-			args.GetReturnValue().Set(ScriptObj);
-			return;
-		}
-
-		Script.BindObj( NULL, args.This(), pInfo->m_pClassInfo );
-	}
-
-	void CScriptJS::Destruction(const v8::FunctionCallbackInfo<v8::Value>& args)
-	{
-		Local<External> wrap = Local<External>::Cast(args.Data());
-		SClassInfo* pClassInfo = (SClassInfo*)wrap->Value();
-		CScriptJS& Script = *(CScriptJS*)pClassInfo->m_pScript;
-		v8::Object* pScriptObject = v8::Object::Cast(*args.This());
-		v8::External* pCppBind = NULL;
-		if (pScriptObject->InternalFieldCount())
-			pCppBind = v8::External::Cast(*pScriptObject->GetInternalField(0));
-		else
-		{
-			v8::Local<v8::Value> key = Script.m_CppField.Get(Script.GetIsolate());
-			v8::Local<v8::Context> context = Script.GetIsolate()->GetCurrentContext();
-			v8::MaybeLocal<v8::Value> field = pScriptObject->Get(context, key);
-			pCppBind = v8::External::Cast(*(field.ToLocalChecked()));
-		}
-
-		SObjInfo* pObjectInfo = (SObjInfo*)pCppBind->Value();
-		if (!pObjectInfo)
-			return;
-		Script.UnbindObj( pObjectInfo, false );
-	}
-
-	void CScriptJS::GCCallback(const v8::WeakCallbackInfo<SObjInfo>& data)
-	{
-		SObjInfo* pObjectInfo = data.GetParameter();
-		SClassInfo* pInfo = pObjectInfo->m_pClassInfo;
-		pInfo->m_pScript->UnbindObj(pObjectInfo, true);
-	}
-
-	void CScriptJS::GetterCallback(Local<Name> property, const PropertyCallbackInfo<Value>& info)
-	{
-		Local<External> wrap = Local<External>::Cast(info.Data());
-		SCallInfo* pCallInfo = (SCallInfo*)wrap->Value();
-		if (!pCallInfo )
-			return;
-		Isolate* isolate = info.GetIsolate();
-		HandleScope scope(isolate);
-		CByScriptJS::GetByJS( *pCallInfo->m_pScript, 
-			pCallInfo->m_pCallBase, info.This(), info.GetReturnValue());
-	}
-
-	void CScriptJS::SetterCallback(Local<Name> property, LocalValue value, const PropertyCallbackInfo<void>& info)
-	{
-		Local<External> wrap = Local<External>::Cast(info.Data());
-		SCallInfo* pCallInfo = (SCallInfo*)wrap->Value();
-		if (!pCallInfo )
-			return;
-		Isolate* isolate = info.GetIsolate();
-		HandleScope scope(isolate);
-		CByScriptJS::SetByJS( *pCallInfo->m_pScript,
-			pCallInfo->m_pCallBase, info.This(), value );
-	}
-
-	void CScriptJS::BindObj( void* pObject, Local<Object> ScriptObj, const CClassRegistInfo* pInfo, void* pSrc )
-	{
-		SObjInfo& ObjectInfo = *AllocObjectInfo();
-		ObjectInfo.m_bRecycle = false;
-		if (!pObject)
-		{
-			pObject = new tbyte[pInfo->GetClassSize()];
-			pInfo->Create( this, pObject );
-			if( pSrc )
-				pInfo->Assign( this, pObject, pSrc );
-			ObjectInfo.m_bRecycle = true;
-		}
-
-		ObjectInfo.m_Object.Reset(m_pIsolate, ScriptObj);
-		ObjectInfo.m_pClassInfo = m_mapClassInfo.Find( (const void*)pInfo );
-		ObjectInfo.m_pObject = pObject;
-		m_mapObjInfo.Insert(ObjectInfo);
-
-		// 注册回调函数
-		if (pInfo->IsCallBack())
-			pInfo->ReplaceVirtualTable(this, pObject, ObjectInfo.m_bRecycle, 0);
-
-		Local<External> cppInfo = External::New(m_pIsolate, &ObjectInfo);
-		if (ScriptObj->InternalFieldCount())
-			ScriptObj->SetInternalField(0, cppInfo);
-		else
-			ScriptObj->Set(m_pIsolate->GetCurrentContext(), m_CppField.Get(m_pIsolate), cppInfo);
-		ObjectInfo.m_Object.SetWeak(&ObjectInfo, &CScriptJS::GCCallback, WeakCallbackType::kParameter);
-	}
-
-	void CScriptJS::UnbindObj( SObjInfo* pObjectInfo, bool bFromGC )
-	{
-		void* pObject = pObjectInfo->m_pObject;
-		bool bRecycle = pObjectInfo->m_bRecycle;
-		const CClassRegistInfo* pInfo = pObjectInfo->m_pClassInfo->m_pClassInfo;
-		Isolate* isolate = GetIsolate();
-		v8::HandleScope handle_scope(isolate);
-		v8::TryCatch try_catch(isolate);
-
-		if( !bFromGC )
-		{
-			Local<v8::Object> ScriptObj = pObjectInfo->m_Object.Get(isolate);
-			assert( !ScriptObj.IsEmpty()&&ScriptObj->IsObject() );
-			if (ScriptObj->InternalFieldCount())
-				ScriptObj->SetInternalField( 0, v8::Null(isolate) );
-			else
-				ScriptObj->Set( m_pIsolate->GetCurrentContext(), m_CppField.Get( m_pIsolate ), v8::Null(isolate) );
-		}
-
-		pObjectInfo->Remove();
-		pObjectInfo->m_pObject = NULL;
-		pObjectInfo->m_Object.Reset();
-
-		FreeObjectInfo(pObjectInfo);
-		if (!pObject)
-			return;
-		pInfo->RecoverVirtualTable( this, pObject );
-		if (!bRecycle)
-			return;
-		pInfo->Release( this, pObject );
-		delete[](tbyte*)pObject;
-	}
 	
-	bool CScriptJS::CallVM( CCallScriptBase* pCallBase, 
-		SVirtualObj* pObject, void* pRetBuf, void** pArgArray )
+	bool CScriptJS::CallVM( const CCallScriptBase* pCallBase,
+		void* pRetBuf, void** pArgArray )
 	{
 		SCallInfo* pInfo = GetCallInfo( pCallBase );
 		return CCallBackJS::CallVM( *pInfo->m_pScript, 
-			pInfo->m_strName, pCallBase, pObject, pRetBuf, pArgArray );
+			pInfo->m_strName, pCallBase, pRetBuf, pArgArray );
 	}
 
-	void CScriptJS::DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject )
+	void CScriptJS::DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
 		SCallInfo* pInfo = GetCallInfo( pCallBase );
 		return CCallBackJS::DestrucVM( *pInfo->m_pScript,
-			pInfo->m_pScript->m_Deconstruction, pCallBase, pObject );
+			pInfo->m_pScript->GetV8Context().m_Deconstruction, pCallBase, pObject );
 	}
 
-	Gamma::CScriptJS::SObjInfo* CScriptJS::FindExistObjInfo( void* pObj )
+	SObjInfo* CScriptJS::FindExistObjInfo( void* pObj )
 	{
 		if( pObj == NULL )
 			return NULL;
@@ -484,16 +308,6 @@ namespace Gamma
 			return NULL;
 		return pLeft;
 	}
-
-	//==================================================================================================================================//
-    //                                                        对内部提供的功能性函数                                                    //
-	//==================================================================================================================================//
-   
-
-	//==================================================================================================================================//
-	//                                                        字符串函数																//
-	//==================================================================================================================================//
-	
 
     //==================================================================================================================================//
     //                                                        对C++提供的功能性函数                                                     //
@@ -532,30 +346,32 @@ namespace Gamma
 		fread( &sBuf[0], sBuf.size(), 1, iFile );
 		fclose( iFile );
 
-		HandleScope handle_scope(m_pIsolate);
-		v8::TryCatch try_catch(m_pIsolate);
+		SV8Context& Context = GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
+		v8::HandleScope handle_scope( isolate );
+		v8::TryCatch try_catch( isolate );
 
 		// Enter the context for compiling and running the hello world script.
-		Local<Context> context = m_Context.Get(m_pIsolate);
-		Context::Scope context_scope(context);
+		v8::Local<v8::Context> context = Context.m_Context.Get( isolate );
+		v8::Context::Scope context_scope(context);
 
 		// Create a string containing the JavaScript source code.
-		Local<String> source =
-			String::NewFromUtf8(m_pIsolate, sBuf.c_str(), NewStringType::kNormal)
+		v8::Local<v8::String> source =
+			v8::String::NewFromUtf8( isolate, sBuf.c_str(), v8::NewStringType::kNormal)
 			.ToLocalChecked();
 
 		// Compile the source code.
-		MaybeLocal<String> fileName = String::NewFromUtf8(
-			m_pIsolate, sFileName.c_str(), NewStringType::kNormal);
+		v8::MaybeLocal<v8::String> fileName = v8::String::NewFromUtf8(
+			isolate, sFileName.c_str(), v8::NewStringType::kNormal);
 		v8::ScriptOrigin origin(fileName.ToLocalChecked());
-		MaybeLocal<Script> temp_script = Script::Compile(context, source, &origin);
-		Local<Script> script = temp_script.ToLocalChecked();
+		v8::MaybeLocal<v8::Script> temp_script = v8::Script::Compile(context, source, &origin);
+		v8::Local<v8::Script> script = temp_script.ToLocalChecked();
 
 		// Run the script to get the result.
-		MaybeLocal<Value> result = script->Run(context);
+		v8::MaybeLocal<v8::Value> result = script->Run(context);
 		if (result.IsEmpty())
 		{	
-			ReportException(&try_catch, context);
+			Context.ReportException(&try_catch, context);
 			return false;
 		}
 		if( !GetDebugger() || !GetDebugger()->RemoteDebugEnable() )
@@ -572,47 +388,52 @@ namespace Gamma
 
     bool CScriptJS::RunString( const char* szString )
 	{
-		HandleScope handle_scope(m_pIsolate);
-		v8::TryCatch try_catch(m_pIsolate);
+		SV8Context& Context = GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
+		v8::HandleScope handle_scope( isolate );
+		v8::TryCatch try_catch( isolate );
 
 		// Enter the context for compiling and running the hello world script.
-		Local<Context> context = m_Context.Get(m_pIsolate);
-		Context::Scope context_scope(context);
+		v8::Local<v8::Context> context = Context.m_Context.Get( isolate );
+		v8::Context::Scope context_scope(context);
 
 		// Create a string containing the JavaScript source code.
-		Local<String> source =
-			String::NewFromUtf8(m_pIsolate, szString, NewStringType::kNormal)
+		v8::Local<v8::String> source =
+			v8::String::NewFromUtf8( isolate, szString, v8::NewStringType::kNormal)
 			.ToLocalChecked();
 
 		char szLaber[256];
-		gammasstream(szLaber) << "$Label$String" << ++m_nStringID;
+		gammasstream(szLaber) << "$Label$String" << ++Context.m_nStringID;
 
 		// Compile the source code.
-		MaybeLocal<String> fileName = String::NewFromUtf8(
-			m_pIsolate, szLaber, NewStringType::kNormal);
+		v8::MaybeLocal<v8::String> fileName = v8::String::NewFromUtf8(
+			isolate, szLaber, v8::NewStringType::kNormal);
 		v8::ScriptOrigin origin(fileName.ToLocalChecked());
-		MaybeLocal<Script> temp_script = Script::Compile(context, source, &origin);
-		Local<Script> script = temp_script.ToLocalChecked();
+		auto temp_script = v8::Script::Compile(context, source, &origin);
+		v8::Local<v8::Script> script = temp_script.ToLocalChecked();
 
 		// Run the script to get the result.
-		MaybeLocal<Value> result = script->Run(context);
-		if (result.IsEmpty())
+		v8::MaybeLocal<v8::Value> result = script->Run( context );
+		if( result.IsEmpty() )
 		{
-			ReportException(&try_catch, context);
+			Context.ReportException( &try_catch, context );
 			return false;
 		}
-		if (!GetDebugger() || !GetDebugger()->RemoteDebugEnable())
+		if( !GetDebugger() || !GetDebugger()->RemoteDebugEnable() )
 			return true;
-		GetDebugger()->AddFileContent(szLaber, szString);
+		GetDebugger()->AddFileContent( szLaber, szString );
 		return true;
 	}
 
-	bool CScriptJS::RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg )
+	bool CScriptJS::RunFunction( const STypeInfoArray& aryTypeInfo, 
+		void* pResultBuf, const char* szFunction, void** aryArg )
 	{
-		HandleScope handle_scope(m_pIsolate);
+		SV8Context& Context = GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
+		v8::HandleScope handle_scope( isolate );
 		// Enter the context for compiling and running the hello world script.
-		Local<Context> context = m_Context.Get(m_pIsolate);
-		Context::Scope context_scope(context);
+		v8::Local<v8::Context> context = Context.m_Context.Get( isolate );
+		v8::Context::Scope context_scope(context);
 
 		LocalValue args[256];
 		uint32 nParamCount = aryTypeInfo.nSize - 1;
@@ -623,33 +444,76 @@ namespace Gamma
 			args[nArgIndex] = pParamType->ToVMValue( nType, *this, (char*)aryArg[nArgIndex] );
 		}
 
-		Local<Object> classObject = context->Global();
+		v8::Local<v8::Object> classObject = context->Global();
 		const char* szFunName = strrchr( szFunction, '.' );
 		if (szFunName)
 		{
 			std::string szClass;
 			szClass = std::string(szFunction, szFunName - szFunction);
-			Local<Value>object = classObject->Get(String::NewFromUtf8(m_pIsolate, szClass.c_str()));
+			auto object = classObject->Get( v8::String::NewFromUtf8( isolate, szClass.c_str()));
 			if (object.IsEmpty())
 				return false;
-			classObject = object->ToObject(m_pIsolate);
+			classObject = object->ToObject( isolate );
 			szFunction = szFunName + 1;
 		}
 
-		Local<Value> value = classObject->Get(String::NewFromUtf8(m_pIsolate, szFunction));
-		Local<Function> func = Local<Function>::Cast(value);
-		MaybeLocal<Value> result = !nParamCount ? func->Call(classObject, 0, args) :
-			func->Call(args[0], nParamCount - 1, args + 1);
-		if(result.IsEmpty())
+		auto value = classObject->Get( v8::String::NewFromUtf8( isolate, szFunction ) );
+		v8::Local<v8::Function> func = v8::Local<v8::Function>::Cast( value );
+		v8::MaybeLocal<v8::Value> result = !nParamCount ? func->Call( classObject, 0, args ) :
+			func->Call( args[0], nParamCount - 1, args + 1 );
+		if( result.IsEmpty() )
 			return false;
 		DataType nResultType = ToDataType( aryTypeInfo.aryInfo[nParamCount] );
 		if( nResultType && pResultBuf )
-			GetTypeBase( nResultType )->FromVMValue( nResultType, *this, (char*)pResultBuf, result.ToLocalChecked() );
+			GetTypeBase( nResultType )->FromVMValue( nResultType, 
+				*this, (char*)pResultBuf, result.ToLocalChecked() );
 		return true;
 	}
 
 	void CScriptJS::BuildRegisterInfo()
 	{
+		SV8Context& Context = GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
+		std::function<void( const CClassRegistInfo*,
+			v8::Local<v8::Function>, v8::Local<v8::Object>, bool )> MakeMeberFunction;
+
+		MakeMeberFunction = [&]( const CClassRegistInfo* pInfo,
+			v8::Local<v8::Function> NewClass, v8::Local<v8::Object> Prototype, bool bBase )->void
+		{
+			v8::Local<v8::Context> context = isolate->GetCurrentContext();
+			const CCallBaseMap& mapFunction = pInfo->GetRegistFunction();
+			std::string strName = pInfo->GetClassName().c_str();
+			for( auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext() )
+			{
+				const char* szFunName = pCall->GetFunctionName().c_str();
+				if( pCall->GetFunctionIndex() == eCT_MemberFunction )
+				{
+					Prototype->SetAccessor( context, 
+						v8::String::NewFromUtf8( isolate, szFunName ),
+						&SV8Context::GetterCallback, &SV8Context::SetterCallback,
+						v8::External::New( isolate, GetCallInfo( pCall ) ) );
+				}
+				else if( pCall->GetFunctionIndex() == eCT_ClassStaticFunction )
+				{
+					NewClass->Set( context, 
+						v8::String::NewFromUtf8( isolate, szFunName ),
+						v8::Function::New( isolate, &SV8Context::Callback,
+						v8::External::New( isolate, GetCallInfo( pCall ) ) ) );
+				}
+				else
+				{
+					Prototype->Set( context, 
+						v8::String::NewFromUtf8( isolate, szFunName ),
+						v8::Function::New( isolate, &SV8Context::Callback,
+						v8::External::New( isolate, GetCallInfo( pCall ) ) ) );
+				}
+			}
+			if( !bBase )
+				return;
+			for( uint32 i = 0; i < pInfo->BaseRegist().size(); i++ )
+				MakeMeberFunction( pInfo->BaseRegist()[i].m_pBaseInfo, NewClass, Prototype, true );
+		};
+
 		const CTypeIDNameMap& mapRegisterInfo = CClassRegistInfo::GetAllRegisterInfo();
 		for( auto pInfo = mapRegisterInfo.GetFirst(); pInfo; pInfo = pInfo->GetNext() )
 		{
@@ -658,98 +522,67 @@ namespace Gamma
 
 			if( pInfo->GetTypeIDName().empty() )
 			{
-				HandleScope handle_scope( m_pIsolate );
-				Local<Context> context = m_Context.Get( m_pIsolate );
-				Context::Scope context_scope( context );
-				Local<Object> globalObj = context->Global();
-				Local<String> strPackage = String::NewFromUtf8( m_pIsolate, "window" );
+				v8::HandleScope handle_scope( isolate );
+				v8::Local<v8::Context> context = Context.m_Context.Get( isolate );
+				v8::Context::Scope context_scope( context );
+				v8::Local<v8::Object> globalObj = context->Global();
+				v8::Local<v8::String> strPackage = v8::String::NewFromUtf8( isolate, "window" );
 				LocalValue Package = globalObj->Get( strPackage );
 				assert( !Package.IsEmpty() );
 				const CCallBaseMap& mapFunction = pInfo->GetRegistFunction();
 				for( auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext() )
 				{
-					Local<Function> funGlobal = Function::New( GetIsolate(),
-						&CScriptJS::Callback, External::New( m_pIsolate, GetCallInfo(pCall) ) );
+					v8::Local<v8::Function> funGlobal = v8::Function::New( isolate,
+						&SV8Context::Callback, v8::External::New( isolate, GetCallInfo(pCall) ) );
 					const char* szFunName = pCall->GetFunctionName().c_str();
-					Package->ToObject( m_pIsolate )->Set( 
-						String::NewFromUtf8( m_pIsolate, szFunName ), funGlobal );
+					Package->ToObject( isolate )->Set(
+						v8::String::NewFromUtf8( isolate, szFunName ), funGlobal );
 				}
 				continue;
 			}
 
-			HandleScope handle_scope( m_pIsolate );
-			Local<Context> context = m_Context.Get( m_pIsolate );
-			Context::Scope context_scope( context );
-			Local<Object> globalObj = context->Global();
+			v8::HandleScope handle_scope( isolate );
+			v8::Local<v8::Context> context = Context.m_Context.Get( isolate );
+			v8::Context::Scope context_scope( context );
+			v8::Local<v8::Object> globalObj = context->Global();
 
 			const char* szClass = pInfo->GetClassName().c_str();
-			Local<String> strClassName = String::NewFromUtf8( m_pIsolate, szClass );
-			Local<FunctionTemplate> NewTemplate = FunctionTemplate::New(
-				m_pIsolate, &CScriptJS::NewObject, External::New( m_pIsolate, pInfo ) );
+			v8::Local<v8::String> strClassName = v8::String::NewFromUtf8( isolate, szClass );
+			v8::Local<v8::FunctionTemplate> NewTemplate = v8::FunctionTemplate::New(
+				isolate, &SV8Context::NewObject, v8::External::New( isolate, pInfo ) );
 			NewTemplate->SetClassName( strClassName );
 			NewTemplate->InstanceTemplate()->SetInternalFieldCount( 1 );
-			Local<Function> NewClass = NewTemplate->GetFunction( context ).ToLocalChecked();
-			PersistentFunTmplt& persistentTemplate = GetPersistentFunTemplate( pInfo );
-			persistentTemplate.Reset( m_pIsolate, NewTemplate );
+			v8::Local<v8::Function> NewClass = NewTemplate->GetFunction( context ).ToLocalChecked();
+			static PersistentFunTmplt s_Instance;
+			SClassInfo* classInfo = m_mapClassInfo.Find( (const void*)pInfo );
+			PersistentFunTmplt& persistentTemplate = classInfo ? classInfo->m_FunctionTemplate : s_Instance;
+			persistentTemplate.Reset( isolate, NewTemplate );
 
-			LocalValue Base = Undefined( m_pIsolate );
+			LocalValue Base = Undefined( isolate );
 			if( pInfo->BaseRegist().size() )
 			{
 				const CClassRegistInfo* pBaseInfo = pInfo->BaseRegist()[0].m_pBaseInfo;
-				PersistentFunTmplt& persistentTemplate = GetPersistentFunTemplate( pBaseInfo );
-				Local<FunctionTemplate> BaseTemplate = persistentTemplate.Get( m_pIsolate );
+				SClassInfo* classInfo = m_mapClassInfo.Find( (const void*)pBaseInfo );
+				PersistentFunTmplt& persistentTemplate = classInfo ? classInfo->m_FunctionTemplate : s_Instance;
+				v8::Local<v8::FunctionTemplate> BaseTemplate = persistentTemplate.Get( isolate );
 				Base = BaseTemplate->GetFunction( context ).ToLocalChecked();
 			}
 
 			std::string strNewPath = szClass;
-			Local<Function> GammaClass = m_GammaClass.Get( m_pIsolate );
-			Local<String> strPathName = String::NewFromUtf8( m_pIsolate, strNewPath.c_str() );
+			v8::Local<v8::Function> GammaClass = Context.m_GammaClass.Get( isolate );
+			v8::Local<v8::String> strPathName = v8::String::NewFromUtf8( isolate, strNewPath.c_str() );
 			LocalValue args[] = { NewClass, strPathName, Base };
 			GammaClass->Call( globalObj, 3, args );
 
-			MaybeLocal<Value> Prototype = NewClass->Get( context, m_Prototype.Get( m_pIsolate ) );
-			Local<Object> PrototypeObj = Prototype.ToLocalChecked()->ToObject( m_pIsolate );
-			Local<Value> InfoValue = External::New( m_pIsolate, pInfo );
-			PrototypeObj->Set( context, m_Deconstruction.Get( m_pIsolate ),
-				Function::New( m_pIsolate, &CScriptJS::Destruction, InfoValue ) );
+			v8::MaybeLocal<v8::Value> Prototype = NewClass->Get( context, Context.m_Prototype.Get( isolate ) );
+			v8::Local<v8::Object> PrototypeObj = Prototype.ToLocalChecked()->ToObject( isolate );
+			v8::Local<v8::Value> InfoValue = v8::External::New( isolate, pInfo );
+			PrototypeObj->Set( context, Context.m_Deconstruction.Get( isolate ),
+				v8::Function::New( isolate, &SV8Context::Destruction, InfoValue ) );
 			for( uint32 i = 1; i < pInfo->BaseRegist().size(); i++ )
 				MakeMeberFunction( pInfo->BaseRegist()[i].m_pBaseInfo, NewClass, PrototypeObj, true );
 			MakeMeberFunction( pInfo, NewClass, PrototypeObj, false );
 		}
-	}
-
-	void CScriptJS::MakeMeberFunction( const CClassRegistInfo* pInfo, 
-		Local<Function> NewClass, v8::Local<v8::Object> Prototype, bool bBase )
-	{
-		Local<Context> context = m_pIsolate->GetCurrentContext();
-		const CCallBaseMap& mapFunction = pInfo->GetRegistFunction();
-		std::string strName = pInfo->GetClassName().c_str();
-		for( auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext() )
-		{
-			const char* szFunName = pCall->GetFunctionName().c_str();
-			if( pCall->GetFunctionIndex() == eCT_MemberFunction )
-			{
-				Prototype->SetAccessor( context, String::NewFromUtf8( m_pIsolate, szFunName ),
-					&CScriptJS::GetterCallback, &CScriptJS::SetterCallback, 
-					External::New( m_pIsolate, GetCallInfo( pCall ) ) );
-			}
-			else if( pCall->GetFunctionIndex() == eCT_ClassStaticFunction )
-			{
-				NewClass->Set( context, String::NewFromUtf8( m_pIsolate, szFunName ),
-					Function::New( m_pIsolate, &CScriptJS::Callback, 
-						External::New( m_pIsolate, GetCallInfo( pCall ) ) ) );
-			}
-			else
-			{
-				Prototype->Set( context, String::NewFromUtf8( m_pIsolate, szFunName ),
-					Function::New( m_pIsolate, &CScriptJS::Callback, 
-						External::New( m_pIsolate, GetCallInfo( pCall ) ) ) );
-			}
-		}
-		if( !bBase )
-			return;
-		for( uint32 i = 0; i < pInfo->BaseRegist().size(); i++ )
-			MakeMeberFunction( pInfo->BaseRegist()[i].m_pBaseInfo, NewClass, Prototype, true );
 	}
 
 	int32 CScriptJS::Compiler( int32 nArgc, char** szArgv )
@@ -769,11 +602,11 @@ namespace Gamma
 
 	void CScriptJS::GC()
 	{
-		m_pIsolate->LowMemoryNotification();
+		GetV8Context().m_pIsolate->LowMemoryNotification();
 	}
 
 	void CScriptJS::GCAll()
 	{
-		m_pIsolate->IdleNotificationDeadline(0.1);
+		GetV8Context().m_pIsolate->IdleNotificationDeadline(0.1);
 	}
 };

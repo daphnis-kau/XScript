@@ -61,7 +61,7 @@ namespace Gamma
 		{
 			auto& listParam = pCallBase->GetParamList();
 			size_t nParamCount = listParam.size();
-			const DataType* aryParam = &listParam[0];
+			const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
 			size_t* aryParamSize = (size_t*)alloca( sizeof(size_t)*nParamCount );
 			size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
 			DataType nResultType = pCallBase->GetResultType();

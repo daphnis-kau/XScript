@@ -2,8 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="..\..\sampler\sampler.cpp" />
+    <ClCompile Include="..\..\sampler\CApplication.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\sampler\sampler.h" />
+    <ClInclude Include="..\..\sampler\CApplication.h" />
   </ItemGroup>
 </Project>

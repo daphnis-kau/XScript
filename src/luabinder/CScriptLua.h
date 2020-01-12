@@ -37,8 +37,6 @@ namespace Gamma
 		static int32			ErrorHandler( lua_State* pState );
 		static int32			DebugBreak( lua_State* pState );
 		static int32			BackTrace( lua_State* pState );
-		static int32			NewUcs2String( lua_State* pL );
-		static int32			NewUtf8String( lua_State* pL );
         static int32			ToUint32( lua_State* pL );
         static int32			ToInt32( lua_State* pL );
         static int32			ToUint16( lua_State* pL );
@@ -93,7 +91,9 @@ namespace Gamma
         //==============================================================================
         static void				NewLuaObj( lua_State* pL, const CClassRegistInfo* pInfo, void* pSrc );
 		static void				RegisterObject( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, bool bGC );
-							    
+		static void				NewUnicodeString( lua_State* pL, const wchar_t* szStr );
+		static const wchar_t*	ConvertUtf8ToUcs2( lua_State* pL, int32 nStkId );
+
 		lua_State*              GetLuaState();
 		void					PushLuaState( lua_State* pL );
 		void					PopLuaState();

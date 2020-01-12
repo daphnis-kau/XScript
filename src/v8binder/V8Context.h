@@ -70,8 +70,9 @@ namespace Gamma
 
 	struct SV8Context
 	{
-		SV8Context();
+		SV8Context( CScriptJS* pScript );
 
+		CScriptJS*					m_pScript;
 		uint32						m_nStringID;
 		std::vector<SStringDynamic>	m_vecStringInfo;
 		tbyte*						m_pTempStrBuffer64K;
@@ -114,7 +115,7 @@ namespace Gamma
 
 		static void					GetterCallback(v8::Local<v8::Name> property, 
 			 							const v8::PropertyCallbackInfo<v8::Value>& info);
-		static void					SetterCallback(v8::Local<v8::Name> property, v8::Local<v8::Value> value, 
+		static void					SetterCallback(v8::Local<v8::Name> property, LocalValue value,
 			 							const v8::PropertyCallbackInfo<void>& info);
 	};
 

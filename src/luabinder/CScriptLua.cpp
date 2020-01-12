@@ -496,6 +496,36 @@ namespace Gamma
         lua_pop( L, 1 );        //弹出CScriptLua::ms_szGlobObjectTable    
     }
 
+	void CScriptLua::NewUnicodeString( lua_State* pL, const wchar_t* szStr )
+	{
+		if( szStr == NULL )
+			return lua_pushnil( pL );
+		CScriptLua* pScript = CScriptLua::GetScript( pL );
+		size_t nLen = UcsToUtf8( nullptr, 0, szStr );
+		pScript->m_szTempUtf8.resize( nLen + 1 );
+		UcsToUtf8( &pScript->m_szTempUtf8[0], nLen + 1, szStr );
+		lua_pushlstring( pL, pScript->m_szTempUtf8.c_str(), nLen );
+	}
+
+	const wchar_t* CScriptLua::ConvertUtf8ToUcs2( lua_State* pL, int32 nStkId )
+	{
+		if( lua_isnil( pL, nStkId ) )
+			return nullptr;
+		const char* szStr = lua_tostring( pL,  nStkId );
+		if( szStr == nullptr )
+			return nullptr;
+		if( szStr[0] == 0 )
+			return L"";
+		CScriptLua* pScript = CScriptLua::GetScript( pL );
+		size_t nLen = Utf8ToUcs( nullptr, 0, szStr );
+		pScript->m_szTempUcs2.resize( nLen + 1 );
+		Utf8ToUcs( &pScript->m_szTempUcs2[0], nLen + 1, szStr );
+		const char* szUcs2 = (const char*)pScript->m_szTempUcs2.c_str();
+		lua_pushlstring( pL, szUcs2, ( nLen + 1 )*sizeof(wchar_t) );
+		lua_replace( pL, nStkId );
+		return (const wchar_t*)lua_tostring( pL, nStkId );
+	}
+
 //==================================================================================================================================//
 //                                                        对Lua提供的功能性函数                                                        //
 //==================================================================================================================================//
@@ -635,45 +665,6 @@ namespace Gamma
     //=========================================================================
     // 数值类型转换                                                
     //=========================================================================
-    int32 CScriptLua::NewUcs2String( lua_State* L )
-    {
-		size_t nLen;
-		const char* szStr = lua_tolstring( L, -1, &nLen );
-		if( !szStr )
-			return 0;
-		if( nLen >= 2 && szStr[ nLen - 1 ] == 0 && szStr[ nLen - 2 ] == 0 )
-			return 1;
-
-		CScriptLua* pScript = GetScript( L );
-		if( pScript->m_szTempUcs2.size() < nLen + 1 )
-			pScript->m_szTempUcs2.resize( nLen + 1 );
-
-		nLen = Utf8ToUcs( &pScript->m_szTempUcs2[0], (uint32)pScript->m_szTempUcs2.size(), szStr, (uint32)nLen );
-        lua_pushlstring( L, (const char*)pScript->m_szTempUcs2.c_str(), ( nLen + 1 )*sizeof(wchar_t) );
-        return 1;
-    }
-
-	int32 CScriptLua::NewUtf8String( lua_State* L )
-	{
-		size_t nLen;
-		const char* szStr = lua_tolstring( L, -1, &nLen );
-		if( !szStr )
-			return 0;
-
-		if( nLen >= 2 && szStr[ nLen - 1 ] == 0 && szStr[ nLen - 2 ] == 0 )
-		{
-			CScriptLua* pScript = GetScript( L );
-			size_t nMaxLen = ( nLen/sizeof(wchar_t) - 1 )*3 + 1;
-			if( pScript->m_szTempUtf8.size() < nMaxLen )
-				pScript->m_szTempUtf8.resize( nMaxLen );
-
-			nLen = UcsToUtf8( &pScript->m_szTempUtf8[0], (uint32)pScript->m_szTempUtf8.size(), (const wchar_t*)szStr, (uint32)( nLen/sizeof(wchar_t) ) - 1 );
-			lua_pushlstring( L, pScript->m_szTempUtf8.c_str(), nLen );
-		}
-
-		return 1;
-	}
-
     int32 CScriptLua::ToUint32( lua_State* L )
     {
         double n = GetNumFromLua( L, -1 );
@@ -1257,6 +1248,8 @@ namespace Gamma
 		sprintf(szFuncBuf, szFun, szFunction);
 		if( GetGlobObject( pL, szFuncBuf ) || ( !luaL_loadstring( pL, szFuncBuf ) && SetGlobObject( pL, szFuncBuf ) ) )
 			lua_pcall( pL, 0, LUA_MULTRET, 0 );
+		if( !lua_isfunction( pL, -1 ) )
+			return false;
 
 		uint32 nParamCount = aryTypeInfo.nSize - 1;
 		for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )

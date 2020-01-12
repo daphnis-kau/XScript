@@ -26,15 +26,15 @@ namespace Gamma
 		
 		void						BuildRegisterInfo();
 		
-		SCallInfo*					GetCallInfo( CByScriptBase* pCallBase );
+		SCallInfo*					GetCallInfo( const CByScriptBase* pCallBase );
 		SObjInfo*					AllocObjectInfo();
 		void						FreeObjectInfo(SObjInfo* pObjectInfo);
 
-		virtual bool				CallVM( CCallScriptBase* pCallBase, SVirtualObj* pObject, 
-										void* pRetBuf, void** pArgArray );
-		virtual void				DestrucVM( CCallScriptBase* pCallBase, SVirtualObj* pObject );
+		virtual bool				CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray );
+		virtual void				DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject );
 
 		friend class CJSObject;
+		friend struct SV8Context;
     public:
 		CScriptJS( uint16 nDebugPort );
 		~CScriptJS(void);

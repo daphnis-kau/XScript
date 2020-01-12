@@ -175,18 +175,18 @@ namespace Gamma
 	//=======================================================================
 	// 函数调用包装
 	//=======================================================================
-	template< typename T >
+	template< typename T > 
 	struct ArgFetcher
-	{
-		static inline T&	CallWrapArg( void* pArgArray )	{ return *(T*)pArgArray; }
-		static inline void* CallBackArg( T*& pArgArray )	{ return pArgArray; }
+	{ 
+		static inline T& CallWrapArg( void* pData )		{ return *(T*)pData; }	
+		static inline void* CallBackArg( T*& pData )	{ return pData; }
 	};
 
-	template<typename T>
+	template<typename T> 
 	struct ArgFetcher<T&>
-	{
-		static inline T&	CallWrapArg( void* pArgArray )	{ return **(T**)pArgArray; }
-		static inline void* CallBackArg( T*& pArgArray )	{ return &pArgArray; }
+	{ 
+		static inline T& CallWrapArg( void* pData )		{ return **(T**)pData; } 
+		static inline void* CallBackArg( T*& pData )	{ return &pData; }
 	};
 	
 	template<> struct ArgFetcher<const char		&> : public ArgFetcher<char		> {};
@@ -234,8 +234,8 @@ namespace Gamma
 		template<> struct TFetchParam<>
 		{
 			template<typename... FetchParam>
-			static void CallFun( size_t nIndex, FunctionType funCall, void* pRetBuf,
-				void** pArgArray, FetchParam...p )
+			static void CallFun( size_t nIndex, FunctionType funCall, 
+				void* pRetBuf, void** pArgArray, FetchParam&...p )
 			{ TFetchResult<RetType> Temp( funCall, pRetBuf, p... ); }
 		};
 
@@ -243,10 +243,12 @@ namespace Gamma
 		struct TFetchParam<FirstParam, RemainParam...>
 		{
 			template<typename... FetchParam>
-			static void CallFun( size_t nIndex, FunctionType funCall,void* pRetBuf,
-				void** pArgArray, FetchParam...p )
-			{ TFetchParam<RemainParam...>::CallFun( nIndex + 1, funCall, pRetBuf, 
-				pArgArray, p..., ArgFetcher<FirstParam>::CallWrapArg( pArgArray[nIndex] ) ); }
+			static void CallFun( size_t nIndex, FunctionType funCall,
+				void* pRetBuf, void** pArgArray, FetchParam&...p )
+			{ 
+				FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( pArgArray[nIndex] );
+				TFetchParam<RemainParam...>::CallFun( nIndex + 1, funCall, pRetBuf, pArgArray, p..., f );
+			}
 		};
 
 	public:
@@ -330,15 +332,7 @@ namespace Gamma
 			RetType WrapAddress( ParamPtr ... p )
 			{
 				TCallBackWrap* pThis = this;
-				void* pCallArray[] = { &pThis, ArgFetcher<Param...>::CallBackArg( p... ), NULL };
-				return TCallBack<RetType>::OnCall( GetCallBackIndex(), pCallArray );
-			}
-
-			template<>
-			RetType WrapAddress<>()
-			{
-				TCallBackWrap* pThis = this;
-				void* pCallArray[] = { &pThis, NULL };
+				void* pCallArray[] = { &pThis, ArgFetcher<Param>::CallBackArg( p )..., NULL };
 				return TCallBack<RetType>::OnCall( GetCallBackIndex(), pCallArray );
 			}
 
@@ -348,10 +342,6 @@ namespace Gamma
 			}
 
 			typedef decltype(&TCallBackWrap::BootFunction) FunctionType;
-			static RetType Call(FunctionType funCall, TCallBackWrap* pObj, Param...p)
-			{
-				return (pObj->*(funCall))(p...);
-			}
 		};
 	public:
 		static Gamma::SFunctionTable* GetVirtualTable( void* p )
@@ -370,7 +360,7 @@ namespace Gamma
 			RetType(ClassType::*pFun)(Param...) )
 		{
 			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;		
-			typedef TFunctionWrap<CallBackWrap, RetType, CallBackWrap*, Param...> FunctionWrap;
+			typedef TFunctionWrap<RetType, ClassType*, Param...> FunctionWrap;
 
 			// 下面编译不过表示函数指针FunctionType的大小和uintptr_t不一致，
 			// 这和编译器有关，大部分编译器不会出现，本实现目前不支持这种情况

@@ -40,7 +40,7 @@ namespace Gamma
 		void FromVMValue(DataType eType, 
 			CScriptJS& Script, char* pDataBuf, LocalValue obj)
 		{
-			v8::Isolate* isolate = Script.GetIsolate();
+			v8::Isolate* isolate = Script.GetV8Context().m_pIsolate;
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 			v8::MaybeLocal<v8::Int32> v = obj->ToInt32(context);
 			*(T*)(pDataBuf) = (T)( v.IsEmpty() ? 0 : v.ToLocalChecked()->Value() );
@@ -49,7 +49,7 @@ namespace Gamma
 		LocalValue ToVMValue(DataType eType, 
 			CScriptJS& Script, char* pDataBuf)
 		{
-			return v8::Int32::New(Script.GetIsolate(), (int32)*(T*)(pDataBuf));
+			return v8::Int32::New(Script.GetV8Context().m_pIsolate, (int32)*(T*)(pDataBuf));
 		}
 
 		static TJSValue<T>& GetInst()
@@ -236,12 +236,14 @@ namespace Gamma
 	typedef TJSValue<int32>				CJSInt32;
 	typedef TJSValue<int16>				CJSInt16;
 	typedef TJSValue<int8>				CJSInt8;
+	typedef TJSValue<char>				CJSChar;
 	typedef TJSValue<long>				CJSLong;
 	typedef TJSValue<ulong>				CJSUlong;
 	typedef TJSValue<uint64>			CJSUint64;
 	typedef TJSValue<uint32>			CJSUint32;
 	typedef TJSValue<uint16>			CJSUint16;
 	typedef TJSValue<uint8>				CJSUint8;
+	typedef TJSValue<wchar_t>			CJSWChar;
 	typedef TJSValue<float>				CJSFloat;
 	typedef TJSValue<double>			CJSDouble;
 	typedef TJSValue<bool>				CJSBool;
@@ -282,140 +284,6 @@ namespace Gamma
 		virtual LocalValue ToVMValue(DataType eType, 
 			CScriptJS& Script, char* pDataBuf);
 	};
-	
-	//=====================================================================
-	/// C++内建对象以JS形式的表示及其操作
-	//=====================================================================
-	template<class Type> class TArrayType	{ public: typedef v8::ArrayBuffer Array; };
-	template<> class TArrayType<int8>		{ public: typedef v8::Int8Array Array; };
-	template<> class TArrayType<int16>		{ public: typedef v8::Int16Array Array; };
-	template<> class TArrayType<int32>		{ public: typedef v8::Int32Array Array; };
-	template<> class TArrayType<uint8>		{ public: typedef v8::Uint8Array Array; };
-	template<> class TArrayType<uint16>		{ public: typedef v8::Uint16Array Array; };
-	template<> class TArrayType<uint32>		{ public: typedef v8::Uint32Array Array; };
-	template<> class TArrayType<float>		{ public: typedef v8::Float32Array Array; };
-	template<> class TArrayType<double>		{ public: typedef v8::Float64Array Array; };
-
-	template<class Type, class ImpClass>
-	class TBuildinObject : public CJSPointer
-	{
-		typedef typename TArrayType<Type>::Array ArrayType;
-		typedef typename v8::Local<v8::ArrayBuffer> ArrayBuffer;
-		const char*				m_szBuildinName;
-		PersistentObject		m_ClassPrototype;
-	public:
-		TBuildinObject( uint32 nSize, const char* szName ) 
-			: CJSPointer( sizeof( Type )*nSize ), m_szBuildinName( szName ) 
-		{
-			m_nType = eDT_class;
-			m_nFlag = 0;
-		}
-		virtual LocalValue ToVMValue(DataType eType, 
-			CScriptJS& Script, char* pDataBuf );
-	};
-
-	template<class Type, class ImpClass>
-	inline LocalValue 
-	Gamma::TBuildinObject<Type, ImpClass>::ToVMValue(
-		DataType eType, CScriptJS& Script, char* pDataBuf )
-	{
-		ArrayBuffer ArrBuf = ImpClass::NewBuff( Script, pDataBuf, CJSPointer::m_nSize );
-		v8::Local<ArrayType> ArrayObj = ArrayType::New( ArrBuf, 0, CJSPointer::m_nSize/sizeof( Type ) );
-		v8::Isolate* isolate = Script.GetIsolate();
-		v8::Local<v8::Context> context = isolate->GetCurrentContext();
-		if( m_szBuildinName )
-		{
-			v8::Local<v8::Object> nsGamma = Script.GetGammaNameSpace().Get( isolate );
-			v8::Local<v8::String> name = v8::String::NewFromUtf8( isolate, m_szBuildinName );
-			v8::Local<v8::Value> JSClassV = nsGamma->Get( context, name ).ToLocalChecked();
-			v8::Local<v8::Object> JSClass = v8::Local<v8::Object>::Cast( JSClassV );
-			v8::Local<v8::String> PrototypeName = Script.GetPrototype().Get( isolate );
-			v8::MaybeLocal<v8::Value> ProtoValue = JSClass->Get( context, PrototypeName );
-			m_ClassPrototype.Reset( isolate, ProtoValue.ToLocalChecked()->ToObject( isolate ) );
-			m_ClassPrototype.SetWeak();
-			m_szBuildinName = NULL;
-		}
-		v8::Local<v8::String> __proto__ = Script.GetProto().Get( isolate );
-		ArrayObj->Set( context, __proto__, m_ClassPrototype.Get( isolate ) );
-		return ArrayObj;
-	}
-
-	//=====================================================================
-	/// C++内建对象以JS形式的表示及其操作---指针类型
-	//=====================================================================
-	template<class Type>
-	class TBuildinPoint : public TBuildinObject<Type, TBuildinPoint<Type>>
-	{
-	public:
-		TBuildinPoint( uint32 nSize, const char* szName )
-			: TBuildinObject<Type, TBuildinPoint<Type>>( nSize, szName ) {}
-		static v8::Local<v8::ArrayBuffer> NewBuff( 
-			CScriptJS& Script, char* pDataBuf, uint32 nSize );
-	};
-
-	template<class Type>
-	inline v8::Local<v8::ArrayBuffer> 
-	Gamma::TBuildinPoint<Type>::NewBuff( 
-		CScriptJS& Script, char* pDataBuf, uint32 nSize )
-	{
-		return v8::ArrayBuffer::New( Script.GetIsolate(), *(void**)( pDataBuf ), nSize );
-	}
-
-	//=====================================================================
-	/// C++内建对象以JS形式的表示及其操作---值类型
-	//=====================================================================
-	template<class Type>
-	class TBuildinValue : public TBuildinObject<Type, TBuildinValue<Type>>
-	{
-	public:
-		TBuildinValue( uint32 nSize, const char* szName ) 
-			: TBuildinObject<Type, TBuildinValue<Type>>( nSize, szName ) {}
-		static v8::Local<v8::ArrayBuffer> NewBuff( 
-			CScriptJS& Script, char* pDataBuf, uint32 nSize );
-		void FromVMValue(DataType eType,  
-			CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj );
-	};
-
-	template<class Type>
-	void Gamma::TBuildinValue<Type>::FromVMValue(
-		DataType eType,  CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj )
-	{
-		if( obj->IsArrayBufferView() )
-		{
-			v8::ArrayBufferView* view = v8::ArrayBufferView::Cast( *obj );
-			char* data = (char*)view->Buffer()->GetContents().Data();
-			memcpy( pDataBuf, data + view->ByteOffset(), CJSPointer::m_nSize );
-			return;
-		}
-
-		if (obj->IsArrayBuffer())
-		{
-			char* data = v8::ArrayBuffer::Cast(*obj)->GetContents().Data();
-			memcpy(pDataBuf, data, CJSPointer::m_nSize);
-			return;
-		}
-		
-		memset( pDataBuf, 0, CJSPointer::m_nSize );
-	}
-
-	template<class Type>
-	inline v8::Local<v8::ArrayBuffer>
-		Gamma::TBuildinValue<Type>::NewBuff( 
-			CScriptJS& Script, char* pDataBuf, uint32 nSize )
-	{
-		v8::Local<v8::ArrayBuffer> ArrayBuf =
-			v8::ArrayBuffer::New( Script.GetIsolate(), nSize );
-		memcpy( ArrayBuf->GetContents().Data(), *(void**)( pDataBuf ), nSize );
-		return ArrayBuf;
-	}
-
-	template<class Type>
-	inline CJSTypeBase* CreateBuildinType( bool bValue, uint32 nSize, const char* szName )
-	{
-		if( bValue )
-			return new Gamma::TBuildinValue<Type>( nSize, szName );
-		return new Gamma::TBuildinPoint<Type>( nSize, szName );
-	}
 }
 
 #endif

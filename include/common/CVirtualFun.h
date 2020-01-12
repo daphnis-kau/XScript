@@ -45,7 +45,7 @@ namespace Gamma
 		typedef void ( ClassType::*FunctionType )();
 		FunctionType funCall = (FunctionType)pFun;
 		struct SFun { static void Call( ClassType* pObj, void* pContext )
-		{ FunctionType funCall = *(FunctionType*)pContext; ( pObj->*funCall )();	} };
+		{ FunctionType funCall = *(FunctionType*)pContext; ( pObj->*funCall )(); } };
 		VirtualFunCallback funCallback = (VirtualFunCallback)&SFun::Call;
 		return FindVirtualFunction( sizeof( ClassType ), funCallback, &funCall );
 	}
@@ -54,9 +54,12 @@ namespace Gamma
 	template<typename ClassType>
 	uint32 GetDestructorFunIndex()
 	{
-		struct SFun { static void Call( ClassType* pObj, void* ) { pObj->~ClassType(); } };
+		struct SFun : public ClassType 
+		{ virtual ~SFun(){} static void Call( SFun* pObj, void* ) { pObj->~SFun(); } };
+		if( sizeof( SFun ) != sizeof( ClassType ) )
+			throw "the class have not virtual table";
 		VirtualFunCallback funCallback = (VirtualFunCallback)&SFun::Call;
-		return FindVirtualFunction( sizeof( ClassType ), funCallback, nullptr );
+		return FindVirtualFunction( sizeof( SFun ), funCallback, nullptr );
 	}
 
 #endif	//end as3_alchemy_swig Gambey 2012-8-2
