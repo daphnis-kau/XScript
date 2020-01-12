@@ -5,7 +5,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "debuglua",
+			"name": "debugjs",
 			"type": "node",
 			"request": "attach",
 			"debugServer": 5067

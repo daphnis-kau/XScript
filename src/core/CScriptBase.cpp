@@ -373,6 +373,7 @@ namespace Gamma
 		for( auto it = m_listSearchPath.begin(); it != m_listSearchPath.end(); ++it )
 		{
 			std::string sFileName = *it + szFileName;
+			ShortPath( &sFileName[0] );
 			std::string strFileContent = ReadEntirFile( sFileName.c_str() );
 			if( strFileContent.empty() )
 				continue;

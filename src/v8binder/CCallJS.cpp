@@ -126,7 +126,7 @@ namespace Gamma
 			if (pObject == NULL)
 				return;
 
-			DataType nType = pByScript->GetParamList()[0];
+			DataType nType = pByScript->GetParamList()[1];
 			size_t nParamSize = GetAligenSizeOfType( nType );
 			char* pDataBuf = (char*)alloca( nParamSize );
 			SV8Context& Context = Script.GetV8Context();
@@ -151,7 +151,7 @@ namespace Gamma
 		SV8Context& Context = Script.GetV8Context();
 		Context.CallJSStatck(true);
 
-		void* pObject = *(void**)pArgArray[0];
+		void* pObject = *(void**)*pArgArray++;
 		v8::Isolate* isolate = Context.m_pIsolate;
 		v8::HandleScope handle_scope(isolate);
 		v8::TryCatch try_catch(isolate);
@@ -164,8 +164,8 @@ namespace Gamma
 		LocalValue pThis = CJSObject::GetInst().ToVMValue( nThisType, Script, (char*)&pObject);
 		v8::Local<v8::Object> object = pThis->ToObject(isolate);
 
-		const DataType* aryParam = &( pCallBase->GetParamList()[1] );
 		int32 nParamCount = (int32)pCallBase->GetParamCount() - 1;
+		const DataType* aryParam = nParamCount ? &( pCallBase->GetParamList()[1] ) : nullptr;
 		size_t nTotalSize = sizeof( LocalValue )*nParamCount;
 		LocalValue* args = ( LocalValue* )alloca( sizeof( nTotalSize ) );
 		for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )

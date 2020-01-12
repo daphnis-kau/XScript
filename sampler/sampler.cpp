@@ -22,9 +22,16 @@ DEFINE_ABSTRACT_CLASS_END();
 
 int main( int argc, const char* argv[] )
 {
+#ifdef TEST_LUA
 	CScriptBase* pScript = new CScriptLua( 5067 );
 	pScript->AddSearchPath( "F:/GitHub/XScript/sampler/lua/" );
 	pScript->RunFile( "./test.lua" );
+#else
+	CScriptBase* pScript = new CScriptJS( 5067 );
+	pScript->AddSearchPath( "F:/GitHub/XScript/sampler/js/" );
+	pScript->RunFile( "./test.js" );
+#endif // TEST_LUA
+
 	while( true )
 	{
 		pScript->RunFunction( NULL, "StartApplication", "sampler", 12345 );

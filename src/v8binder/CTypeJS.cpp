@@ -154,7 +154,7 @@ namespace Gamma
 	Gamma::LocalValue CJSValueObject::ToVMValue(DataType eType, 
 		CScriptJS& Script, char* pDataBuf)
 	{
-		void* pObj = *(void**)(pDataBuf);
+		void* pObj = pDataBuf;
 		if (!pObj)
 			return v8::Null(Script.GetV8Context().m_pIsolate);
 		return _ToVMValue(eType, Script, pObj, true);
