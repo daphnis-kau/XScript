@@ -167,7 +167,7 @@ namespace Gamma
 		int32 nParamCount = (int32)pCallBase->GetParamCount() - 1;
 		const DataType* aryParam = nParamCount ? &( pCallBase->GetParamList()[1] ) : nullptr;
 		size_t nTotalSize = sizeof( LocalValue )*nParamCount;
-		LocalValue* args = ( LocalValue* )alloca( sizeof( nTotalSize ) );
+		LocalValue* args = ( LocalValue* )alloca( nTotalSize );
 		for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 		{
 			new ( args + nArgIndex ) LocalValue;
