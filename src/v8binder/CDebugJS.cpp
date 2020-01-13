@@ -45,8 +45,8 @@ namespace Gamma
 	CDebugJS::CDebugJS(CScriptBase* pBase, uint16 nDebugPort, bool bV8Protocal)
 		: CDebugBase(pBase, nDebugPort)
 		, m_nDebugPort(nDebugPort)
-		, m_bLoopOnPause( false ) 
-		, m_bV8Protocal(bV8Protocal)
+		, m_bV8Protocal( bV8Protocal )
+		, m_nBreakFrame( -1 )
 	{
 		if (!nDebugPort)
 			return;
@@ -71,7 +71,7 @@ namespace Gamma
 
 		// create a v8 channel. 
 		// ChannelImpl : public v8_inspector::V8Inspector::Channel
-		const char* szView = "{}";
+		const char* szView = "{\"Debugger\":{\"debuggerEnabled\":true}}";
 		v8_inspector::StringView view((const uint8_t*)szView, strlen(szView));
 
 		// Create a debugging session by connecting the V8Inspector
@@ -85,30 +85,14 @@ namespace Gamma
 		// your app creates. Normally just one btw.
 		v8_inspector::V8ContextInfo Info(isolate->GetCurrentContext(), 1, ContextName);
 		m_Inspector->contextCreated(Info);
-
-		if (m_bV8Protocal)
-			return;
-
-		struct SInspectable : public v8_inspector::V8InspectorSession::Inspectable
-		{
-			v8::Isolate* m_pIsolate;
-			SInspectable(v8::Isolate* isolate) :m_pIsolate(isolate) {}
-			virtual ~SInspectable() {};
-			virtual v8::Local<v8::Value> get(v8::Local<v8::Context>)
-			{
-				return v8::Boolean::New(m_pIsolate, true);
-			}
-		};
-
-		m_Session->addInspectedObject(
-			std::unique_ptr<SInspectable>(new SInspectable(isolate)));
 	}
 
 	void CDebugJS::Break()
 	{
 		CheckSession();
-		v8_inspector::StringView desc((const uint8_t*)"break", 5);
-		m_Session->breakProgram(desc, desc);
+		v8_inspector::StringView breakReason( ( const uint8_t* )"break", 5 );
+		v8_inspector::StringView breakDetails( ( const uint8_t* )"{}", 2 );
+		m_Session->breakProgram( breakReason, breakDetails );
 	}
 
 	//=====================================================================
@@ -295,6 +279,12 @@ namespace Gamma
 
 	void CDebugJS::runMessageLoopOnPause(int contextGroupId)
 	{
+		if( !m_bV8Protocal )
+		{
+			m_nBreakFrame = MAX_INT32;
+			return CheckCommonDebugBreak();
+		}
+
 		//GammaLog << "++++++++++++++++runMessageLoopOnPause+++++++++++++++" << endl;
 		m_bLoopOnPause = true;
 		while (m_bLoopOnPause)
@@ -366,29 +356,74 @@ namespace Gamma
 	//=====================================================================
 	// 默认 协议
 	//=====================================================================
+	void CDebugJS::CheckCommonDebugBreak()
+	{
+		// always stop while step in or meet the breakpoint
+		if( m_nBreakFrame == MAX_INT32 )
+			return CDebugBase::Debug();
+
+		CScriptJS* pScript = (CScriptJS*)m_pBase;
+		SV8Context& Context = pScript->GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
+		auto curStack = v8::StackTrace::CurrentStackTrace( isolate, 255 );
+		auto curFrame = curStack->GetFrame( isolate, 0 );
+		auto szFile = Context.StringToUtf8( curFrame->GetScriptNameOrSourceURL() );
+		if( GetBreakPoint( szFile, curFrame->GetLineNumber() ) )
+			return CDebugBase::Debug();
+
+		// no any frame is expected to be break
+		if( m_nBreakFrame < 0 )
+			return m_Session->stepOver();
+
+		// check break frame
+		if( (int32)curStack->GetFrameCount() > m_nBreakFrame )
+			return m_Session->stepOver();
+		CDebugBase::Debug();
+	}
+
 	uint32 CDebugJS::GenBreakPointID(const char* szFileName, int32 nLine)
 	{
 		return 0;
 	}
 
-	void CDebugJS::DelBreakPoint(uint32 nBreakPointID)
+	void CDebugJS::DelBreakPoint( uint32 nBreakPointID )
 	{
 
 	}
 
 	uint32 CDebugJS::GetFrameCount()
 	{
-		return 0;
+		CScriptJS* pScript = (CScriptJS*)m_pBase;
+		SV8Context& Context = pScript->GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
+		auto curStack = v8::StackTrace::CurrentStackTrace( isolate, 255 );
+		return curStack->GetFrameCount();
 	}
 
 	bool CDebugJS::GetFrameInfo(int32 nFrame, int32* nLine, const char** szFunction, const char** szSource)
 	{
-		return false;
+		CScriptJS* pScript = (CScriptJS*)m_pBase;
+		SV8Context& Context = pScript->GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
+		auto curStack = v8::StackTrace::CurrentStackTrace( isolate, 255 );
+		auto curFrame = curStack->GetFrame( isolate, nFrame );
+		if( curFrame.IsEmpty() )
+			return false;
+		if( nLine )
+			*nLine = curFrame->GetLineNumber();
+		if( szFunction )
+			*szFunction = Context.StringToUtf8( curFrame->GetFunctionName() );
+		if( szSource )
+			*szSource = Context.StringToUtf8( curFrame->GetScriptNameOrSourceURL() );
+		return true;
 	}
 
 	int32 CDebugJS::SwitchFrame(int32 nCurFrame)
 	{
-		return 0;
+		int32 nFrameCount = GetFrameCount();
+		if( nCurFrame < nFrameCount )
+			return nCurFrame;
+		return nFrameCount - 1;
 	}
 
 	uint32 CDebugJS::GetVariableID(int32 nCurFrame, const char* szName)
@@ -418,17 +453,22 @@ namespace Gamma
 
 	void CDebugJS::StepIn()
 	{
-
+		m_nBreakFrame = MAX_INT32;
+		m_Session->resume();
+		v8_inspector::StringView empty;
+		m_Session->schedulePauseOnNextStatement( empty, empty );
 	}
 
 	void CDebugJS::StepNext()
 	{
-
+		m_nBreakFrame = GetFrameCount();
+		m_Session->stepOver();
 	}
 
 	void CDebugJS::StepOut()
 	{
-
+		m_nBreakFrame = (int32)GetFrameCount() - 1;
+		m_Session->stepOver();
 	}
 
 }

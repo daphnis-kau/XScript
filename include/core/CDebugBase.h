@@ -90,6 +90,7 @@ namespace Gamma
 		CFileMap			m_mapFileBuffer;
 
 		EAttachType			m_eAttachType;
+		bool				m_bLoopOnPause;
 		bool				m_bRemoteCmdValid;
 		bool				m_bAllExceptionsBreak;
 		bool				m_bUncaughtExceptionsBreak;

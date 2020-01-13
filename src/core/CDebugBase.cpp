@@ -77,7 +77,8 @@ namespace Gamma
 		, m_hThread( NULL )
 		, m_hSemaphore( NULL )
 		, m_hCmdLock( NULL )
-		, m_pBuf(NULL)
+		, m_pBuf( NULL )
+		, m_bLoopOnPause( false )
 		, m_bEnterDebug( false )
 		, m_eAttachType( eAT_Detach )
 		, m_nExceptionID( 1 )
@@ -442,11 +443,13 @@ namespace Gamma
 		}
 		SendEvent( pBody, "stopped" );
 
-		while( true )
+		m_bLoopOnPause = true;
+		while( m_bLoopOnPause )
 		{
 			if( !CheckRemoteCmd( true ) )
-				break;
-			GammaGetSemaphore( m_hSemaphore );
+				m_bLoopOnPause = false;
+			else
+				GammaGetSemaphore( m_hSemaphore );
 		}
 	}
 
@@ -851,9 +854,10 @@ namespace Gamma
 			PrintFrame( m_nCurFrame, szCurFunction, szCurSource, m_nCurLine );
 		PrintLine( m_nCurFrame, szCurSource, m_nCurLine, true );
 		m_nShowLine = m_nCurLine - LINE_COUNT_ON_SHOW/2;
-		m_bPrintFrame = true;
+		m_bPrintFrame = true; 
+		m_bLoopOnPause = true;
 
-		for(;;)
+		while( m_bLoopOnPause )
 		{
 			szBuf = ReadWord( true );
 			if( !szBuf )
@@ -883,7 +887,7 @@ namespace Gamma
 			else if( !strcmp( szBuf, "continue" ) || !strcmp( szBuf, "c" ) )
 			{
 				Continue();
-				break;
+				m_bLoopOnPause = false;
 			}
 			else if( !strcmp( szBuf, "del" ) )
 			{
@@ -910,17 +914,17 @@ namespace Gamma
 			{
 				StepNext();
 				m_bPrintFrame = false;
-				break;
+				m_bLoopOnPause = false;
 			}
 			else if( !strcmp( szBuf, "step") || !strcmp( szBuf, "s") )
 			{
 				StepIn();
-				break;
+				m_bLoopOnPause = false;
 			}
 			else if( !strcmp( szBuf, "out") || !strcmp( szBuf, "o") )
 			{
 				StepOut();
-				break;
+				m_bLoopOnPause = false;
 			}
 			else if( !strcmp( szBuf, "list") || !strcmp( szBuf, "l") )
 			{

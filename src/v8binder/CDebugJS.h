@@ -6,7 +6,7 @@
 // 柯达昭
 // 2007-10-16
 //=====================================================================
-
+#include "v8/v8.h"
 #include "v8/v8-inspector.h"
 #include "v8/v8-platform.h"
 #include "core/CDebugBase.h"
@@ -24,15 +24,16 @@ namespace Gamma
 	{
 		uint16				m_nDebugPort;
 		bool				m_bV8Protocal;
-		bool				m_bLoopOnPause;
 		CInspectorPtr		m_Inspector;
 		CInsSessionPtr		m_Session;
 		std::string			m_strUtf8Buffer;
+		int32				m_nBreakFrame;
 
 		void				CheckSession();
 		virtual bool		CheckRemoteSocket( char(&szBuffer)[2048], int32 nCurSize );
 		virtual bool		ProcessCommand(CDebugCmd* pCmd);
 		void				SendWebSocketData( uint8 nId, const char* pData, uint32 nSize );
+		void				CheckCommonDebugBreak();
 		virtual uint32		GenBreakPointID(const char* szFileName, int32 nLine);
 	public:
 		CDebugJS(CScriptBase* pBase, uint16 nDebugPort, bool bV8Protocal);
