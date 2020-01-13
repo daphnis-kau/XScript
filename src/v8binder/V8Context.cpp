@@ -1,4 +1,4 @@
-#include "V8Context.h"
+Ôªø#include "V8Context.h"
 #include "CScriptJS.h"
 #include "CCallJS.h"
 #include "CDebugJS.h"
@@ -34,7 +34,7 @@ namespace Gamma
 	}
 
 	//==================================================================================================================================//
-	//                                                        ◊÷∑˚¥Æ∫Ø ˝																//
+	//                                                        Â≠óÁ¨¶‰∏≤ÂáΩÊï∞																//
 	//==================================================================================================================================//
 	void SV8Context::ClearCppString(void* pStack)
 	{
@@ -158,7 +158,7 @@ namespace Gamma
 
 
 	//==================================================================================================================================//
-	//                                                        ∂‘ƒ⁄≤øÃ·π©µƒπ¶ƒ‹–‘∫Ø ˝                                                    //
+	//                                                        ÂØπÂÜÖÈÉ®Êèê‰æõÁöÑÂäüËÉΩÊÄßÂáΩÊï∞                                                    //
 	//==================================================================================================================================//
 	void SV8Context::ReportException(v8::TryCatch* try_catch, v8::Local<v8::Context> context)
 	{
@@ -227,9 +227,9 @@ namespace Gamma
 
 	void SV8Context::Break( const v8::FunctionCallbackInfo<v8::Value>& args )
 	{
-		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast( args.Data() );
-		SCallInfo* pCallInfo = (SCallInfo*)wrap->Value();
-		( (CDebugJS*)( pCallInfo->m_pScript->GetDebugger() ) )->Break();
+		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(args.Data());
+		CScriptJS* pScript = (CScriptJS*)wrap->Value();
+		( (CDebugJS*)( pScript->GetDebugger() ) )->Break();
 	}
 
 	void SV8Context::Callback( const v8::FunctionCallbackInfo<v8::Value>& args )
@@ -349,7 +349,7 @@ namespace Gamma
 		ObjectInfo.m_pObject = pObject;
 		m_pScript->m_mapObjInfo.Insert( ObjectInfo );
 
-		// ◊¢≤·ªÿµ˜∫Ø ˝
+		// Ê≥®ÂÜåÂõûË∞ÉÂáΩÊï∞
 		if( pInfo->IsCallBack() )
 			pInfo->ReplaceVirtualTable( m_pScript, pObject, ObjectInfo.m_bRecycle, 0 );
 

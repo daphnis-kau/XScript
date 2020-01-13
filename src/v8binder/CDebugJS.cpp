@@ -4,6 +4,7 @@
 #include "CDebugJS.h"
 #include "CScriptJS.h"
 #include "V8Context.h"
+#include <memory>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -41,14 +42,27 @@ namespace Gamma
 	//-----------------------------------------------------
 	// CDebugJS
 	//-----------------------------------------------------
-	CDebugJS::CDebugJS(CScriptBase* pBase, uint16 nDebugPort)
+	CDebugJS::CDebugJS(CScriptBase* pBase, uint16 nDebugPort, bool bV8Protocal)
 		: CDebugBase(pBase, nDebugPort)
 		, m_nDebugPort(nDebugPort)
 		, m_bLoopOnPause( false ) 
+		, m_bV8Protocal(bV8Protocal)
 	{
 		if (!nDebugPort)
 			return;
-		CScriptJS* pScript = (CScriptJS*)pBase;
+		CheckSession();
+	}
+
+	CDebugJS::~CDebugJS(void)
+	{
+	}
+
+	void CDebugJS::CheckSession()
+	{
+		if (m_Session.get())
+			return;
+
+		CScriptJS* pScript = (CScriptJS*)m_pBase;
 		SV8Context& Context = pScript->GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
 
@@ -59,28 +73,42 @@ namespace Gamma
 		// ChannelImpl : public v8_inspector::V8Inspector::Channel
 		const char* szView = "{}";
 		v8_inspector::StringView view((const uint8_t*)szView, strlen(szView));
-		
+
 		// Create a debugging session by connecting the V8Inspector
 		// instance to the channel
 		m_Session = m_Inspector->connect(1, this, view);
 
 		const char* szName = "GammaJavaScriptDebugger";
-		v8_inspector::StringView ContextName( (const uint8_t*)szName, strlen(szName) );
+		v8_inspector::StringView ContextName((const uint8_t*)szName, strlen(szName));
 		// make sure you register Context objects in the V8Inspector.
 		// ctx_name will be shown in CDT/console. Call this for each context 
 		// your app creates. Normally just one btw.
 		v8_inspector::V8ContextInfo Info(isolate->GetCurrentContext(), 1, ContextName);
 		m_Inspector->contextCreated(Info);
-	}
 
-	CDebugJS::~CDebugJS(void)
-	{
+		if (m_bV8Protocal)
+			return;
+
+		struct SInspectable : public v8_inspector::V8InspectorSession::Inspectable
+		{
+			v8::Isolate* m_pIsolate;
+			SInspectable(v8::Isolate* isolate) :m_pIsolate(isolate) {}
+			virtual ~SInspectable() {};
+			virtual v8::Local<v8::Value> get(v8::Local<v8::Context>)
+			{
+				return v8::Boolean::New(m_pIsolate, true);
+			}
+		};
+
+		m_Session->addInspectedObject(
+			std::unique_ptr<SInspectable>(new SInspectable(isolate)));
 	}
 
 	void CDebugJS::Break()
 	{
+		CheckSession();
 		v8_inspector::StringView desc((const uint8_t*)"break", 5);
-		m_Session->schedulePauseOnNextStatement(desc, desc);
+		m_Session->breakProgram(desc, desc);
 	}
 
 	//=====================================================================
@@ -90,8 +118,11 @@ namespace Gamma
 	{
 		//GammaLog << szBuffer << endl;
 		// 确定是否V8协议（websocket)
+		if (!m_bV8Protocal)
+			return CDebugBase::CheckRemoteSocket(szBuffer, nCurSize);
+
 		if (nCurSize < 0 || memcmp(szBuffer, "GET /", 5))
-			return false;// CDebugBase::CheckRemoteSocket(szBuffer, nCurSize);
+			return false;
 
 		CHttpRequestState State;
 		EHttpReadState eState = State.CheckHttpBuffer(szBuffer, nCurSize);

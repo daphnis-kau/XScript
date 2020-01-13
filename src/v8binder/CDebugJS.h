@@ -23,21 +23,22 @@ namespace Gamma
 		, public v8_inspector::V8Inspector::Channel
 	{
 		uint16				m_nDebugPort;
+		bool				m_bV8Protocal;
 		bool				m_bLoopOnPause;
 		CInspectorPtr		m_Inspector;
 		CInsSessionPtr		m_Session;
 		std::string			m_strUtf8Buffer;
 
+		void				CheckSession();
 		virtual bool		CheckRemoteSocket( char(&szBuffer)[2048], int32 nCurSize );
 		virtual bool		ProcessCommand(CDebugCmd* pCmd);
 		void				SendWebSocketData( uint8 nId, const char* pData, uint32 nSize );
 		virtual uint32		GenBreakPointID(const char* szFileName, int32 nLine);
 	public:
-		CDebugJS(CScriptBase* pBase, uint16 nDebugPort);
+		CDebugJS(CScriptBase* pBase, uint16 nDebugPort, bool bV8Protocal);
 		~CDebugJS(void);
 
 		void				Break();
-
 		virtual void		DelBreakPoint(uint32 nBreakPointID);;
 
 		virtual uint32		GetFrameCount();
