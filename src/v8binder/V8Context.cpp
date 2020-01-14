@@ -229,7 +229,7 @@ namespace Gamma
 	{
 		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(args.Data());
 		CScriptJS* pScript = (CScriptJS*)wrap->Value();
-		( (CDebugJS*)( pScript->GetDebugger() ) )->Break();
+		( (CDebugJS*)( pScript->GetDebugger() ) )->Stop();
 	}
 
 	void SV8Context::Callback( const v8::FunctionCallbackInfo<v8::Value>& args )

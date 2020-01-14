@@ -1040,7 +1040,7 @@ namespace Gamma
 			const CBreakPoint& BreakPoint = *it++;
 			char szBreakInfo[1024];
 			sprintf( szBreakInfo, "%d\t%s:%d\n", BreakPoint.GetBreakPointID(),
-				BreakPoint.GetModuleName(), it->GetLineNum() );
+				BreakPoint.GetModuleName(), BreakPoint.GetLineNum() );
 			m_pBase->Output( szBreakInfo, -1 );
 		}
 	}

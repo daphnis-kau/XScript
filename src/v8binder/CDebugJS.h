@@ -22,25 +22,62 @@ namespace Gamma
 		, public v8_inspector::V8InspectorClient
 		, public v8_inspector::V8Inspector::Channel
 	{
+		struct SLocation 
+		{
+			int32 nScriptId = 0;
+			int32 nLineNum = -1;
+			int32 nColumnNum = -1;
+		}; 
+		
+		struct SObjectInfo
+		{
+			std::string strType;
+			std::string	strClassName;
+			std::string strDesc;
+			std::string strID;
+		};
+
+		struct SScopeInfo
+		{
+			std::string strType;
+			SObjectInfo ObjectInfo;
+			SLocation	StartLocation;
+			SLocation	EndLocation;
+		};
+
+		struct SFrameInfo
+		{
+			std::string strCallFrameID;
+			std::string	strFunctionName;
+			std::string	strScriptUrl;
+			SLocation FunctionLocation;
+			SLocation PauseLocation;
+			SObjectInfo ThisInfo;
+			std::vector<SScopeInfo> vecScope;
+		};
+		typedef std::vector<SFrameInfo> FrameArray;
+		typedef std::map<std::string, uint32> BreakPointMap;
+
 		uint16				m_nDebugPort;
 		bool				m_bV8Protocal;
 		CInspectorPtr		m_Inspector;
 		CInsSessionPtr		m_Session;
 		std::string			m_strUtf8Buffer;
-		int32				m_nBreakFrame;
 
+		uint32				m_nMessageID;		
+		FrameArray			m_aryFrame;	
+		BreakPointMap		m_mapBreakPoint;
+		
 		void				CheckSession();
 		virtual bool		CheckRemoteSocket( char(&szBuffer)[2048], int32 nCurSize );
 		virtual bool		ProcessCommand(CDebugCmd* pCmd);
 		void				SendWebSocketData( uint8 nId, const char* pData, uint32 nSize );
-		void				CheckCommonDebugBreak();
 		virtual uint32		GenBreakPointID(const char* szFileName, int32 nLine);
 	public:
 		CDebugJS(CScriptBase* pBase, uint16 nDebugPort, bool bV8Protocal);
 		~CDebugJS(void);
 
-		void				Break();
-		virtual void		DelBreakPoint(uint32 nBreakPointID);;
+		virtual void		DelBreakPoint(uint32 nBreakPointID);
 
 		virtual uint32		GetFrameCount();
 		virtual bool		GetFrameInfo(int32 nFrame, int32* nLine, const char** szFunction,

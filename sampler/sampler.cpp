@@ -20,6 +20,7 @@ DEFINE_ABSTRACT_CLASS_BEGIN( CApplication )
 	REGIST_STATICFUNCTION( GetInst )
 DEFINE_ABSTRACT_CLASS_END();
 
+//#define TEST_LUA
 int main( int argc, const char* argv[] )
 {
 #ifdef TEST_LUA
@@ -27,7 +28,7 @@ int main( int argc, const char* argv[] )
 	pScript->AddSearchPath( "F:/GitHub/XScript/sampler/lua/" );
 	pScript->RunFile( "./test.lua" );
 #else
-	CScriptBase* pScript = new CScriptJS( 0 );
+	CScriptBase* pScript = new CScriptJS( 5067 );
 	pScript->AddSearchPath( "F:/GitHub/XScript/sampler/js/" );
 	pScript->RunFile( "./test.js" );
 #endif // TEST_LUA

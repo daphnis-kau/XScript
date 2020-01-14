@@ -380,7 +380,7 @@ namespace Gamma
 			if( !RunBuffer( strFileContent.c_str(), strFileContent.size(), sFileName.c_str() ) )
 				return false;
 			if( GetDebugger() )
-				GetDebugger()->AddFileContent( szFileName, "" );
+				GetDebugger()->AddFileContent( sFileName.c_str(), "" );
 			return true;
 		}
 		return false;
