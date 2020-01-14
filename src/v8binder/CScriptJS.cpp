@@ -45,7 +45,7 @@ namespace Gamma
 	//====================================================================================
     // CScriptJS
 	//====================================================================================
-    CScriptJS::CScriptJS( uint16 nDebugPort, bool bV8Protocal)
+    CScriptJS::CScriptJS( uint16 nDebugPort )
 		: m_pFreeObjectInfo( NULL )
 		, m_pV8Context( new SV8Context( this ) )
 	{
@@ -110,7 +110,7 @@ namespace Gamma
 			v8::Function::New(pIsolate, &SV8Context::Break, ScriptContext);
 		globalObj->Set( context, v8::String::NewFromUtf8(pIsolate, "gdb" ), funDebug );
 
-		m_pDebugger = new CDebugJS( this, nDebugPort, bV8Protocal );
+		m_pDebugger = new CDebugJS( this, nDebugPort );
 
 		m_pV8Context->m_CppField.Reset(pIsolate, 
 			v8::String::NewFromUtf8(pIsolate, "__cpp_obj_info__" ) );

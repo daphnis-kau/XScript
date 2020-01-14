@@ -42,10 +42,10 @@ namespace Gamma
 	//-----------------------------------------------------
 	// CDebugJS
 	//-----------------------------------------------------
-	CDebugJS::CDebugJS(CScriptBase* pBase, uint16 nDebugPort, bool bV8Protocal)
+	CDebugJS::CDebugJS(CScriptBase* pBase, uint16 nDebugPort)
 		: CDebugBase(pBase, nDebugPort)
 		, m_nDebugPort(nDebugPort)
-		, m_bV8Protocal( bV8Protocal )
+		, m_bV8Protocal( true )
 		, m_nMessageID( 1 )
 	{
 		if (!nDebugPort)
@@ -92,13 +92,15 @@ namespace Gamma
 	//=====================================================================
 	bool CDebugJS::CheckRemoteSocket(char(&szBuffer)[2048], int32 nCurSize)
 	{
+		if( nCurSize < 0 )
+			return false;
 		//GammaLog << szBuffer << endl;
 		// 确定是否V8协议（websocket)
-		if (!m_bV8Protocal)
-			return CDebugBase::CheckRemoteSocket(szBuffer, nCurSize);
-
-		if (nCurSize < 0 || memcmp(szBuffer, "GET /", 5))
-			return false;
+		if( !memcmp( szBuffer, "Content-Length", 14 ) )
+		{
+			m_bV8Protocal = false;
+			return CDebugBase::CheckRemoteSocket( szBuffer, nCurSize );
+		}
 
 		CHttpRequestState State;
 		EHttpReadState eState = State.CheckHttpBuffer(szBuffer, nCurSize);

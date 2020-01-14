@@ -74,7 +74,7 @@ namespace Gamma
 		void				SendWebSocketData( uint8 nId, const char* pData, uint32 nSize );
 		virtual uint32		GenBreakPointID(const char* szFileName, int32 nLine);
 	public:
-		CDebugJS(CScriptBase* pBase, uint16 nDebugPort, bool bV8Protocal);
+		CDebugJS(CScriptBase* pBase, uint16 nDebugPort);
 		~CDebugJS(void);
 
 		virtual void		DelBreakPoint(uint32 nBreakPointID);

@@ -36,7 +36,7 @@ namespace Gamma
 		friend class CJSObject;
 		friend struct SV8Context;
     public:
-		CScriptJS( uint16 nDebugPort, bool bV8Protocal = false );
+		CScriptJS( uint16 nDebugPort );
 		~CScriptJS(void);
 
 		SV8Context&					GetV8Context() { return *m_pV8Context; }
