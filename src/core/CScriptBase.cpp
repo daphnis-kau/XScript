@@ -366,7 +366,7 @@ namespace Gamma
 			if( !RunBuffer( strFileContent.c_str(), strFileContent.size(), szFileName ) )
 				return false;
 			if( GetDebugger() && GetDebugger()->RemoteDebugEnable() )
-				GetDebugger()->AddFileContent( szFileName, strFileContent.c_str() );
+				GetDebugger()->AddFileContent( szFileName, "" );
 			return true;
 		}
 
@@ -379,8 +379,8 @@ namespace Gamma
 				continue;
 			if( !RunBuffer( strFileContent.c_str(), strFileContent.size(), sFileName.c_str() ) )
 				return false;
-			if( GetDebugger() && GetDebugger()->RemoteDebugEnable() )
-				GetDebugger()->AddFileContent( szFileName, strFileContent.c_str() );
+			if( GetDebugger() )
+				GetDebugger()->AddFileContent( szFileName, "" );
 			return true;
 		}
 		return false;
@@ -399,7 +399,11 @@ namespace Gamma
 		name << g_CacheTruckPrefix << (uintptr_t)(void*)( itPre->c_str() );
 		std::string strName = name.str();
 		const char* szName = strName.c_str();
-		return RunBuffer( itPre->c_str(), itPre->size(), szName );
+		if( !RunBuffer( itPre->c_str(), itPre->size(), szName ) )
+			return false;
+		if( GetDebugger() )
+			GetDebugger()->AddFileContent( szName, szString );
+		return true;
 	}
 
 	void CScriptBase::CallBack( int32 nIndex, void* pRetBuf, void** pArgArray )

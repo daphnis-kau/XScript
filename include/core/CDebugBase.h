@@ -25,7 +25,7 @@ namespace Gamma
 	class CBreakPoint;
 	typedef std::set<CBreakPoint> CBreakPointList;
 	typedef std::vector<std::string> CFileLines;
-	typedef std::map<gammacstring, CFileLines> CFileMap;
+	typedef std::map<std::string, CFileLines> CFileMap;
 	typedef TList<CDebugCmd> CDebugCmdList;
 	typedef CDebugCmdList::CListNode CDebugNode;
 	class CDebugCmd : public CDebugNode, public CJson{};

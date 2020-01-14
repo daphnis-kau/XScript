@@ -474,6 +474,11 @@ namespace Gamma
 		return false;
 	}
 
+	uint32 CJson::GetChildCount() const
+	{
+		return m_nChildCount;
+	}
+
 	CJson* CJson::GetChild( uint32 nChildIndex )
 	{
 		CJson* pChild = TList<CJson>::GetFirst();

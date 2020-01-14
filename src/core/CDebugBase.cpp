@@ -159,7 +159,9 @@ namespace Gamma
 
 	void CDebugBase::AddFileContent( const char* szSource, const char* szData )
 	{
-		CFileLines& vecLines = m_mapFileBuffer[gammacstring(szSource)];
+		CFileLines& vecLines = m_mapFileBuffer[szSource];
+		if( !szData || !szData[0] )
+			return;
 		const char* pCur = szData;
 		const char* pStart = pCur;
 		while( *pCur )
@@ -178,13 +180,12 @@ namespace Gamma
 
 	const char* CDebugBase::ReadFileLine( const char* szSource, int32 nLine )
 	{
-		gammacstring strKey( szSource, true );
-		CFileMap::iterator it = m_mapFileBuffer.find( strKey );
-		if( m_mapFileBuffer.end() == it )
+		CFileMap::iterator it = m_mapFileBuffer.find( szSource );
+		if( m_mapFileBuffer.end() == it || it->second.empty() )
 		{
 			std::string strBuffer = m_pBase->ReadEntirFile( szSource );
 			AddFileContent( szSource, strBuffer.c_str() );
-			it = m_mapFileBuffer.find( strKey );
+			it = m_mapFileBuffer.find( szSource );
 		}
 
 		if( nLine <= 0 || nLine > (int32)it->second.size() )

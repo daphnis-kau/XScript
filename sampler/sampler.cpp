@@ -27,7 +27,7 @@ int main( int argc, const char* argv[] )
 	pScript->AddSearchPath( "F:/GitHub/XScript/sampler/lua/" );
 	pScript->RunFile( "./test.lua" );
 #else
-	CScriptBase* pScript = new CScriptJS( 5067 );
+	CScriptBase* pScript = new CScriptJS( 0 );
 	pScript->AddSearchPath( "F:/GitHub/XScript/sampler/js/" );
 	pScript->RunFile( "./test.js" );
 #endif // TEST_LUA

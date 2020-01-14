@@ -49,6 +49,7 @@ namespace Gamma
 		bool Save( std::ostream& os, uint32 nStack = 0 ) const;
 		void Clear();
 
+		uint32 GetChildCount() const;
 		CJson* AddChild( CJson* pChild, CJson* pBefore = NULL );
 		CJson* AddChild( const char* szName, CJson* pBefore = NULL );
 		template <typename ValueType>
