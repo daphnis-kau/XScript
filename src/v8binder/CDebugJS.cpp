@@ -45,7 +45,7 @@ namespace Gamma
 	CDebugJS::CDebugJS(CScriptBase* pBase, uint16 nDebugPort)
 		: CDebugBase(pBase, nDebugPort)
 		, m_nDebugPort(nDebugPort)
-		, m_bV8Protocal( true )
+		, m_bChromeProtocol( true )
 		, m_nMessageID( 1 )
 	{
 		if (!nDebugPort)
@@ -98,7 +98,7 @@ namespace Gamma
 		// 确定是否V8协议（websocket)
 		if( !memcmp( szBuffer, "Content-Length", 14 ) )
 		{
-			m_bV8Protocal = false;
+			m_bChromeProtocol = false;
 			return CDebugBase::CheckRemoteSocket( szBuffer, nCurSize );
 		}
 
@@ -227,7 +227,7 @@ namespace Gamma
 
 	bool CDebugJS::ProcessCommand( CDebugCmd* pCmd )
 	{
-		if( !m_bV8Protocal )
+		if( !m_bChromeProtocol )
 			return CDebugBase::ProcessCommand( pCmd );
 
 		if (!pCmd->GetName())
@@ -241,9 +241,9 @@ namespace Gamma
 			return true;
 		}
 
-		//GammaLog << "************************begin*************************" << endl;
-		//GammaLog << szContent << endl;
-		//GammaLog << "*************************end**************************" << endl;
+		m_pBase->Output( "*********************cmd begin**********************\n", -1 );
+		m_pBase->Output( szContent, -1 ); m_pBase->Output( "\n", -1 );
+		m_pBase->Output( "**********************cmd end***********************\n", -1 );
 		v8_inspector::StringView view( (const uint8_t*)szContent, nSize );
 		m_Session->dispatchProtocolMessage(view);
 		return true;
@@ -276,7 +276,7 @@ namespace Gamma
 
 	void CDebugJS::runMessageLoopOnPause(int contextGroupId)
 	{
-		if (!m_bV8Protocal)
+		if (!m_bChromeProtocol)
 			return CDebugBase::Debug();
 
 		m_bLoopOnPause = true;
@@ -324,7 +324,10 @@ namespace Gamma
 			szBuffer = m_strUtf8Buffer.c_str();
 		}
 
-		if (m_nRemoteConnecter == INVALID_SOCKET || !m_bV8Protocal)
+		m_pBase->Output( "*********************res begin**********************\n", -1 );
+		m_pBase->Output( m_strUtf8Buffer.c_str(), -1 ); m_pBase->Output( "\n", -1 );
+		m_pBase->Output( "**********************res end***********************\n", -1 );
+		if (m_nRemoteConnecter == INVALID_SOCKET || !m_bChromeProtocol)
 			return;
 		SendWebSocketData( eWS_Text, m_strUtf8Buffer.c_str(), nSize );
 	}
@@ -341,7 +344,10 @@ namespace Gamma
 			szBuffer = m_strUtf8Buffer.c_str();
 		}
 
-		if (m_nRemoteConnecter != INVALID_SOCKET && m_bV8Protocal)
+		m_pBase->Output( "*********************ntf begin**********************\n", -1 );
+		m_pBase->Output( m_strUtf8Buffer.c_str(), -1 ); m_pBase->Output( "\n", -1 );
+		m_pBase->Output( "**********************ntf end***********************\n", -1 );
+		if (m_nRemoteConnecter != INVALID_SOCKET && m_bChromeProtocol)
 			return SendWebSocketData(eWS_Text, szBuffer, nSize);
 
 		CJson Json;

@@ -59,7 +59,7 @@ namespace Gamma
 		typedef std::map<std::string, uint32> BreakPointMap;
 
 		uint16				m_nDebugPort;
-		bool				m_bV8Protocal;
+		bool				m_bChromeProtocol;
 		CInspectorPtr		m_Inspector;
 		CInsSessionPtr		m_Session;
 		std::string			m_strUtf8Buffer;

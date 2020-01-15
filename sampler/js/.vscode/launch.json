@@ -9,6 +9,14 @@
 			"type": "node",
 			"request": "attach",
 			"debugServer": 5067
+		},
+		
+        {
+            "name": "Attach Server",
+    		"type": "node",
+			"request": "attach",
+			"protocol": "inspector",
+    		"port": 5067
 		}
 	]
 }
