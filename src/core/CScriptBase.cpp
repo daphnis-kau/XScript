@@ -187,7 +187,7 @@ namespace Gamma
 	{
 		if( !m_pDebugger || !m_pDebugger->RemoteCmdValid() )
 			return;
-		m_pDebugger->CheckRemoteCmd();
+		m_pDebugger->CheckEnterRemoteDebug();
 	}
 
 	bool CScriptBase::IsVirtualTableValid( SVirtualObj* pVObj )

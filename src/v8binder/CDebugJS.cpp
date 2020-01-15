@@ -45,7 +45,7 @@ namespace Gamma
 	CDebugJS::CDebugJS(CScriptBase* pBase, uint16 nDebugPort)
 		: CDebugBase(pBase, nDebugPort)
 		, m_nDebugPort(nDebugPort)
-		, m_bChromeProtocol( true )
+		, m_bChromeProtocol( false )
 		, m_nMessageID( 1 )
 	{
 		if (!nDebugPort)
@@ -71,7 +71,8 @@ namespace Gamma
 
 		// create a v8 channel. 
 		// ChannelImpl : public v8_inspector::V8Inspector::Channel
-		const char* szView = "{\"Debugger\":{\"debuggerEnabled\":true}}";
+		//const char* szView = "{\"Debugger\":{\"debuggerEnabled\":true}}";
+		const char* szView = "{}";
 		v8_inspector::StringView view((const uint8_t*)szView, strlen(szView));
 
 		// Create a debugging session by connecting the V8Inspector
@@ -96,6 +97,7 @@ namespace Gamma
 			return false;
 		//GammaLog << szBuffer << endl;
 		// 确定是否V8协议（websocket)
+		m_bChromeProtocol = true;
 		if( !memcmp( szBuffer, "Content-Length", 14 ) )
 		{
 			m_bChromeProtocol = false;
@@ -222,6 +224,8 @@ namespace Gamma
 				continue;
 			break;
 		}
+
+		m_bChromeProtocol = false;
 		return false;
 	}
 
@@ -241,9 +245,9 @@ namespace Gamma
 			return true;
 		}
 
-		m_pBase->Output( "*********************cmd begin**********************\n", -1 );
-		m_pBase->Output( szContent, -1 ); m_pBase->Output( "\n", -1 );
-		m_pBase->Output( "**********************cmd end***********************\n", -1 );
+		//m_pBase->Output( "*********************cmd begin**********************\n", -1 );
+		//m_pBase->Output( szContent, -1 ); m_pBase->Output( "\n", -1 );
+		//m_pBase->Output( "**********************cmd end***********************\n", -1 );
 		v8_inspector::StringView view( (const uint8_t*)szContent, nSize );
 		m_Session->dispatchProtocolMessage(view);
 		return true;
@@ -324,9 +328,9 @@ namespace Gamma
 			szBuffer = m_strUtf8Buffer.c_str();
 		}
 
-		m_pBase->Output( "*********************res begin**********************\n", -1 );
-		m_pBase->Output( m_strUtf8Buffer.c_str(), -1 ); m_pBase->Output( "\n", -1 );
-		m_pBase->Output( "**********************res end***********************\n", -1 );
+		//m_pBase->Output( "*********************res begin**********************\n", -1 );
+		//m_pBase->Output( m_strUtf8Buffer.c_str(), -1 ); m_pBase->Output( "\n", -1 );
+		//m_pBase->Output( "**********************res end***********************\n", -1 );
 		if (m_nRemoteConnecter == INVALID_SOCKET || !m_bChromeProtocol)
 			return;
 		SendWebSocketData( eWS_Text, m_strUtf8Buffer.c_str(), nSize );
@@ -344,9 +348,9 @@ namespace Gamma
 			szBuffer = m_strUtf8Buffer.c_str();
 		}
 
-		m_pBase->Output( "*********************ntf begin**********************\n", -1 );
-		m_pBase->Output( m_strUtf8Buffer.c_str(), -1 ); m_pBase->Output( "\n", -1 );
-		m_pBase->Output( "**********************ntf end***********************\n", -1 );
+		//m_pBase->Output( "*********************ntf begin**********************\n", -1 );
+		//m_pBase->Output( m_strUtf8Buffer.c_str(), -1 ); m_pBase->Output( "\n", -1 );
+		//m_pBase->Output( "**********************ntf end***********************\n", -1 );
 		if (m_nRemoteConnecter != INVALID_SOCKET && m_bChromeProtocol)
 			return SendWebSocketData(eWS_Text, szBuffer, nSize);
 
@@ -525,6 +529,13 @@ namespace Gamma
 	void CDebugJS::Stop()
 	{
 		CheckSession();
+
+		char szCommand[256];
+		gammasstream( szCommand ) << "{\"id\":" << m_nMessageID++
+			<< ",\"method\":\"Debugger.enable\"}";
+		v8_inspector::StringView view( (const uint8_t*)szCommand, strlen( szCommand ) );
+		m_Session->dispatchProtocolMessage( view );
+
 		v8_inspector::StringView breakReason((const uint8_t*)"break", 5);
 		v8_inspector::StringView breakDetails((const uint8_t*)"{}", 2);
 		m_Session->breakProgram(breakReason, breakDetails);

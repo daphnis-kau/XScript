@@ -248,6 +248,7 @@ namespace Gamma
 		pCallInfo->m_pScript = this;
 		pCallInfo->m_strName.Reset( isolate, v8::String::NewFromUtf8
 			( isolate, pCallBase->GetFunctionName().c_str() ) );
+		m_mapCallBase.Insert( *pCallInfo );
 		return pCallInfo;
 	}
 
@@ -320,6 +321,14 @@ namespace Gamma
     //==================================================================================================================================//
    	bool CScriptJS::RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName )
 	{
+		std::string sFileName = szFileName;
+		if( sFileName[0] == '/' )
+			sFileName = "file://" + sFileName;
+		else if( sFileName[1] == ':' )
+			sFileName = "file:///" + sFileName;
+		else
+			sFileName = "memory:///" + sFileName;
+
 		SV8Context& Context = GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
 		v8::HandleScope handle_scope( isolate );
@@ -336,7 +345,7 @@ namespace Gamma
 
 		// Compile the source code.
 		v8::MaybeLocal<v8::String> fileName = v8::String::NewFromUtf8(
-			isolate, szFileName, v8::NewStringType::kNormal );
+			isolate, sFileName.c_str(), v8::NewStringType::kNormal );
 		v8::ScriptOrigin origin(fileName.ToLocalChecked());
 		auto temp_script = v8::Script::Compile(context, source, &origin);
 		if( temp_script.IsEmpty() )

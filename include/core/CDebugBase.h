@@ -137,6 +137,7 @@ namespace Gamma
 		void				SendNetData( CJson* pJson );
 		void				OnNetData( CDebugCmd* pCmd );
 		virtual bool		ProcessCommand( CDebugCmd* pCmd );
+		bool				CheckRemoteCmd();
 
 	protected:
 		CScriptBase*		GetScriptBase() const { return m_pBase; }
@@ -153,7 +154,7 @@ namespace Gamma
 		void				AddFileContent( const char* szSource, const char* szData );
 		bool				RemoteDebugEnable() const;
 		bool				RemoteCmdValid() const { return m_bRemoteCmdValid; }
-		bool				CheckRemoteCmd( bool bForceLoop = false );
+		void				CheckEnterRemoteDebug();
 
 		virtual uint32		AddBreakPoint( const char* szFileName, int32 nLine );
 		virtual void		DelBreakPoint( uint32 nBreakPointID );

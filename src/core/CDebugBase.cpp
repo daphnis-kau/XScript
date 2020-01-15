@@ -391,11 +391,20 @@ namespace Gamma
 		CmdUnLock();
 	}
 
-	bool CDebugBase::CheckRemoteCmd( bool bForceLoop )
+	void CDebugBase::CheckEnterRemoteDebug()
 	{
 		if( m_nRemoteConnecter == -1 )
-			return false;
-		if( !bForceLoop && m_bEnterDebug )
+			return;
+		if( m_bEnterDebug )
+			return;
+		m_bEnterDebug = true;
+		CheckRemoteCmd();
+		m_bEnterDebug = false;
+	}
+
+	bool CDebugBase::CheckRemoteCmd()
+	{
+		if( m_nRemoteConnecter == -1 )
 			return false;
 
 		bool bContinue = true;
@@ -447,7 +456,7 @@ namespace Gamma
 		m_bLoopOnPause = true;
 		while( m_bLoopOnPause )
 		{
-			if( !CheckRemoteCmd( true ) )
+			if( !CheckRemoteCmd() )
 				m_bLoopOnPause = false;
 			else
 				GammaGetSemaphore( m_hSemaphore );
