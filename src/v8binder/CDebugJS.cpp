@@ -71,7 +71,6 @@ namespace Gamma
 
 		// create a v8 channel. 
 		// ChannelImpl : public v8_inspector::V8Inspector::Channel
-		//const char* szView = "{\"Debugger\":{\"debuggerEnabled\":true}}";
 		const char* szView = "{}";
 		v8_inspector::StringView view((const uint8_t*)szView, strlen(szView));
 
@@ -413,7 +412,13 @@ namespace Gamma
 				Frame.strScriptUrl = pFrame->At<std::string>( "url" );
 				Frame.FunctionLocation = ReadLocation( pFrame->GetChild( "functionLocation" ) );
 				Frame.PauseLocation = ReadLocation( pFrame->GetChild( "location" ) );
-				Frame.ThisInfo = ReadObject( pFrame->GetChild( "this" ) );
+				Frame.ThisInfo = ReadObject(pFrame->GetChild("this"));
+
+				if (!memcmp(Frame.strScriptUrl.c_str(), "file://", 7))
+					Frame.strScriptUrl.erase(0, 7 + (Frame.strScriptUrl[9] == ':'));
+				else if (!memcmp(Frame.strScriptUrl.c_str(), "memory:///", 10))
+					Frame.strScriptUrl.erase(0, 10);
+
 				CJson* pScopeChain = pFrame->GetChild( "scopeChain" );
 				if( !pScopeChain || !pScopeChain->GetChildCount() )
 					continue;
@@ -441,12 +446,21 @@ namespace Gamma
 			++itFile;
 		if( itFile == m_mapFileBuffer.end() )
 			return 0;
+
+		std::string sFileName = itFile->first;
+		if (sFileName[0] == '/')
+			sFileName = "file://" + sFileName;
+		else if (sFileName[1] == ':')
+			sFileName = "file:///" + sFileName;
+		else
+			sFileName = "memory:///" + sFileName;
+
 		char szCommand[4096];
 		uint32 nMessageID = m_nMessageID++;
 		gammasstream( szCommand )
 			<< "{\"id\":" << nMessageID << ","
 			<< "\"method\":\"Debugger.setBreakpointByUrl\","
-			<< "\"params\":{\"url\":\"" << itFile->first.c_str() << "\","
+			<< "\"params\":{\"url\":\"" << sFileName.c_str() << "\","
 			<< "\"lineNumber\":" << ( nLine ? nLine - 1 : 0 ) << "}}";
 		v8_inspector::StringView view( (const uint8_t*)szCommand, strlen( szCommand ) );
 		m_strUtf8Buffer.clear();
@@ -458,30 +472,24 @@ namespace Gamma
 		CJson* pResult = BreakPoint.GetChild( "result" );
 		if( !pResult )
 			return 0;
-		std::string strID = pResult->At<std::string>( "breakpointId" );
-		auto itBreakPoint = m_mapBreakPoint.find( strID );
-		if( itBreakPoint != m_mapBreakPoint.end() )
-			return itBreakPoint->second;
-		m_mapBreakPoint[strID] = nMessageID;
+		m_mapBreakPoint[nMessageID] = pResult->At<std::string>("breakpointId");
 		return nMessageID;
 	}
 
 	void CDebugJS::DelBreakPoint( uint32 nBreakPointID )
 	{
-		for(auto it = m_mapBreakPoint.begin(); it != m_mapBreakPoint.end(); ++it)
-		{
-			if(it->second != nBreakPointID)
-				continue;
-			char szCommand[4096];
-			gammasstream( szCommand )
-				<< "{\"id\":" << m_nMessageID++ << ","
-				<< "\"method\":\"Debugger.removeBreakpoint\","
-				<< "\"params\":{\"breakpointId\":\"" << it->first << "\"}}";
-			v8_inspector::StringView view( (const uint8_t*)szCommand, strlen( szCommand ) );
-			m_mapBreakPoint.erase(it);
-			m_Session->dispatchProtocolMessage( view );
+		CDebugBase::DelBreakPoint( nBreakPointID );
+		auto it = m_mapBreakPoint.find(nBreakPointID);
+		if (it == m_mapBreakPoint.end())
 			return;
-		}
+		char szCommand[4096];
+		gammasstream(szCommand)
+			<< "{\"id\":" << m_nMessageID++ << ","
+			<< "\"method\":\"Debugger.removeBreakpoint\","
+			<< "\"params\":{\"breakpointId\":\"" << it->second << "\"}}";
+		v8_inspector::StringView view((const uint8_t*)szCommand, strlen(szCommand));
+		m_mapBreakPoint.erase(it);
+		m_Session->dispatchProtocolMessage(view);
 	}
 
 	uint32 CDebugJS::GetFrameCount()

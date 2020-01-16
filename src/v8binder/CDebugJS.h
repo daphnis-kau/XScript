@@ -56,7 +56,7 @@ namespace Gamma
 			std::vector<SScopeInfo> vecScope;
 		};
 		typedef std::vector<SFrameInfo> FrameArray;
-		typedef std::map<std::string, uint32> BreakPointMap;
+		typedef std::map<uint32, std::string> BreakPointMap;
 
 		uint16				m_nDebugPort;
 		bool				m_bChromeProtocol;
