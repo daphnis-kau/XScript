@@ -56,7 +56,7 @@ namespace Gamma
 			std::vector<SScopeInfo> vecScope;
 		};
 		typedef std::vector<SFrameInfo> FrameArray;
-		typedef std::map<uint32, std::string> BreakPointMap;
+		typedef std::map<uint32, std::string> IDStringMap;
 
 		uint16				m_nDebugPort;
 		bool				m_bChromeProtocol;
@@ -65,8 +65,9 @@ namespace Gamma
 		std::string			m_strUtf8Buffer;
 
 		uint32				m_nMessageID;		
-		FrameArray			m_aryFrame;	
-		BreakPointMap		m_mapBreakPoint;
+		FrameArray			m_aryFrame;
+		IDStringMap			m_mapBreakPoint;
+		IDStringMap			m_mapScriptInfo;
 		
 		void				CheckSession();
 		virtual bool		CheckRemoteSocket( char(&szBuffer)[2048], int32 nCurSize );

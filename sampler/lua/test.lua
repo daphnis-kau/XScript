@@ -5,9 +5,7 @@ end
 CApplicationHandler = class(IApplicationHandler);
 function CApplicationHandler:OnTestPureVirtual(
 	e, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13)
-    
-	gdb()
-	Test( e == 1234, "Test enum value to Script" );
+    Test( e == 1234, "Test enum value to Script" );
 
 	Test( v0 == -123, "Test int8 value to Script" );
 	Test( v1 == -12345, "Test int16 value to Script" );

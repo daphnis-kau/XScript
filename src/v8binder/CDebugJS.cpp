@@ -230,8 +230,16 @@ namespace Gamma
 
 	bool CDebugJS::ProcessCommand( CDebugCmd* pCmd )
 	{
-		if( !m_bChromeProtocol )
-			return CDebugBase::ProcessCommand( pCmd );
+		if (!m_bChromeProtocol)
+		{
+			char szCommand[256];
+			gammasstream(szCommand) << "{\"id\":" << m_nMessageID++
+				<< ",\"method\":\"Debugger.enable\"}";
+			v8_inspector::StringView view((const uint8_t*)szCommand, strlen(szCommand));
+			m_strUtf8Buffer.clear();
+			m_Session->dispatchProtocolMessage(view);
+			return CDebugBase::ProcessCommand(pCmd);
+		}
 
 		if (!pCmd->GetName())
 			return true;
@@ -429,6 +437,14 @@ namespace Gamma
 					Frame.vecScope[nScopeIndex] = ReadScope( pScope );
 			}
 		}
+		else if (strMethod == "Debugger.scriptParsed")
+		{
+			CJson* params = Json.GetChild("params");
+			if (!params)
+				return;
+			uint32 nID = params->At<uint32>("scriptId");
+			m_mapScriptInfo[nID] = params->At<std::string>("url");
+		}
 	}
 
 	void CDebugJS::flushProtocolNotifications()
@@ -436,39 +452,31 @@ namespace Gamma
 	}
 
 	//=====================================================================
-	// 默认 协议
+	// 默认协议
 	//=====================================================================
 	uint32 CDebugJS::GenBreakPointID(const char* szFileName, int32 nLine)
 	{
-		auto itFile = m_mapFileBuffer.begin();
-		while( itFile != m_mapFileBuffer.end() &&
-			itFile->first.find( szFileName ) == std::string::npos )
+		auto itFile = m_mapScriptInfo.begin();
+		while( itFile != m_mapScriptInfo.end() &&
+			itFile->second.find( szFileName ) == std::string::npos )
 			++itFile;
-		if( itFile == m_mapFileBuffer.end() )
+		if( itFile == m_mapScriptInfo.end() || nLine <= 0 )
 			return 0;
-
-		std::string sFileName = itFile->first;
-		if (sFileName[0] == '/')
-			sFileName = "file://" + sFileName;
-		else if (sFileName[1] == ':')
-			sFileName = "file:///" + sFileName;
-		else
-			sFileName = "memory:///" + sFileName;
 
 		char szCommand[4096];
 		uint32 nMessageID = m_nMessageID++;
 		gammasstream( szCommand )
 			<< "{\"id\":" << nMessageID << ","
-			<< "\"method\":\"Debugger.setBreakpointByUrl\","
-			<< "\"params\":{\"url\":\"" << sFileName.c_str() << "\","
-			<< "\"lineNumber\":" << ( nLine ? nLine - 1 : 0 ) << "}}";
+			<< "\"method\":\"Debugger.setBreakpoint\","
+			<< "\"params\":{\"location\":{\"scriptId\":\"" 
+			<< itFile->first << "\",\"lineNumber\":" << nLine - 1 << "}}}";
 		v8_inspector::StringView view( (const uint8_t*)szCommand, strlen( szCommand ) );
 		m_strUtf8Buffer.clear();
 		m_Session->dispatchProtocolMessage( view );
 		if( m_strUtf8Buffer.empty() )
 			return 0;
 		CJson BreakPoint;
-		BreakPoint.Load( m_strUtf8Buffer.c_str(), strlen( m_strUtf8Buffer.c_str() ) );
+		BreakPoint.Load( m_strUtf8Buffer.c_str(), (uint32)strlen( m_strUtf8Buffer.c_str() ) );
 		CJson* pResult = BreakPoint.GetChild( "result" );
 		if( !pResult )
 			return 0;

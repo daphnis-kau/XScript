@@ -353,12 +353,16 @@ namespace Gamma
 		pEvent->AddChild( "event", szEvent );
 		if( pBody )
 			pEvent->AddChild( pBody );
-		SendNetData( pEvent );
+
 #ifdef LOG_REMOTE_COMMAND
+		std::stringstream oss;
+		pEvent->Save(oss);
 		m_pBase->Output( "event : ", -1 );
 		m_pBase->Output( szEvent, -1 );
+		m_pBase->Output( oss.str().c_str(), -1 );
 		m_pBase->Output( "\n", -1 );
 #endif
+		SendNetData( pEvent );
 	}
 
 	void CDebugBase::SendRespone( CJson* pBody, const char* szSequence, 

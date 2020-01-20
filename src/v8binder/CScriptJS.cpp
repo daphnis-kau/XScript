@@ -340,7 +340,7 @@ namespace Gamma
 
 		// Create a string containing the JavaScript source code.
 		v8::Local<v8::String> source = v8::String::NewFromUtf8( 
-			isolate, (const char*)pBuffer, v8::NewStringType::kNormal, nSize )
+			isolate, (const char*)pBuffer, v8::NewStringType::kNormal, (uint32)nSize )
 			.ToLocalChecked();
 
 		// Compile the source code.
@@ -385,15 +385,27 @@ namespace Gamma
 		{
 			std::string szClass;
 			szClass = std::string(szFunction, szFunName - szFunction);
-			auto object = classObject->Get( v8::String::NewFromUtf8( isolate, szClass.c_str()));
-			if (object.IsEmpty())
+			auto className = v8::String::NewFromUtf8(isolate, szClass.c_str());
+			auto object = classObject->Get(context, className);
+			if (object.IsEmpty() || object.ToLocalChecked() == Undefined(isolate))
 				return false;
-			classObject = object->ToObject( isolate );
+			classObject = object.ToLocalChecked()->ToObject( isolate );
 			szFunction = szFunName + 1;
 		}
 
-		auto value = classObject->Get( v8::String::NewFromUtf8( isolate, szFunction ) );
-		v8::Local<v8::Function> func = v8::Local<v8::Function>::Cast( value );
+		if (classObject.IsEmpty() || classObject == Undefined(isolate))
+			return false;
+
+		auto functionName = v8::String::NewFromUtf8(isolate, szFunction);
+		auto value = classObject->Get( context, functionName );
+		if (value.IsEmpty() || value.ToLocalChecked() == Undefined(isolate))
+			return false;
+
+		v8::Local<v8::Function> func = 
+			v8::Local<v8::Function>::Cast( value.ToLocalChecked() );
+		if (func.IsEmpty() || func == Undefined(isolate))
+			return false;
+
 		v8::MaybeLocal<v8::Value> result = func->Call( classObject, nParamCount, args );
 		if( result.IsEmpty() )
 			return false;
