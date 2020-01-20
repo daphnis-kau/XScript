@@ -78,6 +78,7 @@ namespace Gamma
 		CDebugJS(CScriptBase* pBase, uint16 nDebugPort);
 		~CDebugJS(void);
 
+		void				AddScriptInfo(int32 nID, const char* szFileName);
 		virtual void		DelBreakPoint(uint32 nBreakPointID);
 
 		virtual uint32		GetFrameCount();

@@ -65,6 +65,12 @@ namespace Gamma
 		CScriptJS* pScript = (CScriptJS*)m_pBase;
 		SV8Context& Context = pScript->GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
+		v8::HandleScope handle_scope(isolate);
+		v8::TryCatch try_catch(isolate);
+
+		// Enter the context for compiling and running the hello world script.
+		v8::Local<v8::Context> context = Context.m_Context.Get(isolate);
+		v8::Context::Scope context_scope(context);
 
 		// create a v8 inspector instance.
 		m_Inspector = v8_inspector::V8Inspector::create(isolate, this);
@@ -230,6 +236,8 @@ namespace Gamma
 
 	bool CDebugJS::ProcessCommand( CDebugCmd* pCmd )
 	{
+		CheckSession();
+
 		if (!m_bChromeProtocol)
 		{
 			char szCommand[256];
@@ -426,6 +434,8 @@ namespace Gamma
 					Frame.strScriptUrl.erase(0, 7 + (Frame.strScriptUrl[9] == ':'));
 				else if (!memcmp(Frame.strScriptUrl.c_str(), "memory:///", 10))
 					Frame.strScriptUrl.erase(0, 10);
+				else if (Frame.strScriptUrl.empty())
+					Frame.strScriptUrl = m_mapScriptInfo[Frame.PauseLocation.nScriptId];
 
 				CJson* pScopeChain = pFrame->GetChild( "scopeChain" );
 				if( !pScopeChain || !pScopeChain->GetChildCount() )
@@ -443,7 +453,10 @@ namespace Gamma
 			if (!params)
 				return;
 			uint32 nID = params->At<uint32>("scriptId");
-			m_mapScriptInfo[nID] = params->At<std::string>("url");
+			const char* szUrl = params->At<const char*>("url");
+			if (!nID || !szUrl || !szUrl[0])
+				return;
+			AddScriptInfo(nID, szUrl);
 		}
 	}
 
@@ -454,6 +467,11 @@ namespace Gamma
 	//=====================================================================
 	// 默认协议
 	//=====================================================================
+	void CDebugJS::AddScriptInfo(int32 nID, const char* szFileName)
+	{
+		m_mapScriptInfo[nID] = szFileName;
+	}
+
 	uint32 CDebugJS::GenBreakPointID(const char* szFileName, int32 nLine)
 	{
 		auto itFile = m_mapScriptInfo.begin();

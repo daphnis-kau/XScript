@@ -351,13 +351,20 @@ namespace Gamma
 		if( temp_script.IsEmpty() )
 			return false;
 		v8::Local<v8::Script> script = temp_script.ToLocalChecked();
+		auto scriptInfo = script->GetUnboundScript();
+		int32 nID = scriptInfo->GetId();
 
 		// Run the script to get the result.
 		v8::MaybeLocal<v8::Value> result = script->Run( context );
-		if( !result.IsEmpty() )
-			return true;
-		Context.ReportException( &try_catch, context );
-		return false;
+		if (result.IsEmpty())
+		{
+			Context.ReportException(&try_catch, context);
+			return false;
+		}
+
+		auto pDebug = static_cast<CDebugJS*>( GetDebugger() );
+		pDebug->AddScriptInfo( nID, szFileName );
+		return true;
 	}
 
 	bool CScriptJS::RunFunction( const STypeInfoArray& aryTypeInfo, 
