@@ -69,7 +69,6 @@ namespace Gamma
 		IDStringMap			m_mapBreakPoint;
 		IDStringMap			m_mapScriptInfo;
 		
-		void				CheckSession();
 		virtual bool		CheckRemoteSocket( char(&szBuffer)[2048], int32 nCurSize );
 		virtual bool		ProcessCommand(CDebugCmd* pCmd);
 		void				SendWebSocketData( uint8 nId, const char* pData, uint32 nSize );

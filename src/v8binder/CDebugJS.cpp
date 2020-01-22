@@ -48,20 +48,6 @@ namespace Gamma
 		, m_bChromeProtocol( false )
 		, m_nMessageID( 1 )
 	{
-		if (!nDebugPort)
-			return;
-		CheckSession();
-	}
-
-	CDebugJS::~CDebugJS(void)
-	{
-	}
-
-	void CDebugJS::CheckSession()
-	{
-		if (m_Session.get())
-			return;
-
 		CScriptJS* pScript = (CScriptJS*)m_pBase;
 		SV8Context& Context = pScript->GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
@@ -91,6 +77,10 @@ namespace Gamma
 		// your app creates. Normally just one btw.
 		v8_inspector::V8ContextInfo Info(isolate->GetCurrentContext(), 1, ContextName);
 		m_Inspector->contextCreated(Info);
+	}
+
+	CDebugJS::~CDebugJS(void)
+	{
 	}
 
 	//=====================================================================
@@ -236,8 +226,6 @@ namespace Gamma
 
 	bool CDebugJS::ProcessCommand( CDebugCmd* pCmd )
 	{
-		CheckSession();
-
 		if (!m_bChromeProtocol)
 		{
 			char szCommand[256];
@@ -562,8 +550,6 @@ namespace Gamma
 
 	void CDebugJS::Stop()
 	{
-		CheckSession();
-
 		char szCommand[256];
 		gammasstream( szCommand ) << "{\"id\":" << m_nMessageID++
 			<< ",\"method\":\"Debugger.enable\"}";
@@ -591,11 +577,7 @@ namespace Gamma
 
 	void CDebugJS::StepNext()
 	{
-		char szCommand[256];
-		gammasstream(szCommand) << "{\"id\":" << m_nMessageID++
-			<< ",\"method\":\"Debugger.stepOver\"}";
-		v8_inspector::StringView view((const uint8_t*)szCommand, strlen(szCommand));
-		m_Session->dispatchProtocolMessage(view);
+		m_Session->stepOver();
 	}
 
 	void CDebugJS::StepOut()

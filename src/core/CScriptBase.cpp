@@ -278,6 +278,17 @@ namespace Gamma
     void CScriptBase::AddSearchPath( const char* szPath )
     {
         m_listSearchPath.push_back( szPath );
+		auto& strPath = *m_listSearchPath.rbegin();
+		for (int32 i = 0; i < strPath.size(); i++)
+		{
+			if (strPath[i] != '\\')
+				continue;
+			strPath[i] = '/';
+		}
+
+		if (*strPath.rbegin() == '/')
+			return;
+		strPath.push_back('/');
     }
 
 	int CScriptBase::Input( char* szBuffer, int nCount )

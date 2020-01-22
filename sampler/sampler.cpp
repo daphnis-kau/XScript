@@ -1,4 +1,10 @@
-﻿#include "sampler.h"
+﻿#ifndef _WIN32
+#include <unistd.h>
+#else
+#include <direct.h>
+#endif
+
+#include "sampler.h"
 #include "CApplication.h"
 
 DEFINE_CLASS_BEGIN( SApplicationConfig )
@@ -23,14 +29,17 @@ DEFINE_ABSTRACT_CLASS_END();
 //#define TEST_LUA
 int main( int argc, const char* argv[] )
 {
+	char szWorkDir[2048];
+	getcwd(szWorkDir, ELEM_COUNT(szWorkDir));
+
 #ifdef TEST_LUA
 	CScriptBase* pScript = new CScriptLua( 5067 );
-	pScript->AddSearchPath( "F:/GitHub/XScript/sampler/lua/" );
-	pScript->RunFile( "./test.lua" );
+	pScript->AddSearchPath( szWorkDir );
+	pScript->RunFile( "lua/test.lua" );
 #else
 	CScriptBase* pScript = new CScriptJS( 5067 );
-	pScript->AddSearchPath( "F:/GitHub/XScript/sampler/js/" );
-	pScript->RunFile( "./test.js" );
+	pScript->AddSearchPath( szWorkDir );
+	pScript->RunFile( "js/test.js" );
 #endif // TEST_LUA
 
 	while( true )
