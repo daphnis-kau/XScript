@@ -37,8 +37,48 @@ typedef struct linger		LINGER;
 #define NE_EINPROGRESS		EINPROGRESS	
 #endif
 
+//#define DEBUG_LOG( msg )
+#define DEBUG_LOG( msg )	m_pBase->Output( msg, -1 )
+
 namespace Gamma
 {
+	void CDebugJS::SLocation::ReadFromJson(CJson* pJson)
+	{
+		if (!pJson)
+			return;
+		nScriptId = pJson->At<int32>("scriptId");
+		nLineNum = pJson->At<int32>("lineNumber");
+		nColumnNum = pJson->At<int32>("columnNumber");
+	};
+
+	void CDebugJS::SObjectInfo::ReadFromJson(CJson* pJson)
+	{
+		if (!pJson)
+			return;
+		strType = pJson->At<std::string>("type");
+		strClassName = pJson->At<std::string>("className");
+		strDesc = pJson->At<std::string>("description");
+		strValue = pJson->At<std::string>("value");
+		strID = pJson->At<std::string>("objectId"); 
+		for (int32 i = (int32)strID.size() - 1; i >= 0; --i)
+		{
+			if (strID[i] != '\"')
+				continue;
+			strID.insert(i, 1, '\\');
+		}
+	};
+
+	void CDebugJS::SScopeInfo::ReadFromJson(CJson* pJson)
+	{
+		if (!pJson)
+			return;
+		strType = pJson->At<std::string>("type");
+		ObjectInfo = new SObjectInfo;
+		ObjectInfo->ReadFromJson(pJson->GetChild("object"));
+		StartLocation.ReadFromJson(pJson->GetChild("startLocation"));
+		EndLocation.ReadFromJson(pJson->GetChild("endLocation"));
+	};
+
 	//-----------------------------------------------------
 	// CDebugJS
 	//-----------------------------------------------------
@@ -248,9 +288,9 @@ namespace Gamma
 			return true;
 		}
 
-		//m_pBase->Output( "*********************cmd begin**********************\n", -1 );
-		//m_pBase->Output( szContent, -1 ); m_pBase->Output( "\n", -1 );
-		//m_pBase->Output( "**********************cmd end***********************\n", -1 );
+		DEBUG_LOG( "*********************cmd begin**********************\n" );
+		DEBUG_LOG( szContent ); DEBUG_LOG( "\n" );
+		DEBUG_LOG( "**********************cmd end***********************\n" );
 		v8_inspector::StringView view( (const uint8_t*)szContent, nSize );
 		m_Session->dispatchProtocolMessage(view);
 		return true;
@@ -292,6 +332,7 @@ namespace Gamma
 			GammaSleep(10);
 			CheckRemoteCmd();
 		}
+		ClearVariables();
 	}
 
 	void CDebugJS::quitMessageLoopOnPause()
@@ -331,9 +372,9 @@ namespace Gamma
 			szBuffer = m_strUtf8Buffer.c_str();
 		}
 
-		//m_pBase->Output( "*********************res begin**********************\n", -1 );
-		//m_pBase->Output( m_strUtf8Buffer.c_str(), -1 ); m_pBase->Output( "\n", -1 );
-		//m_pBase->Output( "**********************res end***********************\n", -1 );
+		DEBUG_LOG( "*********************res begin**********************\n" );
+		DEBUG_LOG( m_strUtf8Buffer.c_str() ); DEBUG_LOG( "\n" );
+		DEBUG_LOG( "**********************res end***********************\n" );
 		if (m_nRemoteConnecter == INVALID_SOCKET || !m_bChromeProtocol)
 			return;
 		SendWebSocketData( eWS_Text, m_strUtf8Buffer.c_str(), nSize );
@@ -351,9 +392,9 @@ namespace Gamma
 			szBuffer = m_strUtf8Buffer.c_str();
 		}
 
-		//m_pBase->Output( "*********************ntf begin**********************\n", -1 );
-		//m_pBase->Output( m_strUtf8Buffer.c_str(), -1 ); m_pBase->Output( "\n", -1 );
-		//m_pBase->Output( "**********************ntf end***********************\n", -1 );
+		DEBUG_LOG( "*********************ntf begin**********************\n" );
+		DEBUG_LOG( m_strUtf8Buffer.c_str() ); DEBUG_LOG( "\n" );
+		DEBUG_LOG( "**********************ntf end***********************\n" );
 		if (m_nRemoteConnecter != INVALID_SOCKET && m_bChromeProtocol)
 			return SendWebSocketData(eWS_Text, szBuffer, nSize);
 
@@ -362,7 +403,7 @@ namespace Gamma
 		std::string strMethod = Json.At<std::string>("method");
 		if (strMethod == "Debugger.paused")
 		{
-			m_aryFrame.clear();
+			ClearVariables();
 			CJson* params = Json.GetChild("params");
 			if (!params)
 				return;
@@ -370,53 +411,20 @@ namespace Gamma
 			if( !pCallFrames || !pCallFrames->GetChildCount() )
 				return;
 
-			auto ReadLocation = [&](CJson* pLocation)->SLocation
-			{
-				SLocation Location;
-				if( !pLocation )
-					return Location;
-				Location.nScriptId = pLocation->At<int32>( "scriptId" );
-				Location.nLineNum = pLocation->At<int32>( "lineNumber" );
-				Location.nColumnNum = pLocation->At<int32>( "columnNumber" );
-				return Location;
-			};
-
-			auto ReadObject = [&]( CJson* pObject )->SObjectInfo
-			{
-				SObjectInfo ObjectInfo;
-				if( !pObject )
-					return ObjectInfo;
-				ObjectInfo.strType = pObject->At<std::string>( "type" );
-				ObjectInfo.strClassName = pObject->At<std::string>( "className" );
-				ObjectInfo.strDesc = pObject->At<std::string>( "description" );
-				ObjectInfo.strID = pObject->At<std::string>( "objectId" );
-				return ObjectInfo;
-			};
-
-			auto ReadScope = [&]( CJson* pScope )->SScopeInfo
-			{
-				SScopeInfo VariableInfo;
-				if( !pScope )
-					return VariableInfo;
-				VariableInfo.strType = pScope->At<std::string>( "type" );
-				VariableInfo.ObjectInfo = ReadObject( pScope->GetChild( "object" ) );
-				VariableInfo.StartLocation = ReadLocation( pScope->GetChild( "startLocation" ) );
-				VariableInfo.EndLocation = ReadLocation( pScope->GetChild( "endLocation" ) );
-				return VariableInfo;
-			};
-
 			int32 nFrameIndex = 0;
 			m_aryFrame.resize( pCallFrames->GetChildCount() );
 			for( CJson* pFrame = pCallFrames->GetChild( (uint32)0 );
 				pFrame; pFrame = pFrame->GetNext(), nFrameIndex++ )
 			{
 				SFrameInfo& Frame = m_aryFrame[nFrameIndex];
+				Frame.ThisInfo = new SObjectInfo;
 				Frame.strCallFrameID = pFrame->At<std::string>( "callFrameId" );
 				Frame.strFunctionName = pFrame->At<std::string>( "functionName" );
 				Frame.strScriptUrl = pFrame->At<std::string>( "url" );
-				Frame.FunctionLocation = ReadLocation( pFrame->GetChild( "functionLocation" ) );
-				Frame.PauseLocation = ReadLocation( pFrame->GetChild( "location" ) );
-				Frame.ThisInfo = ReadObject(pFrame->GetChild("this"));
+				Frame.FunctionLocation.ReadFromJson( pFrame->GetChild( "functionLocation" ) );
+				Frame.PauseLocation.ReadFromJson( pFrame->GetChild( "location" ) );
+				Frame.ThisInfo->ReadFromJson(pFrame->GetChild("this"));
+				AddFrameObject(Frame, *Frame.ThisInfo, "this");
 
 				if (!memcmp(Frame.strScriptUrl.c_str(), "file://", 7))
 					Frame.strScriptUrl.erase(0, 7 + (Frame.strScriptUrl[9] == ':'));
@@ -430,9 +438,13 @@ namespace Gamma
 					continue;
 				int32 nScopeIndex = 0;
 				Frame.vecScope.resize( pScopeChain->GetChildCount() );
-				for( CJson* pScope = pScopeChain->GetChild( (uint32)0 );
-					pScope; pScope = pScope->GetNext(), nScopeIndex++ )
-					Frame.vecScope[nScopeIndex] = ReadScope( pScope );
+				for (CJson* pScope = pScopeChain->GetChild((uint32)0);
+					pScope; pScope = pScope->GetNext(), nScopeIndex++)
+				{
+					Frame.vecScope[nScopeIndex].ReadFromJson(pScope);
+					SObjectInfo* pObjInfo = Frame.vecScope[nScopeIndex].ObjectInfo;
+					AddFrameObject(Frame, *pObjInfo, Frame.vecScope[nScopeIndex].strType.c_str());
+				}
 			}
 		}
 		else if (strMethod == "Debugger.scriptParsed")
@@ -458,6 +470,76 @@ namespace Gamma
 	void CDebugJS::AddScriptInfo(int32 nID, const char* szFileName)
 	{
 		m_mapScriptInfo[nID] = szFileName;
+	}
+
+	void CDebugJS::ClearVariables()
+	{
+		m_aryFrame.clear();
+		while (m_mapObjects.GetFirst())
+			delete m_mapObjects.GetFirst();
+	}
+
+	void CDebugJS::AddFrameObject( SFrameInfo& FrameInfo, SObjectInfo& ObjInfo,
+		std::string strField, std::string strParentID /*= ""*/ )
+	{
+		if(!ObjInfo.IsInTree())
+			m_mapObjects.Insert( ObjInfo );
+
+		SObjectRefInfo& RefInfo = FrameInfo.mapObjRefs[++FrameInfo.nVariableID];
+		RefInfo.pObjectInfo = &ObjInfo;
+		RefInfo.strFieldName = strField;
+		if (strParentID.empty())
+		{
+			FrameInfo.nMaxScopeID = FrameInfo.nVariableID;
+			return;
+		}
+
+		SObjectInfo* pParent = m_mapObjects.Find(strParentID);
+		if (pParent == nullptr)
+			return;
+		if(strField.empty() || strField[0] < '0' || strField[0] > '9')
+			pParent->vecName.push_back(FrameInfo.nVariableID);
+		else
+			pParent->vecIndex.push_back(FrameInfo.nVariableID);
+		return;
+	}
+
+	void CDebugJS::FetchChildren( SObjectInfo& ObjInfo )
+	{
+		if (m_nCurFrame >= (int32)GetFrameCount())
+			return;
+		SFrameInfo& CurFrame = m_aryFrame[m_nCurFrame];
+		if (ObjInfo.bChildrenFetched)
+			return;
+		ObjInfo.bChildrenFetched = true;
+		char szCommand[4096];
+		uint32 nMessageID = m_nMessageID++;
+		gammasstream(szCommand)
+			<< "{\"id\":" << nMessageID << ","
+			<< "\"method\":\"Runtime.getProperties\","
+			<< "\"params\":{\"objectId\":\"" << ObjInfo.strID
+			<< "\",\"ownProperties\":true}}";
+		v8_inspector::StringView view((const uint8_t*)szCommand, strlen(szCommand));
+		m_strUtf8Buffer.clear();
+		m_Session->dispatchProtocolMessage(view);
+		if (m_strUtf8Buffer.empty())
+			return;
+		CJson Propertys;
+		Propertys.Load(m_strUtf8Buffer.c_str(), (uint32)strlen(m_strUtf8Buffer.c_str()));
+		CJson* pResult = Propertys.GetChild("result");
+		if (!pResult)
+			return;
+		pResult = pResult->GetChild("result");
+		if (!pResult)
+			return;
+		for (auto pProp = pResult->GetChild((uint32)0);
+			pProp; pProp = pProp->GetNext())
+		{
+			const char* szName = pProp->At<const char*>("name");
+			SObjectInfo* ObjectInfo = new SObjectInfo;
+			ObjectInfo->ReadFromJson(pProp->GetChild("value"));
+			AddFrameObject(CurFrame, *ObjectInfo, szName, ObjInfo.strID);
+		}
 	}
 
 	uint32 CDebugJS::GenBreakPointID(const char* szFileName, int32 nLine)
@@ -533,19 +615,77 @@ namespace Gamma
 		return nCurFrame;
 	}
 
-	uint32 CDebugJS::GetVariableID(int32 nCurFrame, const char* szName)
+	uint32 CDebugJS::GetVariableID( int32 nCurFrame, const char* szName )
 	{
+		if (szName == nullptr)
+			return eScopeID;
+		if (m_nCurFrame >= (int32)GetFrameCount())
+			return 0;
 		return 0;
 	}
 
-	uint32 CDebugJS::GetChildrenID(uint32 nParentID, bool bIndex, uint32 nStart, uint32* aryChild, uint32 nCount)
+	uint32 CDebugJS::GetChildrenID( uint32 nParentID, bool bIndex,
+		uint32 nStart, uint32* aryChild, uint32 nCount)
 	{
-		return 0;
+		if (m_nCurFrame >= (int32)GetFrameCount())
+			return 0;
+
+		SFrameInfo& CurFrame = m_aryFrame[m_nCurFrame];
+		if (nParentID == eScopeID)
+		{
+			if (bIndex)
+				return 0;
+			if (aryChild == nullptr)
+				return (uint32)CurFrame.vecScope.size() + 1;
+			for(int32 i = 0; i < CurFrame.vecScope.size() + 1; i++)
+				aryChild[i] = eScopeID + 1 + i;
+			return (uint32)CurFrame.vecScope.size() + 1;
+		}
+
+		auto it = CurFrame.mapObjRefs.find(nParentID);
+		if (it == CurFrame.mapObjRefs.end())
+			return 0;
+	
+		SObjectInfo* pInfo = it->second.pObjectInfo;
+		FetchChildren( *pInfo );
+
+		auto& vecChild = bIndex ? pInfo->vecIndex : pInfo->vecName;
+		if (nStart >= vecChild.size())
+			return 0;
+		if (nCount == 0 || nCount > vecChild.size() - nStart)
+			nCount = (uint32)vecChild.size() - nStart;
+		if (aryChild)
+			memcpy(aryChild, &vecChild[nStart], sizeof(uint32) * nCount);
+		return nCount;
 	}
 
-	Gamma::SValueInfo CDebugJS::GetVariable(uint32 nID)
+	SValueInfo CDebugJS::GetVariable( uint32 nID )
 	{
-		return Gamma::SValueInfo();
+		if (m_nCurFrame >= (int32)GetFrameCount())
+			return Gamma::SValueInfo();
+
+		SFrameInfo& CurFrame = m_aryFrame[m_nCurFrame];
+		SValueInfo Info;
+		Info.nID = nID;
+		if (nID == eScopeID)
+		{
+			Info.strName = "Scopes";
+			Info.nNameValues = (uint32)CurFrame.vecScope.size() + 1;
+			return Info;
+		}
+
+		auto itRef = CurFrame.mapObjRefs.find(nID);
+		if(itRef == CurFrame.mapObjRefs.end())
+			return Gamma::SValueInfo();
+
+		auto pInfo = itRef->second.pObjectInfo;
+		FetchChildren(*pInfo);
+
+		Info.strName = itRef->second.strFieldName;
+		Info.nNameValues = (uint32)(pInfo->vecName.size());
+		Info.nIndexValues = (uint32)(pInfo->vecIndex.size());
+		Info.strValue = pInfo->strValue;
+		return Info;
 	}
 
 	void CDebugJS::Stop()

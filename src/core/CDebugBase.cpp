@@ -669,13 +669,20 @@ namespace Gamma
 			int32 nFrame = pArg->At<int32>( "frameId", 0 );
 			CJson* pBody = new CJson( "body" );
 			CJson* pScopes = pBody->AddChild( "scopes" );
-			CJson* pLocal = pScopes->AddChild( "" );
 			SValueInfo Value = GetVariable( GetVariableID( nFrame, NULL ) );
-			pLocal->AddChild( "name", Value.strName.c_str() );
-			pLocal->AddChild( "variablesReference", Value.nID );
-			pLocal->AddChild( "namedVariables", Value.nNameValues );
-			pLocal->AddChild( "indexedVariables", Value.nIndexValues );
-			pLocal->AddChild( "expensive", false );
+			uint32 nCount = Value.nNameValues;
+			uint32* aryChild = (uint32*)alloca(sizeof(uint32) * nCount );
+			GetChildrenID( Value.nID, false, 0, aryChild, nCount );
+			for( int32 i = 0; i < nCount; i++ )
+			{
+				SValueInfo Scope = GetVariable( aryChild[i] );
+				CJson* pLocal = pScopes->AddChild( "" );
+				pLocal->AddChild( "name", Scope.strName.c_str() );
+				pLocal->AddChild( "variablesReference", Scope.nID );
+				pLocal->AddChild( "namedVariables", Scope.nNameValues );
+				pLocal->AddChild( "indexedVariables", Scope.nIndexValues );
+				pLocal->AddChild( "expensive", false );
+			}
 			SendRespone( pBody, szSequence, true, szCommand );
 			return true;
 		}

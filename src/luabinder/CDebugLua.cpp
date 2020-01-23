@@ -21,7 +21,8 @@ namespace Gamma
 		ePDVID_Scopes	= 1,
 		ePDVID_Global	= 2,
 		ePDVID_Local	= 3,
-		ePDVID_Count	= 4,
+		ePDVID_UpValue	= 4,
+		ePDVID_Count	= 5,
 	};
 
 	#define LUA_MASKALL (LUA_MASKCALL|LUA_MASKRET|LUA_MASKLINE)
@@ -250,7 +251,10 @@ namespace Gamma
 			else
 				lua_setfield( m_pState, -2, name[0] ? name : "(anonymous local)" );
 		}
+		TouchVariable( "Local", ePDVID_Scopes, false );
 
+		// up value
+		lua_newtable(m_pState);
 		int32 nCurCount = GetFrameCount() - 1;
 		while( nCurCount >= 0 )
 		{
@@ -263,7 +267,7 @@ namespace Gamma
 			nCurCount--;
 		}
 
-		TouchVariable( "Local", ePDVID_Scopes, false );
+		TouchVariable("UpValue", ePDVID_Scopes, false);
 		return nCurFrame;
 	}
 
@@ -329,7 +333,7 @@ namespace Gamma
 			return ePDVID_Scopes;
 		gammacstring strKey( szName, true );
 
-		uint32 aryID[] = { ePDVID_Local, ePDVID_Global };
+		uint32 aryID[] = { ePDVID_Local, ePDVID_UpValue, ePDVID_Global };
 		for( uint32 i = 0; i < ELEM_COUNT(aryID); i++ )
 		{
 			SVariableInfo* pInfo = m_mapVariable.Find( aryID[i] );
@@ -351,7 +355,7 @@ namespace Gamma
 		if( nID == ePDVID_Scopes )
 		{
 			Info.strName = "scope";
-			Info.nNameValues = 2;
+			Info.nNameValues = 3;
 			return Info;
 		}
 
@@ -362,7 +366,7 @@ namespace Gamma
 		Info.strName = pNode->m_strField.c_str();
 		Info.strValue = Info.strName;
 
-		if( nID != ePDVID_Global && nID != ePDVID_Local )
+		if( nID >= ePDVID_Count )
 		{
 			lua_pushlightuserdata( m_pState, s_szID2Value );
 			lua_rawget( m_pState, LUA_REGISTRYINDEX );
@@ -390,9 +394,10 @@ namespace Gamma
 			if( aryChild )
 			{
 				aryChild[0] = ePDVID_Global;
-				aryChild[1] = ePDVID_Local;
+				aryChild[1] = ePDVID_UpValue;
+				aryChild[2] = ePDVID_Local;
 			}
-			return 2;
+			return 3;
 		}
 
 		SVariableInfo* pInfo = m_mapVariable.Find( nParentID );

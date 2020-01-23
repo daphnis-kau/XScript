@@ -26,7 +26,7 @@ DEFINE_ABSTRACT_CLASS_BEGIN( CApplication )
 	REGIST_STATICFUNCTION( GetInst )
 DEFINE_ABSTRACT_CLASS_END();
 
-//#define TEST_LUA
+#define TEST_LUA
 int main( int argc, const char* argv[] )
 {
 	char szWorkDir[2048];
