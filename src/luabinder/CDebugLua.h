@@ -66,7 +66,8 @@ namespace Gamma
 		virtual bool		GetFrameInfo( int32 nFrame, int32* nLine, 
 								const char** szFunction, const char** szSource );
 		virtual int32		SwitchFrame( int32 nCurFrame );
-		virtual uint32		GetVariableID( int32 nCurFrame, const char* szName );
+		virtual uint32		EvaluateExpression( int32 nCurFrame, const char* szExpression );
+		virtual uint32		GetScopeChainID( int32 nCurFrame );
 		virtual uint32		GetChildrenID( uint32 nParentID, bool bIndex, uint32 nStart, 
 								uint32* aryChild = nullptr, uint32 nCount = INVALID_32BITID );
 		virtual SValueInfo	GetVariable( uint32 nID );

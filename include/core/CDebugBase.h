@@ -129,7 +129,6 @@ namespace Gamma
 		void				ListenRemote( uint16 nDebugPort );
 		void				TeminateRemote( const char* szSequence );
 		void				Run();
-		virtual bool		CheckRemoteSocket( char(&szBuffer)[2048], int32 nCurSize );
 
 		void				SendEvent( CJson* pBody, const char* szEvent );
 		void				SendRespone( CJson* pBody, const char* szSequence, 
@@ -137,6 +136,8 @@ namespace Gamma
 		void				SendNetData( CJson* pJson );
 		void				OnNetData( CDebugCmd* pCmd );
 		virtual bool		ProcessCommand( CDebugCmd* pCmd );
+
+		virtual bool		CheckRemoteSocket( char(&szBuffer)[2048], int32 nCurSize );
 		bool				CheckRemoteCmd();
 
 	protected:
@@ -164,7 +165,8 @@ namespace Gamma
 		virtual bool		GetFrameInfo( int32 nFrame, int32* nLine, 
 								const char** szFunction, const char** szSource ) = 0;
 		virtual int32		SwitchFrame( int32 nCurFrame ) = 0;
-		virtual uint32		GetVariableID( int32 nCurFrame, const char* szName ) = 0;
+		virtual uint32		EvaluateExpression( int32 nCurFrame, const char* szExpression ) = 0;
+		virtual uint32		GetScopeChainID( int32 nCurFrame ) = 0;
 		virtual uint32		GetChildrenID( uint32 nParentID, bool bIndex, uint32 nStart, 
 								uint32* aryChild = nullptr, uint32 nCount = 0 ) = 0;
 		virtual SValueInfo	GetVariable( uint32 nID ) = 0;

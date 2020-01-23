@@ -99,7 +99,7 @@ namespace Gamma
 		virtual uint32		GenBreakPointID(const char* szFileName, int32 nLine);
 		void				ClearVariables();
 		void				FetchChildren( SObjectInfo& ObjInfo );
-		void				AddFrameObject( SFrameInfo& FrameInfo, SObjectInfo& ObjInfo, 
+		uint32				AddFrameObject( SFrameInfo& FrameInfo, SObjectInfo& ObjInfo, 
 								std::string strField, std::string strParentID = "" );
 	public:
 		CDebugJS(CScriptBase* pBase, uint16 nDebugPort);
@@ -112,7 +112,8 @@ namespace Gamma
 		virtual bool		GetFrameInfo(int32 nFrame, int32* nLine, const char** szFunction,
 								const char** szSource);
 		virtual int32		SwitchFrame(int32 nCurFrame);
-		virtual uint32		GetVariableID(int32 nCurFrame, const char* szName);
+		virtual uint32		EvaluateExpression(int32 nCurFrame, const char* szExpression);
+		virtual uint32		GetScopeChainID(int32 nCurFrame) { return eScopeID; };
 		virtual uint32		GetChildrenID(uint32 nParentID, bool bIndex,
 								uint32 nStart, uint32* aryChild, uint32 nCount);
 		virtual SValueInfo	GetVariable(uint32 nID);

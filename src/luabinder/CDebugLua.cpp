@@ -22,7 +22,8 @@ namespace Gamma
 		ePDVID_Global	= 2,
 		ePDVID_Local	= 3,
 		ePDVID_UpValue	= 4,
-		ePDVID_Count	= 5,
+		ePDVID_Tempory  = 5,
+		ePDVID_Count	= 6,
 	};
 
 	#define LUA_MASKALL (LUA_MASKCALL|LUA_MASKRET|LUA_MASKLINE)
@@ -268,6 +269,10 @@ namespace Gamma
 		}
 
 		TouchVariable("UpValue", ePDVID_Scopes, false);
+
+		// tempory value
+		lua_newtable(m_pState);
+		TouchVariable("Tempory", ePDVID_Scopes, false);
 		return nCurFrame;
 	}
 
@@ -327,25 +332,9 @@ namespace Gamma
 		return nID;
 	}
 
-	uint32 CDebugLua::GetVariableID( int32 nCurFrame, const char* szName )
+	uint32 CDebugLua::GetScopeChainID( int32 nCurFrame )
 	{
-		if( szName == NULL )
-			return ePDVID_Scopes;
-		gammacstring strKey( szName, true );
-
-		uint32 aryID[] = { ePDVID_Local, ePDVID_UpValue, ePDVID_Global };
-		for( uint32 i = 0; i < ELEM_COUNT(aryID); i++ )
-		{
-			SVariableInfo* pInfo = m_mapVariable.Find( aryID[i] );
-			if( !pInfo )
-				continue;
-			SFieldInfo* pField = pInfo->m_mapFields[0].Find( strKey );
-			if( !pField )
-				continue;
-			return static_cast<SVariableNode*>( pField )->m_nVariableID;
-		}
-
-		return INVALID_32BITID;
+		return ePDVID_Scopes;
 	}
 
 	Gamma::SValueInfo CDebugLua::GetVariable( uint32 nID )
@@ -460,4 +449,24 @@ namespace Gamma
 		return nCurCount;
 	}
 
+	uint32 CDebugLua::EvaluateExpression(int32 nCurFrame, const char* szName)
+	{
+		if (szName == NULL)
+			return INVALID_32BITID;
+		gammacstring strKey(szName, true);
+
+		uint32 aryID[] = { ePDVID_Local, ePDVID_UpValue, ePDVID_Global };
+		for (uint32 i = 0; i < ELEM_COUNT(aryID); i++)
+		{
+			SVariableInfo* pInfo = m_mapVariable.Find(aryID[i]);
+			if (!pInfo)
+				continue;
+			SFieldInfo* pField = pInfo->m_mapFields[0].Find(strKey);
+			if (!pField)
+				continue;
+			return static_cast<SVariableNode*>(pField)->m_nVariableID;
+		}
+
+		return INVALID_32BITID;
+	}
 }

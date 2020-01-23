@@ -37,11 +37,25 @@ typedef struct linger		LINGER;
 #define NE_EINPROGRESS		EINPROGRESS	
 #endif
 
-//#define DEBUG_LOG( msg )
-#define DEBUG_LOG( msg )	m_pBase->Output( msg, -1 )
+#define DEBUG_LOG( msg )
+//#define DEBUG_LOG( msg )	m_pBase->Output( msg, -1 )
 
 namespace Gamma
 {
+	std::string ReadIDFromJson( CJson* pJson )
+	{
+		if (!pJson)
+			return "";
+		std::string strID = pJson->As<std::string>();
+		for (int32 i = (int32)strID.size() - 1; i >= 0; --i)
+		{
+			if (strID[i] != '\"')
+				continue;
+			strID.insert(i, 1, '\\');
+		}
+		return strID;
+	}
+
 	void CDebugJS::SLocation::ReadFromJson(CJson* pJson)
 	{
 		if (!pJson)
@@ -59,13 +73,7 @@ namespace Gamma
 		strClassName = pJson->At<std::string>("className");
 		strDesc = pJson->At<std::string>("description");
 		strValue = pJson->At<std::string>("value");
-		strID = pJson->At<std::string>("objectId"); 
-		for (int32 i = (int32)strID.size() - 1; i >= 0; --i)
-		{
-			if (strID[i] != '\"')
-				continue;
-			strID.insert(i, 1, '\\');
-		}
+		strID = ReadIDFromJson( pJson->GetChild("objectId") );
 	};
 
 	void CDebugJS::SScopeInfo::ReadFromJson(CJson* pJson)
@@ -418,7 +426,7 @@ namespace Gamma
 			{
 				SFrameInfo& Frame = m_aryFrame[nFrameIndex];
 				Frame.ThisInfo = new SObjectInfo;
-				Frame.strCallFrameID = pFrame->At<std::string>( "callFrameId" );
+				Frame.strCallFrameID = ReadIDFromJson(pFrame->GetChild( "callFrameId" ));
 				Frame.strFunctionName = pFrame->At<std::string>( "functionName" );
 				Frame.strScriptUrl = pFrame->At<std::string>( "url" );
 				Frame.FunctionLocation.ReadFromJson( pFrame->GetChild( "functionLocation" ) );
@@ -479,7 +487,7 @@ namespace Gamma
 			delete m_mapObjects.GetFirst();
 	}
 
-	void CDebugJS::AddFrameObject( SFrameInfo& FrameInfo, SObjectInfo& ObjInfo,
+	uint32 CDebugJS::AddFrameObject( SFrameInfo& FrameInfo, SObjectInfo& ObjInfo,
 		std::string strField, std::string strParentID /*= ""*/ )
 	{
 		if(!ObjInfo.IsInTree())
@@ -491,17 +499,17 @@ namespace Gamma
 		if (strParentID.empty())
 		{
 			FrameInfo.nMaxScopeID = FrameInfo.nVariableID;
-			return;
+			return FrameInfo.nVariableID;
 		}
 
 		SObjectInfo* pParent = m_mapObjects.Find(strParentID);
 		if (pParent == nullptr)
-			return;
+			return FrameInfo.nVariableID;
 		if(strField.empty() || strField[0] < '0' || strField[0] > '9')
 			pParent->vecName.push_back(FrameInfo.nVariableID);
 		else
 			pParent->vecIndex.push_back(FrameInfo.nVariableID);
-		return;
+		return FrameInfo.nVariableID;
 	}
 
 	void CDebugJS::FetchChildren( SObjectInfo& ObjInfo )
@@ -615,15 +623,6 @@ namespace Gamma
 		return nCurFrame;
 	}
 
-	uint32 CDebugJS::GetVariableID( int32 nCurFrame, const char* szName )
-	{
-		if (szName == nullptr)
-			return eScopeID;
-		if (m_nCurFrame >= (int32)GetFrameCount())
-			return 0;
-		return 0;
-	}
-
 	uint32 CDebugJS::GetChildrenID( uint32 nParentID, bool bIndex,
 		uint32 nStart, uint32* aryChild, uint32 nCount)
 	{
@@ -727,5 +726,33 @@ namespace Gamma
 			<< ",\"method\":\"Debugger.stepOut\"}";
 		v8_inspector::StringView view((const uint8_t*)szCommand, strlen(szCommand));
 		m_Session->dispatchProtocolMessage(view);
+	}
+
+	uint32 CDebugJS::EvaluateExpression(int32 nCurFrame, const char* szExpression)
+	{
+		if (m_nCurFrame >= (int32)GetFrameCount())
+			return INVALID_32BITID;
+		SFrameInfo& CurFrame = m_aryFrame[m_nCurFrame];
+		char szCommand[4096];
+		uint32 nMessageID = m_nMessageID++;
+		gammasstream(szCommand)
+			<< "{\"id\":" << nMessageID << ","
+			<< "\"method\":\"Debugger.evaluateOnCallFrame\",\"params\":{"
+			<< "\"callFrameId\":\"" << CurFrame.strCallFrameID << "\","
+			<< "\"expression\":\"" << szExpression << "\","
+			<< "\"silent\":true}}";
+		v8_inspector::StringView view((const uint8_t*)szCommand, strlen(szCommand));
+		m_strUtf8Buffer.clear();
+		m_Session->dispatchProtocolMessage(view);
+		if (m_strUtf8Buffer.empty())
+			return INVALID_32BITID;
+		CJson Value;
+		Value.Load(m_strUtf8Buffer.c_str(), (uint32)strlen(m_strUtf8Buffer.c_str()));
+		CJson* pResult = Value.GetChild("result");
+		if (!pResult || !pResult->GetChild("result"))
+			return INVALID_32BITID;
+		SObjectInfo* ObjectInfo = new SObjectInfo;
+		ObjectInfo->ReadFromJson(pResult->GetChild("result"));
+		return AddFrameObject(CurFrame, *ObjectInfo, "");
 	}
 }

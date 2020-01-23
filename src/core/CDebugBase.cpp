@@ -669,7 +669,7 @@ namespace Gamma
 			int32 nFrame = pArg->At<int32>( "frameId", 0 );
 			CJson* pBody = new CJson( "body" );
 			CJson* pScopes = pBody->AddChild( "scopes" );
-			SValueInfo Value = GetVariable( GetVariableID( nFrame, NULL ) );
+			SValueInfo Value = GetVariable( GetScopeChainID( nFrame ) );
 			uint32 nCount = Value.nNameValues;
 			uint32* aryChild = (uint32*)alloca(sizeof(uint32) * nCount );
 			GetChildrenID( Value.nID, false, 0, aryChild, nCount );
@@ -693,7 +693,7 @@ namespace Gamma
 			const char* szExpression = pArg->At<const char*>( "expression" );
 			//CJson* pFormat = pArg->GetChild( "format" );
 			//bool bHex = pFormat && pFormat->At<bool>( "hex" );
-			uint32 nID = GetVariableID( nFrame, szExpression );
+			uint32 nID = EvaluateExpression( nFrame, szExpression );
 			SValueInfo Value = nID == INVALID_32BITID ? SValueInfo() : GetVariable( nID );
 			CJson* pBody = new CJson( "body" );
 			const char* szValue = Value.strValue.c_str();
@@ -985,7 +985,7 @@ namespace Gamma
 				}
 				szBuf = szBuf && szBuf[0] ? szBuf : m_strLastVarName.c_str();
 				m_strLastVarName = szBuf;
-				SValueInfo Info = GetVariable( GetVariableID( m_nCurFrame, szBuf ) );
+				SValueInfo Info = GetVariable( EvaluateExpression( m_nCurFrame, szBuf ) );
 				m_pBase->Output( Info.strValue.c_str(), -1 );
 				m_pBase->Output( "\n", -1 );
 			}
