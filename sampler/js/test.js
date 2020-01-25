@@ -69,5 +69,5 @@
         Test(g_App.TestNoParamFunction() == "OK", "Test function without parameter");
     }
 
-    console.log("Test lua loaded");
+    console.log("Test javascript loaded");
 })();
