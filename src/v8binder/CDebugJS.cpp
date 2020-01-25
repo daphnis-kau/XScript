@@ -93,7 +93,7 @@ namespace Gamma
 	CDebugJS::CDebugJS(CScriptBase* pBase, uint16 nDebugPort)
 		: CDebugBase(pBase, nDebugPort)
 		, m_nDebugPort(nDebugPort)
-		, m_bChromeProtocol( false )
+		, m_eProtocol( ePT_Unknow )
 		, m_nMessageID( 1 )
 	{
 		CScriptJS* pScript = (CScriptJS*)m_pBase;
@@ -134,17 +134,18 @@ namespace Gamma
 	//=====================================================================
 	// v8_inspector协议
 	//=====================================================================
-	bool CDebugJS::CheckRemoteSocket(char(&szBuffer)[2048], int32 nCurSize)
+	bool CDebugJS::ReciveRemoteData(char(&szBuffer)[2048], int32 nCurSize)
 	{
 		if( nCurSize < 0 )
 			return false;
 		//GammaLog << szBuffer << endl;
 		// 确定是否V8协议（websocket)
-		m_bChromeProtocol = true;
 		if( !memcmp( szBuffer, "Content-Length", 14 ) )
 		{
-			m_bChromeProtocol = false;
-			return CDebugBase::CheckRemoteSocket( szBuffer, nCurSize );
+			m_eProtocol = ePT_VSCode;
+			bool bResult = CDebugBase::ReciveRemoteData(szBuffer, nCurSize);
+			m_eProtocol = ePT_Unknow;
+			return bResult;
 		}
 
 		CHttpRequestState State;
@@ -226,6 +227,7 @@ namespace Gamma
 			break;
 		}
 
+		m_eProtocol = ePT_Chrome;
 		std::string strCmd;
 		while( m_eAttachType )
 		{
@@ -268,13 +270,16 @@ namespace Gamma
 			break;
 		}
 
-		m_bChromeProtocol = false;
+		m_eProtocol = ePT_Unknow;
 		return false;
 	}
 
-	bool CDebugJS::ProcessCommand( CDebugCmd* pCmd )
+	bool CDebugJS::CheckRemoteCmd()
 	{
-		if (!m_bChromeProtocol)
+		if (m_nRemoteConnecter == -1 || m_eProtocol == ePT_Unknow)
+			return false;
+
+		if (m_eProtocol == ePT_VSCode)
 		{
 			char szCommand[256];
 			gammasstream(szCommand) << "{\"id\":" << m_nMessageID++
@@ -282,25 +287,37 @@ namespace Gamma
 			v8_inspector::StringView view((const uint8_t*)szCommand, strlen(szCommand));
 			m_strUtf8Buffer.clear();
 			m_Session->dispatchProtocolMessage(view);
-			return CDebugBase::ProcessCommand(pCmd);
+			return CDebugBase::CheckRemoteCmd();
 		}
 
-		if (!pCmd->GetName())
-			return true;
-
-		const char* szContent = pCmd->GetContent();
-		uint32 nSize = pCmd->GetContentLen();
-		if( *pCmd->GetName() == 'p' )
+		while (m_bRemoteCmdValid)
 		{
-			SendWebSocketData( eWS_Pong, szContent, nSize );
-			return true;
-		}
+			CmdLock();
+			std::unique_ptr<CDebugCmd> pCmd( m_listDebugCmd.GetFirst() );
+			if (!pCmd)
+				m_bRemoteCmdValid = false;
+			else
+				pCmd->CDebugNode::Remove();
+			CmdUnLock();
+			if (!pCmd)
+				break;
+			if (!pCmd->GetName())
+				continue;
 
-		DEBUG_LOG( "*********************cmd begin**********************\n" );
-		DEBUG_LOG( szContent ); DEBUG_LOG( "\n" );
-		DEBUG_LOG( "**********************cmd end***********************\n" );
-		v8_inspector::StringView view( (const uint8_t*)szContent, nSize );
-		m_Session->dispatchProtocolMessage(view);
+			const char* szContent = pCmd->GetContent();
+			uint32 nSize = pCmd->GetContentLen();
+			if (*pCmd->GetName() == 'p')
+			{
+				SendWebSocketData(eWS_Pong, szContent, nSize);
+				continue;
+			}
+
+			DEBUG_LOG("*********************cmd begin**********************\n");
+			DEBUG_LOG(szContent); DEBUG_LOG("\n");
+			DEBUG_LOG("**********************cmd end***********************\n");
+			v8_inspector::StringView view((const uint8_t*)szContent, nSize);
+			m_Session->dispatchProtocolMessage(view);
+		}
 		return true;
 	}
 
@@ -331,7 +348,7 @@ namespace Gamma
 
 	void CDebugJS::runMessageLoopOnPause(int contextGroupId)
 	{
-		if (!m_bChromeProtocol)
+		if (m_eProtocol == ePT_VSCode)
 			return CDebugBase::Debug();
 
 		m_bLoopOnPause = true;
@@ -383,7 +400,7 @@ namespace Gamma
 		DEBUG_LOG( "*********************res begin**********************\n" );
 		DEBUG_LOG( m_strUtf8Buffer.c_str() ); DEBUG_LOG( "\n" );
 		DEBUG_LOG( "**********************res end***********************\n" );
-		if (m_nRemoteConnecter == INVALID_SOCKET || !m_bChromeProtocol)
+		if (m_nRemoteConnecter == INVALID_SOCKET || m_eProtocol == ePT_VSCode)
 			return;
 		SendWebSocketData( eWS_Text, m_strUtf8Buffer.c_str(), nSize );
 	}
@@ -403,7 +420,7 @@ namespace Gamma
 		DEBUG_LOG( "*********************ntf begin**********************\n" );
 		DEBUG_LOG( m_strUtf8Buffer.c_str() ); DEBUG_LOG( "\n" );
 		DEBUG_LOG( "**********************ntf end***********************\n" );
-		if (m_nRemoteConnecter != INVALID_SOCKET && m_bChromeProtocol)
+		if (m_nRemoteConnecter != INVALID_SOCKET && m_eProtocol == ePT_Chrome)
 			return SendWebSocketData(eWS_Text, szBuffer, nSize);
 
 		CJson Json;

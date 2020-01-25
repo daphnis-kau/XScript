@@ -24,6 +24,13 @@ namespace Gamma
 		, public v8_inspector::V8Inspector::Channel
 	{
 		enum { eScopeID = 1 };
+		enum EProtocalType
+		{
+			ePT_Unknow,
+			ePT_VSCode,
+			ePT_Chrome, 
+		};
+
 		struct SObjectInfo;
 		typedef TRBTree<SObjectInfo> CObjectMap;
 
@@ -82,7 +89,7 @@ namespace Gamma
 		typedef std::map<uint32, std::string> IDStringMap;
 
 		uint16				m_nDebugPort;
-		bool				m_bChromeProtocol;
+		EProtocalType		m_eProtocol;
 		CInspectorPtr		m_Inspector;
 		CInsSessionPtr		m_Session;
 		std::string			m_strUtf8Buffer;
@@ -92,9 +99,9 @@ namespace Gamma
 		IDStringMap			m_mapBreakPoint;
 		IDStringMap			m_mapScriptInfo;
 		CObjectMap			m_mapObjects;
-		
-		virtual bool		CheckRemoteSocket( char(&szBuffer)[2048], int32 nCurSize );
-		virtual bool		ProcessCommand(CDebugCmd* pCmd);
+
+		virtual bool		ReciveRemoteData( char(&szBuffer)[2048], int32 nCurSize );
+		virtual bool		CheckRemoteCmd();
 		void				SendWebSocketData( uint8 nId, const char* pData, uint32 nSize );
 		virtual uint32		GenBreakPointID(const char* szFileName, int32 nLine);
 		void				ClearVariables();

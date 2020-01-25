@@ -137,8 +137,11 @@ namespace Gamma
 		void				OnNetData( CDebugCmd* pCmd );
 		virtual bool		ProcessCommand( CDebugCmd* pCmd );
 
-		virtual bool		CheckRemoteSocket( char(&szBuffer)[2048], int32 nCurSize );
-		bool				CheckRemoteCmd();
+		//=================================================================
+		// 重载下面的函数实现其他的调试协议
+		//=================================================================
+		virtual bool		ReciveRemoteData( char(&szBuffer)[2048], int32 nCurSize );
+		virtual bool		CheckRemoteCmd();
 
 	protected:
 		CScriptBase*		GetScriptBase() const { return m_pBase; }

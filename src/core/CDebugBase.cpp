@@ -273,7 +273,7 @@ namespace Gamma
 			m_bExpectStep = false;
 			char szBuffer[2048];
 			int32 nResult = (int32)recv(m_nRemoteConnecter, szBuffer, 2048, 0);
-			if (CheckRemoteSocket(szBuffer, nResult))
+			if (ReciveRemoteData(szBuffer, nResult))
 			{
 				TeminateRemote(NULL);
 				continue;
@@ -284,7 +284,7 @@ namespace Gamma
 		}
 	}
 
-	bool CDebugBase::CheckRemoteSocket(char(&szBuffer)[2048], int32 nCurSize)
+	bool CDebugBase::ReciveRemoteData(char(&szBuffer)[2048], int32 nCurSize)
 	{
 		std::string strBuffer;
 		while (m_eAttachType && nCurSize > 0)
@@ -673,7 +673,7 @@ namespace Gamma
 			uint32 nCount = Value.nNameValues;
 			uint32* aryChild = (uint32*)alloca(sizeof(uint32) * nCount );
 			GetChildrenID( Value.nID, false, 0, aryChild, nCount );
-			for( int32 i = 0; i < nCount; i++ )
+			for( uint32 i = 0; i < nCount; i++ )
 			{
 				SValueInfo Scope = GetVariable( aryChild[i] );
 				CJson* pLocal = pScopes->AddChild( "" );
