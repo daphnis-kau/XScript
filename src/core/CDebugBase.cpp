@@ -74,7 +74,6 @@ namespace Gamma
 		, m_bAllExceptionsBreak( false )
 		, m_bUncaughtExceptionsBreak( false )
 		, m_bPrintFrame( true )
-		, m_hCmdLock( NULL )
 		, m_pBuf( NULL )
 		, m_bLoopOnPause( false )
 		, m_bEnterDebug( false )
@@ -97,8 +96,6 @@ namespace Gamma
 			closesocket( m_nRemoteListener );
 		if( m_nRemoteConnecter != INVALID_SOCKET )
 			closesocket( m_nRemoteConnecter );
-		if( m_hCmdLock )
-			GammaDestroyLock( m_hCmdLock );
 	}
 
 	bool CDebugBase::RemoteDebugEnable() const
@@ -236,23 +233,18 @@ namespace Gamma
 			return;
 		}
 
-		m_hCmdLock = GammaCreateLock();
 		struct _{  static void Run( CDebugBase* pThis ) { pThis->Run(); } };
 		m_hThread = std::thread(&_::Run, this);
 	}
 
 	void CDebugBase::CmdLock()
 	{
-		if( !m_hCmdLock )
-			return;
-		GammaLock( m_hCmdLock );
+		m_hCmdLock.lock();
 	}
 
 	void CDebugBase::CmdUnLock()
 	{
-		if( !m_hCmdLock )
-			return;
-		GammaUnlock( m_hCmdLock );
+		m_hCmdLock.unlock();
 	}
 
 	void CDebugBase::Run()
@@ -454,7 +446,7 @@ namespace Gamma
 			if (!CheckRemoteCmd())
 				m_bLoopOnPause = false;
 			else while (!m_listDebugCmd.GetLast())
-				GammaSleep(10);
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
 

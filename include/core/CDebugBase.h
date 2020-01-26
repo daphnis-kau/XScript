@@ -10,7 +10,6 @@
 #include "core/GammaScriptDef.h"
 #include "common/TConstString.h"
 #include "common/TList.h"
-#include "common/CThread.h"
 #include "common/CJson.h"
 #include <iostream>
 #include <string>
@@ -18,6 +17,7 @@
 #include <map>
 #include <set>
 #include <thread>
+#include <mutex>
 
 namespace Gamma
 {
@@ -79,7 +79,7 @@ namespace Gamma
 
 		CScriptBase*		m_pBase;
 		std::thread			m_hThread;
-		HLOCK				m_hCmdLock;
+		std::mutex			m_hCmdLock;
 		intptr_t			m_nRemoteListener;
 		intptr_t			m_nRemoteConnecter;
 		CDebugCmdList		m_listDebugCmd;

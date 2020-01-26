@@ -25,7 +25,7 @@ namespace Gamma
 	typedef std::map<const CClassRegistInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
 	typedef std::map<SFunctionTable*, SFunctionTable*> CFunctionTableMap;
 
-    class CScriptBase : public TList<CScriptBase>::CListNode
+    class CScriptBase
 	{
 		friend class CCallScriptBase;
 	protected:

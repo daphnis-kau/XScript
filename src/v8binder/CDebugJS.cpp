@@ -349,7 +349,7 @@ namespace Gamma
 		m_bLoopOnPause = true;
 		while (m_bLoopOnPause)
 		{
-			GammaSleep(10);
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			CheckRemoteCmd();
 		}
 		ClearVariables();

@@ -40,18 +40,18 @@ namespace Gamma
 
 	static SFunctionTableHead* AllocFunArray( size_t nArraySize )
 	{
-		static CLock s_Lock;
+		static std::mutex s_Lock;
 		static uint32 s_nFuctionTableUseCount = 0;
 		static uint32 s_nFuctionTableCommitCount = 0;
 
-		s_Lock.Lock();
+		s_Lock.lock();
 		nArraySize += ePointerCount;
 		uint32 nUseCount = s_nFuctionTableUseCount + (uint32)nArraySize;
 		if( nUseCount > s_nFuctionTableCommitCount )
 		{
 			if( nUseCount > MAX_VIRTUAL_FUN_COUNT )
 			{
-				s_Lock.Unlock();
+				s_Lock.unlock();
 				throw( "No enough buffer for funtion table!!!!" );
 			}
 
@@ -70,7 +70,7 @@ namespace Gamma
 
 		void** aryFun = s_aryFuctionTable + s_nFuctionTableUseCount;
 		s_nFuctionTableUseCount += (uint32)nArraySize;
-		s_Lock.Unlock();
+		s_Lock.unlock();
 		return (SFunctionTableHead*)aryFun;
 	}
 
@@ -82,15 +82,9 @@ namespace Gamma
 	//==================================================================
 	// 虚拟机列表
 	//==================================================================
-	static TList<CScriptBase> s_listAllScript;
-	static CLock s_ScriptListLock;
-
     CScriptBase::CScriptBase(void)
         : m_pDebugger( NULL )
 	{
-		s_ScriptListLock.Lock();
-		s_listAllScript.PushBack( *this );
-		s_ScriptListLock.Unlock();
     }
 
     CScriptBase::~CScriptBase(void)
@@ -108,10 +102,6 @@ namespace Gamma
 			assert( it->first == pFunTableHead->m_pOldFunTable );
 			memcpy( pNewFunTable->m_pFun, it->first->m_pFun, nFunCount*sizeof(void*) );
 		}
-
-		s_ScriptListLock.Lock();
-		TList<CScriptBase>::CListNode::Remove();
-		s_ScriptListLock.Unlock();
 	}
 
 	bool CScriptBase::RegistGlobalFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
