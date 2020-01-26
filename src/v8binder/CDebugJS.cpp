@@ -290,17 +290,12 @@ namespace Gamma
 			return CDebugBase::CheckRemoteCmd();
 		}
 
-		while (m_bRemoteCmdValid)
+		while (RemoteCmdValid())
 		{
 			CmdLock();
 			std::unique_ptr<CDebugCmd> pCmd( m_listDebugCmd.GetFirst() );
-			if (!pCmd)
-				m_bRemoteCmdValid = false;
-			else
-				pCmd->CDebugNode::Remove();
+			pCmd->CDebugNode::Remove();
 			CmdUnLock();
-			if (!pCmd)
-				break;
 			if (!pCmd->GetName())
 				continue;
 
@@ -714,7 +709,7 @@ namespace Gamma
 
 		v8_inspector::StringView breakReason((const uint8_t*)"break", 5);
 		v8_inspector::StringView breakDetails((const uint8_t*)"{}", 2);
-		m_Session->breakProgram(breakReason, breakDetails);
+		m_Session->schedulePauseOnNextStatement(breakReason, breakDetails);
 	}
 
 	void CDebugJS::Continue()

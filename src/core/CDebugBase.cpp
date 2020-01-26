@@ -74,8 +74,6 @@ namespace Gamma
 		, m_bAllExceptionsBreak( false )
 		, m_bUncaughtExceptionsBreak( false )
 		, m_bPrintFrame( true )
-		, m_hThread( NULL )
-		, m_hSemaphore( NULL )
 		, m_hCmdLock( NULL )
 		, m_pBuf( NULL )
 		, m_bLoopOnPause( false )
@@ -93,14 +91,12 @@ namespace Gamma
 
     CDebugBase::~CDebugBase(void)
     {
-		if( m_hThread )
-			GammaTerminateThread( m_hThread, 0 );
+		if( m_hThread.joinable() )
+			m_hThread.join();
 		if( m_nRemoteListener != INVALID_SOCKET )
 			closesocket( m_nRemoteListener );
 		if( m_nRemoteConnecter != INVALID_SOCKET )
 			closesocket( m_nRemoteConnecter );
-		if( m_hSemaphore )
-			GammaDestroySemaphore( m_hSemaphore );
 		if( m_hCmdLock )
 			GammaDestroyLock( m_hCmdLock );
 	}
@@ -240,10 +236,9 @@ namespace Gamma
 			return;
 		}
 
-		m_hSemaphore = GammaCreateSemaphore();
 		m_hCmdLock = GammaCreateLock();
 		struct _{  static void Run( CDebugBase* pThis ) { pThis->Run(); } };
-		GammaCreateThread( &m_hThread, 0, (THREADPROC)&_::Run, this );
+		m_hThread = std::thread(&_::Run, this);
 	}
 
 	void CDebugBase::CmdLock()
@@ -357,10 +352,10 @@ namespace Gamma
 #ifdef LOG_REMOTE_COMMAND
 		std::stringstream oss;
 		pEvent->Save(oss);
-		m_pBase->Output( "event : ", -1 );
-		m_pBase->Output( szEvent, -1 );
+		m_pBase->Output( "\n----------------------event begin----------------------\n", -1 );		
+		m_pBase->Output( szEvent, -1 ); m_pBase->Output( "\n", -1 );
 		m_pBase->Output( oss.str().c_str(), -1 );
-		m_pBase->Output( "\n", -1 );
+		m_pBase->Output( "\n-----------------------event end-----------------------\n", -1 );
 #endif
 		SendNetData( pEvent );
 	}
@@ -377,21 +372,22 @@ namespace Gamma
 		if( pBody )
 			pRespone->AddChild( pBody );
 		SendNetData( pRespone );
+
 #ifdef LOG_REMOTE_COMMAND
-		m_pBase->Output( "response : ", -1 );
+		m_pBase->Output( "\n----------------------response begin----------------------\n", -1 );
 		m_pBase->Output( szCommand, -1 );
 		m_pBase->Output( ":", -1 );
 		m_pBase->Output( szSequence, -1 );
-		m_pBase->Output( "\n", -1 );
+		m_pBase->Output( ",", -1 );
+		m_pBase->Output( szMsg, -1 );
+		m_pBase->Output( "\n-----------------------response end-----------------------\n", -1 );
 #endif
 	}
 
 	void CDebugBase::OnNetData( CDebugCmd* pCmd )
 	{
 		CmdLock();
-		m_bRemoteCmdValid = true;
 		m_listDebugCmd.PushBack( *pCmd );
-		GammaPutSemaphore( m_hSemaphore );
 		CmdUnLock();
 	}
 
@@ -401,9 +397,7 @@ namespace Gamma
 			return;
 		if( m_bEnterDebug )
 			return;
-		m_bEnterDebug = true;
 		CheckRemoteCmd();
-		m_bEnterDebug = false;
 	}
 
 	bool CDebugBase::CheckRemoteCmd()
@@ -412,14 +406,11 @@ namespace Gamma
 			return false;
 
 		bool bContinue = true;
-		while( m_bRemoteCmdValid && bContinue )
+		while( RemoteCmdValid() && bContinue )
 		{
 			CmdLock();
 			CDebugCmd* pCmd = m_listDebugCmd.GetFirst();
-			if( !pCmd )
-				m_bRemoteCmdValid = false;
-			else
-				pCmd->CDebugNode::Remove();
+			pCmd->CDebugNode::Remove();
 			CmdUnLock();
 			if( !pCmd )
 				break;
@@ -460,10 +451,10 @@ namespace Gamma
 		m_bLoopOnPause = true;
 		while( m_bLoopOnPause )
 		{
-			if( !CheckRemoteCmd() )
+			if (!CheckRemoteCmd())
 				m_bLoopOnPause = false;
-			else
-				GammaGetSemaphore( m_hSemaphore );
+			else while (!m_listDebugCmd.GetLast())
+				GammaSleep(10);
 		}
 	}
 
@@ -473,11 +464,14 @@ namespace Gamma
 		const char* szCommand = pCmd->At<const char*>( "command" );
 		const char* szSequence = pCmd->At<const char*>( "seq" );
 #ifdef LOG_REMOTE_COMMAND
-		m_pBase->Output( "process : ", -1 );
+		std::stringstream oss;
+		pCmd->Save(oss);
+		m_pBase->Output( "\n----------------------process begin----------------------\n", -1 );
 		m_pBase->Output( szCommand, -1 );
 		m_pBase->Output( ":", -1 );
-		m_pBase->Output( szSequence, -1 );
-		m_pBase->Output( "\n", -1 );
+		m_pBase->Output( szSequence, -1 ); m_pBase->Output( "\n", -1 );
+		m_pBase->Output( oss.str().c_str(), -1 );
+		m_pBase->Output( "\n-----------------------process end-----------------------\n", -1 );
 #endif
 
 		if( !stricmp( szCommand, "initialize" ) )

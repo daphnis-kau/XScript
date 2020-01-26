@@ -19,12 +19,9 @@
 #endif
 
 #include "common/CThread.h"
-#include "common/Help.h"
 #include "common/CodeCvs.h"
 #include <sstream>
 #include <stdlib.h>
-
-#include "common/CThread.h"
 
 namespace Gamma
 {

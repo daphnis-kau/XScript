@@ -17,6 +17,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <thread>
 
 namespace Gamma
 {
@@ -77,8 +78,7 @@ namespace Gamma
 		};
 
 		CScriptBase*		m_pBase;
-		HTHREAD				m_hThread;
-		HSEMAPHORE			m_hSemaphore;
+		std::thread			m_hThread;
 		HLOCK				m_hCmdLock;
 		intptr_t			m_nRemoteListener;
 		intptr_t			m_nRemoteConnecter;
@@ -91,7 +91,6 @@ namespace Gamma
 
 		EAttachType			m_eAttachType;
 		bool				m_bLoopOnPause;
-		bool				m_bRemoteCmdValid;
 		bool				m_bAllExceptionsBreak;
 		bool				m_bUncaughtExceptionsBreak;
 		bool				m_bPrintFrame;
@@ -157,7 +156,7 @@ namespace Gamma
 		void				BTrace( int32 nFrameCount );
 		void				AddFileContent( const char* szSource, const char* szData );
 		bool				RemoteDebugEnable() const;
-		bool				RemoteCmdValid() const { return m_bRemoteCmdValid; }
+		bool				RemoteCmdValid() const { return !m_listDebugCmd.IsEmpty(); }
 		void				CheckEnterRemoteDebug();
 
 		virtual uint32		AddBreakPoint( const char* szFileName, int32 nLine );

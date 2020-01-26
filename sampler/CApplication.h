@@ -1,5 +1,4 @@
 #pragma once
-#include "common/CThread.h"
 #include "core/GammaScript.h"
 #include "../src/luabinder/CScriptLua.h"
 #include "../src/v8binder/CScriptJS.h"
@@ -36,7 +35,8 @@ class CApplication
 
 protected:
 	virtual ~CApplication(){}
-	IApplicationHandler* m_pHandler;
+	std::string				m_strName;
+	IApplicationHandler*	m_pHandler;
 
 public:
 

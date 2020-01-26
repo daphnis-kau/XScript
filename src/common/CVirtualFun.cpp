@@ -1,5 +1,4 @@
 ﻿#include "common/CVirtualFun.h"
-#include "common/CThread.h"
 #include <stdlib.h>
 #include <setjmp.h>
 
@@ -124,17 +123,7 @@ namespace Gamma
 	//=====================================================================
 	// 获取虚表索引
 	//=====================================================================
-	struct SGlobalContext
-	{
-		jmp_buf m_JumpFlag;
-		CLock	m_Lock;
-	};
-
-	static SGlobalContext& GetGlobalContext()
-	{
-		static SGlobalContext s_Instance;
-		return s_Instance;
-	}
+	struct SFunctionContext : public SFunctionTable { jmp_buf JumpFlag; };
 
 	// 将得到索引的函数赋值到虚函数表
 	template<uint32 nStart, uint32 nCount>
@@ -159,10 +148,19 @@ namespace Gamma
 	template<uint32 nStart>
 	class TSetFuntion<nStart, 1>
 	{	
-		static void GetIndex() { longjmp(GetGlobalContext().m_JumpFlag, nStart + 1); }
+		void GetIndex() 
+		{
+			SVirtualObj* pObject = (SVirtualObj*)this;
+			SFunctionContext* pContext = (SFunctionContext*)pObject->m_pTable;
+			longjmp( pContext->JumpFlag, nStart + 1 );
+		}
+
 	public:
 		TSetFuntion( void** pChechFun )
-		{ pChechFun[nStart] = (void*)&TSetFuntion<nStart, 1>::GetIndex; }
+		{ 
+			auto funPointer = &TSetFuntion<nStart, 1>::GetIndex;
+			pChechFun[nStart] = *(void**)&funPointer;
+		}
 	};
 
 	uint32 FindVirtualFunction( uint32 nSize,
@@ -170,17 +168,17 @@ namespace Gamma
 	{
 		static SFunctionTable FunctionTable;
 		static TSetFuntion<0, MAX_VTABLE_SIZE> s_FunIndex( FunctionTable.m_pFun );
-		static SGlobalContext& Context = GetGlobalContext();
-		uint32 nAllocSize, nIndex, i, j;
-		Context.m_Lock.Lock();
+
+		SFunctionContext FunContext;
+		uint32 nAllocSize, i, nIndex;
 		nAllocSize = AligenUp( (uint32)nSize, sizeof( void* ) );
 		void** pObj = (void**)alloca( nAllocSize );
-		for( i = 0, j = 0; i < nSize; i += sizeof( void* ) )
-			pObj[j++] = &FunctionTable;
-		nIndex = setjmp( Context.m_JumpFlag );
+		for( i = 0; i < nAllocSize/sizeof(void*); i++ )
+			pObj[i] = &FunContext;
+		(SFunctionTable&)FunContext = FunctionTable;
+		nIndex = setjmp( FunContext.JumpFlag );
 		if( nIndex == 0 )
 			funCallback( pObj, pContext );
-		Context.m_Lock.Unlock();
 		return nIndex - 1;
 	}
 }

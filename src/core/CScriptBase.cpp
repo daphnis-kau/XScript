@@ -1,6 +1,5 @@
 ﻿#include <stdlib.h>
 #include "common/Help.h"
-#include "common/CThread.h"
 #include "common/Memory.h"
 #include "core/CScriptBase.h"
 #include "core/CCallBase.h"

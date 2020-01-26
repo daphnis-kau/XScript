@@ -4,6 +4,9 @@
 #include <direct.h>
 #endif
 
+#include <chrono>
+#include <thread>
+
 #include "sampler.h"
 #include "CApplication.h"
 
@@ -26,27 +29,28 @@ DEFINE_ABSTRACT_CLASS_BEGIN( CApplication )
 	REGIST_STATICFUNCTION( GetInst )
 DEFINE_ABSTRACT_CLASS_END();
 
-//#define TEST_LUA
-int main( int argc, const char* argv[] )
+template<typename ScriptType>
+CScriptBase* CreateScript(const char* szFilePath)
 {
 	char szWorkDir[2048];
 	getcwd(szWorkDir, ELEM_COUNT(szWorkDir));
+	CScriptBase* pScript = new ScriptType(5067);
+	pScript->AddSearchPath(szWorkDir);
+	pScript->RunFile(szFilePath);
+	return pScript;
+}
 
-#ifdef TEST_LUA
-	CScriptBase* pScript = new CScriptLua( 5067 );
-	pScript->AddSearchPath( szWorkDir );
-	pScript->RunFile( "lua/test.lua" );
-#else
-	CScriptBase* pScript = new CScriptJS( 5067 );
-	pScript->AddSearchPath( szWorkDir );
-	pScript->RunFile( "js/test.js" );
-#endif // TEST_LUA
+int main( int argc, const char* argv[] )
+{
+	//CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
+	CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
 
 	while( true )
 	{
 		pScript->RunFunction( NULL, "StartApplication", "sampler", 12345 );
-		GammaSleep( 10 );
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
+
 	delete pScript;
 	getchar();
 	return 0;
