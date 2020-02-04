@@ -62,5 +62,5 @@ namespace Gamma
 		return FindVirtualFunction( sizeof( SFun ), funCallback, nullptr );
 	}
 
-#endif	//end as3_alchemy_swig Gambey 2012-8-2
+#endif
 }

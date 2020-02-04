@@ -683,6 +683,9 @@ namespace Gamma
 			SValueInfo Value = nID == INVALID_32BITID ? SValueInfo() : GetVariable( nID );
 			CJson* pBody = new CJson( "body" );
 			const char* szValue = Value.strValue.c_str();
+			if( !Value.nNameValues && !Value.nIndexValues )
+				Value.nID = 0;
+
 			pBody->AddChild( "result", szValue )->ForceString( true );
 			pBody->AddChild( "variablesReference", Value.nID );
 			pBody->AddChild( "namedVariables", Value.nNameValues );
@@ -711,6 +714,11 @@ namespace Gamma
 			for( uint32 i = 0; i < Max( nCount, nResult ); i++ )
 			{
 				SValueInfo Info = GetVariable( i < nResult ? aryChild[i] : 0 );
+				if( !Info.nNameValues && !Info.nIndexValues )
+					Info.nID = 0;
+				if( bIndex )
+					Info.strName = "[" + Info.strName + "]";
+
 				CJson* pVariable = pVariableArray->AddChild( "" );
 				pVariable->AddChild( "variablesReference", Info.nID );
 				pVariable->AddChild( "name", Info.strName );

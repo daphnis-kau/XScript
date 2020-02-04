@@ -1,11 +1,10 @@
 ﻿
-//===============================================
-// GammaCodeCvs.h 
-// 定义定义字符串编码转换
-// 柯达昭
-// 2007-09-15
-//===============================================
-
+/**@file  		CodeCvs.h 
+* @brief		Unicode string conversion
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+*/
 #ifndef __GAMMA_CODE_COVS_H__
 #define __GAMMA_CODE_COVS_H__
 
@@ -15,19 +14,62 @@
 
 namespace Gamma
 {
-	//==================================================================
-	// 检查是否Utf8字符串
-	//==================================================================
+	/**
+	* @brief Check Utf8 string
+	*
+	* @param pUtf8 utf8 string
+	* @param nLen string length, C string length of pUtf8 if < 0
+	* @return return true if pUtf8 is a valid UTF8 string
+	*/
 	bool IsUtf8( const char* pUtf8, uint32 nLen = -1 );
+
+	/**
+	* @brief get character count of utf8 string
+	*
+	* @param pUtf8 utf8 string
+	* @param nLen string length, C string length of pUtf8 if < 0
+	* @return valid character count of pUtf8
+	*/
 	int32 GetCharacterCount( const char* pUtf8, uint32 nLen = -1 );
 
-	//========================================================================================
-	// 将utf8转为unicode, pBuf为空返回装载Unicode字符的个数, nSize为wchar_t或uint16的个数
-	//========================================================================================
+	/**
+	* @brief convert utf8 string to usc string
+	*
+	* @param pUtf8 input utf8 string
+	* @param nLen input string length, C string length of pUtf8 if < 0
+	* @param pUnicode output ucs string
+	* @param nSize pUnicode buffer size in wchar_t
+	* @return used wchar_t count of pUnicode
+	*/
 	uint32 Utf8ToUcs( wchar_t* pUnicode, uint32 nSize, const char* pUtf8, uint32 nLen = -1 );
+
+	/**
+	* @brief convert utf8 string to usc2 string
+	*
+	* @param pUtf8 input utf8 string
+	* @param nLen input string length, C string length of pUtf8 if < 0
+	* @param pUnicode output ucsd string
+	* @param nSize pUnicode buffer size in uint16
+	* @return used uint16 count of pUnicode
+	*/
 	uint32 Utf8ToUcs2( uint16* pUnicode, uint32 nSize, const char* pUtf8, uint32 nLen = -1 );
+
+	/**
+	* @brief get next unicode from utf8 buffer
+	*
+	* @param pUtf8 input utf8 string
+	* @param cUnicode output unicode
+	* @return next read position of pUtf8
+	*/
 	const char* GetUnicode( uint32& cUnicode, const char* pUtf8 );
 
+	/**
+	* @brief convert utf8 string to usc string
+	*
+	* @param pUtf8 input utf8 string
+	* @param nLen input string length, C string length of pUtf8 if < 0
+	* @return ucs string
+	*/
 	inline const std::wstring Utf8ToUcs( const char* pUtf8, uint32 nLen = -1 )
 	{
 		std::wstring sTemp;
@@ -40,6 +82,12 @@ namespace Gamma
 		return sTemp.c_str();
 	}
 
+	/**
+	* @brief convert utf8 string to usc string
+	*
+	* @param s input utf8 string
+	* @return ucs string
+	*/
 	inline std::wstring Utf8ToUcs( const std::string& s )
 	{
 		return Utf8ToUcs( s.c_str(), (uint32)s.size() );

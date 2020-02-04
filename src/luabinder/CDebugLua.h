@@ -52,7 +52,7 @@ namespace Gamma
 		void				Debug( lua_State* pState );
 
 		void				ClearVariables();
-		uint32				TouchVariable( const char* szField, uint32 nParentID, bool bIndex );
+		uint32				TouchVariable( const char* szField, uint32 nParentID );
 		virtual uint32		GenBreakPointID( const char* szFileName, int32 nLine );
     public:
         CDebugLua( CScriptBase* pBase, uint16 nDebugPort );

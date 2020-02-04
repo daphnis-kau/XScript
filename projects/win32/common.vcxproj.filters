@@ -13,9 +13,6 @@
     <ClCompile Include="..\..\src\common\CodeCvs.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\CThread.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\common\Memory.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -52,9 +49,6 @@
       <Filter>inlude</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\common\TConstString.h">
-      <Filter>inlude</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\common\CThread.h">
       <Filter>inlude</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\common\Memory.h">

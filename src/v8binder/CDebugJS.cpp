@@ -642,13 +642,13 @@ namespace Gamma
 			return 0;
 
 		SFrameInfo& CurFrame = m_aryFrame[m_nCurFrame];
-		if (nParentID == eScopeID)
+		if( nParentID == eScopeID )
 		{
-			if (bIndex)
+			if( bIndex )
 				return 0;
-			if (aryChild == nullptr)
+			if( aryChild == nullptr )
 				return (uint32)CurFrame.vecScope.size() + 1;
-			for(int32 i = 0; i < CurFrame.vecScope.size() + 1; i++)
+			for( uint32 i = 0; i < CurFrame.vecScope.size() + 1; i++ )
 				aryChild[i] = eScopeID + 1 + i;
 			return (uint32)CurFrame.vecScope.size() + 1;
 		}

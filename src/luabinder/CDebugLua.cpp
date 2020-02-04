@@ -240,7 +240,7 @@ namespace Gamma
 		// global value
 		m_nValueID = ePDVID_Scopes;
 		lua_getglobal( m_pState, "_G" );
-		TouchVariable( "Global", ePDVID_Scopes, false );
+		TouchVariable( "Global", ePDVID_Scopes );
 
 		// local value
 		lua_newtable( m_pState );
@@ -252,7 +252,7 @@ namespace Gamma
 			else
 				lua_setfield( m_pState, -2, name[0] ? name : "(anonymous local)" );
 		}
-		TouchVariable( "Local", ePDVID_Scopes, false );
+		TouchVariable( "Local", ePDVID_Scopes );
 
 		// up value
 		lua_newtable(m_pState);
@@ -268,16 +268,17 @@ namespace Gamma
 			nCurCount--;
 		}
 
-		TouchVariable("UpValue", ePDVID_Scopes, false);
+		TouchVariable( "UpValue", ePDVID_Scopes );
 
 		// tempory value
-		lua_newtable(m_pState);
-		TouchVariable("Tempory", ePDVID_Scopes, false);
+		lua_newtable( m_pState );
+		TouchVariable( "Tempory", ePDVID_Scopes );
 		return nCurFrame;
 	}
 
-	uint32 CDebugLua::TouchVariable( const char* szField, uint32 nParentID, bool bIndex )
+	uint32 CDebugLua::TouchVariable( const char* szField, uint32 nParentID )
 	{
+		bool bIndex = szField[0] >= '0' && szField[0] <= '9';
 		SVariableInfo* pInfo = m_mapVariable.Find( nParentID );
 		if( pInfo == nullptr )
 		{
@@ -394,41 +395,34 @@ namespace Gamma
 			return 0;
 		auto pNode = static_cast<SVariableNode*>( pInfo );
 		CFieldMap& mapFields = pInfo->m_mapFields[bIndex];
+		CScriptLua* pScriptLua = static_cast<CScriptLua*>( GetScriptBase() );
 
-		if( mapFields.IsEmpty() )
+		if( pInfo->m_mapFields[0].IsEmpty() && pInfo->m_mapFields[1].IsEmpty() )
 		{
 			int32 nTop = lua_gettop( m_pState );
 			lua_pushlightuserdata( m_pState, s_szID2Value );
 			lua_rawget( m_pState, LUA_REGISTRYINDEX );
 			lua_pushnumber( m_pState, pNode->m_nRegisterID );
 			lua_rawget( m_pState, -2 );
-			if( !lua_istable( m_pState, -1 ) )
-			{
-				lua_pop( m_pState, 2 );
-				assert( nTop == lua_gettop( m_pState ) );
-				return 0;
-			}
 
-			if( bIndex )
-			{
-				int nLen = lua_objlen( m_pState, -1 );
-				for( int32 i = 1; i <= nLen; i++ )
-				{
-					char szName[256];
-					sprintf( szName, "%d", i );
-					lua_rawgeti( m_pState, -1, i );  /* 2nd argument */
-					TouchVariable( szName, nParentID, true );
-				}
-			}
-			else
+			if( lua_istable( m_pState, -1 ) )
 			{
 				lua_pushnil( m_pState );
 				while( lua_next( m_pState, -2 ) )
 				{
-					const char* szName = lua_tostring( m_pState, -2 );
-					TouchVariable( szName, nParentID, false );
+					lua_pushvalue( m_pState, -2 );
+					pScriptLua->ToString( m_pState );
+					const char* szName = lua_tostring( m_pState, -1 );
+					lua_pop( m_pState, 1 );
+					TouchVariable( szName, nParentID );
 				}
 			}
+
+			int nType = lua_type( m_pState, -1 );
+			if( ( nType == LUA_TTABLE || nType == LUA_TUSERDATA ) && 
+				lua_getmetatable( m_pState, -1 ) )
+				TouchVariable( "(metatable)", nParentID );
+
 			lua_settop( m_pState, nTop );
 			assert( nTop == lua_gettop( m_pState ) );
 		}

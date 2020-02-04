@@ -245,7 +245,7 @@ namespace Gamma
 		size_t nSize = m_ptrBuffer->size();
 		char* szBuffer = &( (*m_ptrBuffer)[0] );
 
-		// 获取节点的开始位置 
+		// Find start position of the next object 
 		while( nCurPos < nSize )
 		{
 			if( bWithName )
@@ -275,12 +275,12 @@ namespace Gamma
 				}
 			}
 
-			// 本对象或者数组结束了
+			// Object or array ended
 			if( ( szBuffer[nCurPos] == '}' && m_szContent == &s_nObjectFlag ) ||
 				( szBuffer[nCurPos] == ']' && m_szContent == &s_nArrayFlag ) )
 				return false;
 
-			// 找到了下一个对象
+			// Next object is found
 			return true;
 		}
 
@@ -353,7 +353,7 @@ namespace Gamma
 				{
 					c = 0;
 				}
-				// \\ \' \" \? 不需要转义
+				// \\ \' \" \? no more convertion needed
 			}
 			szBuffer[nStrPos++] = c;
 		}
@@ -382,7 +382,7 @@ namespace Gamma
 		size_t nSize = m_ptrBuffer->size();
 		char* szBuffer = &( (*m_ptrBuffer)[0] );
 
-		// 这是一个string,也许是名字，也许是内容
+		// This is a string, maybe name or content
 		if( bWithName )
 		{
 			bool bBlankEnd = szBuffer[nCurPos] != '\"';
@@ -437,7 +437,7 @@ namespace Gamma
 			return true;
 		}
 		
-		// 这是一个数字
+		// This is a number
 		if( IsNumber( c ) || c == '-' || c == '+' )
 		{
 			m_szContent = szBuffer + ( --nCurPos );
