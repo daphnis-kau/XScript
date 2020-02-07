@@ -10,9 +10,6 @@
     <ClCompile Include="..\..\src\common\CJson.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\CodeCvs.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\common\Memory.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -43,9 +40,6 @@
       <Filter>inlude</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\common\TTinyList.h">
-      <Filter>inlude</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\common\CodeCvs.h">
       <Filter>inlude</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\common\TConstString.h">

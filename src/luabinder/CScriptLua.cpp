@@ -4,6 +4,8 @@
 #elif( defined _ANDROID )
 #include <alloca.h>
 #endif
+#include <locale>
+#include <codecvt>
 
 extern "C"
 {
@@ -13,7 +15,6 @@ extern "C"
 	#include "lualib.h"
 }
 
-#include "common/CodeCvs.h"
 #include "core/GammaScriptX.h"
 
 #include "CTypeLua.h"
@@ -501,9 +502,13 @@ namespace Gamma
 		if( szStr == NULL )
 			return lua_pushnil( pL );
 		CScriptLua* pScript = CScriptLua::GetScript( pL );
-		size_t nLen = UcsToUtf8( nullptr, 0, szStr );
-		pScript->m_szTempUtf8.resize( nLen + 1 );
-		UcsToUtf8( &pScript->m_szTempUtf8[0], nLen + 1, szStr );
+		size_t nSize = wcslen( szStr );
+		pScript->m_szTempUtf8.resize( nSize * 6 );
+		static std::codecvt_utf8<wchar_t> UtfCvt;
+		std::codecvt_utf8<wchar_t>::state_type State{};
+		char* szUtf = &pScript->m_szTempUtf8[0];
+		UtfCvt.out( State, szStr, szStr + nSize, szStr, szUtf, szUtf + nSize * 6, szUtf );
+		size_t nLen = (size_t)( szUtf - &pScript->m_szTempUtf8[0] );
 		lua_pushlstring( pL, pScript->m_szTempUtf8.c_str(), nLen );
 	}
 
@@ -517,11 +522,16 @@ namespace Gamma
 		if( szStr[0] == 0 )
 			return L"";
 		CScriptLua* pScript = CScriptLua::GetScript( pL );
-		size_t nLen = Utf8ToUcs( nullptr, 0, szStr );
-		pScript->m_szTempUcs2.resize( nLen + 1 );
-		Utf8ToUcs( &pScript->m_szTempUcs2[0], nLen + 1, szStr );
-		const char* szUcs2 = (const char*)pScript->m_szTempUcs2.c_str();
-		lua_pushlstring( pL, szUcs2, ( nLen + 1 )*sizeof(wchar_t) );
+		size_t nSize = strlen( szStr );
+		pScript->m_szTempUcs2.resize( nSize + 1 );
+		static std::codecvt_utf8<wchar_t> UtfCvt;
+		std::codecvt_utf8<wchar_t>::state_type State{};
+		wchar_t* szUcs = &pScript->m_szTempUcs2[0];
+		UtfCvt.in( State, szStr, szStr + nSize, szStr, szUcs, szUcs + nSize, szUcs );
+		size_t nLen = (size_t)( szUcs - &pScript->m_szTempUcs2[0] );
+		pScript->m_szTempUcs2.resize( nLen );
+		const char* szUcsBuffer = (const char*)&pScript->m_szTempUcs2[0];
+		lua_pushlstring( pL, szUcsBuffer, ( nLen + 1 )*sizeof(wchar_t) );
 		lua_replace( pL, nStkId );
 		return (const wchar_t*)lua_tostring( pL, nStkId );
 	}
@@ -738,7 +748,8 @@ namespace Gamma
 				const char* szFileName = luaL_checkstring( pL, 1 );
 				if( szFileName == NULL || szFileName[0] == 0 )
 					return 1;
-				std::wstring strName = Utf8ToUcs( szFileName );
+				std::wstring_convert<std::codecvt_utf8<wchar_t>> _wstr;
+				std::wstring strName = _wstr.from_bytes( szFileName );
 				assert( strName.size() < 1024 );
 				char szAcsName[4096];
 				WideCharToMultiByte( CP_ACP, NULL, strName.c_str(), -1, 

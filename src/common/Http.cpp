@@ -1,12 +1,74 @@
 #include "common/Http.h"
 #include "common/Help.h"
 #include "common/SHA1.h"
-#include "common/CodeCvs.h"
 #include "common/TStrStream.h"
 
 namespace Gamma
 {
-	#define INVALID_DATA_SIZE ( (uint32)( INVALID_32BITID - 1 ) )
+#define INVALID_DATA_SIZE ( (uint32)( INVALID_32BITID - 1 ) )
+
+	//==============================================================================
+	// Base64 Encode
+	//==============================================================================
+	static int32 Base64Encode(
+		char* pBase64Buffer, uint32 nOutLen, const void* pSrcBuffer, uint32 nSrcLen )
+	{
+		static const char aryTable64[64] =
+		{
+			'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+			'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+			'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+			'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+			'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+			'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+			'w', 'x', 'y', 'z', '0', '1', '2', '3',
+			'4', '5', '6', '7', '8', '9', '+', '/',
+		};
+
+		const char cEnd = '=';
+		if( nOutLen < (uint32)AligenUp( nSrcLen, 3 )*4/3 )
+			return -1;
+
+		const uint8* pSrc = (const uint8*)pSrcBuffer;
+		uint32 nSrc = 0;
+		uint32 nDes = 0;
+		while( nSrc < nSrcLen )
+		{
+			// 剩余的位在下一个编码的高位
+			uint32 c = pSrc[nSrc++];
+			pBase64Buffer[nDes++] = aryTable64[c>>2];
+			c = c & 0x3;
+
+			if( nSrc < nSrcLen )
+			{
+				c = ( c << 8 )|pSrc[nSrc++];
+				pBase64Buffer[nDes++] = aryTable64[c>>4];
+				c = c&0xf;
+
+				if( nSrc < nSrcLen )
+				{
+					c = ( c << 8 )|pSrc[nSrc++];
+					pBase64Buffer[nDes++] = aryTable64[c>>6];
+					pBase64Buffer[nDes++] = aryTable64[c&0x3f];
+				}
+				else
+				{
+					pBase64Buffer[nDes++] = aryTable64[c<<2];
+					pBase64Buffer[nDes++] = cEnd;
+				}
+			}
+			else
+			{
+				pBase64Buffer[nDes++] = aryTable64[c<<4];
+				pBase64Buffer[nDes++] = cEnd;
+				pBase64Buffer[nDes++] = cEnd;
+			}
+		}
+
+		if( (int32)nDes < (int32)nOutLen )
+			pBase64Buffer[nDes] = 0;
+		return nDes;
+	}
 
 	//==============================================================================
 	// 读取整数值

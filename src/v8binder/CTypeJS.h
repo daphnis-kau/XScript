@@ -8,7 +8,6 @@
 //=====================================================================
 
 #include "common/Memory.h"
-#include "common/CodeCvs.h"
 #include "core/CTypeBase.h"
 #include "V8Context.h"
 #include "CScriptJS.h"

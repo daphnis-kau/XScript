@@ -716,12 +716,9 @@ namespace Gamma
 				SValueInfo Info = GetVariable( i < nResult ? aryChild[i] : 0 );
 				if( !Info.nNameValues && !Info.nIndexValues )
 					Info.nID = 0;
-				if( bIndex )
-					Info.strName = "[" + Info.strName + "]";
-
 				CJson* pVariable = pVariableArray->AddChild( "" );
 				pVariable->AddChild( "variablesReference", Info.nID );
-				pVariable->AddChild( "name", Info.strName );
+				pVariable->AddChild( "name", Info.strName )->ForceString( true );
 				pVariable->AddChild( "value", Info.strValue )->ForceString( true );
 				pVariable->AddChild( "namedVariables", Info.nNameValues );
 				pVariable->AddChild( "indexedVariables", Info.nIndexValues );

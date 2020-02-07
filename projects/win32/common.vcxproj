@@ -337,7 +337,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\common\CJson.cpp" />
     <ClCompile Include="..\..\src\common\CVirtualFun.cpp" />
-    <ClCompile Include="..\..\src\common\CodeCvs.cpp" />
     <ClCompile Include="..\..\src\common\Http.cpp" />
     <ClCompile Include="..\..\src\common\Memory.cpp" />
     <ClCompile Include="..\..\src\common\Help.cpp" />
@@ -345,7 +344,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\common\CJson.h" />
     <ClInclude Include="..\..\include\common\CommonType.h" />
-    <ClInclude Include="..\..\include\common\CodeCvs.h" />
     <ClInclude Include="..\..\include\common\CVirtualFun.h" />
     <ClInclude Include="..\..\include\common\GammaCpp.h" />
     <ClInclude Include="..\..\include\common\GammaCppParser.h" />

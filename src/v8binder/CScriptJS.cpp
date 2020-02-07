@@ -1,5 +1,4 @@
-﻿#include "common/CodeCvs.h"
-#include "common/TStrStream.h"
+﻿#include "common/TStrStream.h"
 #include "core/CClassRegistInfo.h"
 #include "CScriptJS.h"
 #include "CTypeJS.h"
