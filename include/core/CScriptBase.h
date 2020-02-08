@@ -8,7 +8,6 @@
 //=====================================================================
 
 #include "common/TList.h"
-#include "common/TCircelBuffer.h"
 #include "CClassRegistInfo.h"
 #include <stdarg.h>
 #include <vector>
@@ -29,6 +28,8 @@ namespace XS
 	{
 		friend class CCallScriptBase;
 	protected:
+		static std::string		s_CacheTruckPrefix;
+
 		CDebugBase*				m_pDebugger;
 		CFunctionTableMap		m_mapVirtualTableOld2New;
 		CNewFunctionTableMap	m_mapNewVirtualTable;
@@ -74,12 +75,12 @@ namespace XS
 		virtual int32			ReadFile( void* pContext, char* szBuffer, int32 nCount );
 		virtual void			CloseFile( void* pContext );
 
-		virtual bool        	RunFile( const char* szFileName );
-		virtual bool        	RunString( const char* szString );
-
 		virtual void			UnlinkCppObjFromScript( void* pObj ) = 0;
 		virtual void        	GC() = 0;
 		virtual void        	GCAll() = 0;
+
+		bool        			RunFile( const char* szFileName );
+		bool        			RunString( const char* szString );
 
 		template<typename RetType, typename... Param>
 		bool					RunFunction( RetType* pRetBuf, const char* szFun, Param ... p );

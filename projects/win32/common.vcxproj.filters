@@ -24,12 +24,6 @@
     <ClInclude Include="..\..\include\common\Help.h">
       <Filter>inlude</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\common\GammaCpp.h">
-      <Filter>inlude</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\common\GammaCppParser.h">
-      <Filter>inlude</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\common\TList.h">
       <Filter>inlude</Filter>
     </ClInclude>
@@ -54,13 +48,13 @@
     <ClInclude Include="..\..\include\common\TStrStream.h">
       <Filter>inlude</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\common\TCircelBuffer.h">
-      <Filter>inlude</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\common\CVirtualFun.h">
       <Filter>inlude</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\common\SHA1.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\common\CppTypeParser.h">
       <Filter>inlude</Filter>
     </ClInclude>
   </ItemGroup>
@@ -71,10 +65,5 @@
     <Filter Include="source">
       <UniqueIdentifier>{9172c6ca-712c-462e-a2eb-59614293104c}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\include\common\TCircelBuffer.inl">
-      <Filter>inlude</Filter>
-    </None>
   </ItemGroup>
 </Project>

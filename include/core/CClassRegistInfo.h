@@ -11,7 +11,7 @@
 #include "common/TRBTree.h"
 #include "common/CVirtualFun.h"
 #include "common/TConstString.h"
-#include "core/GammaScriptDef.h"
+#include "core/XScriptDef.h"
 #include <string>
 #include <vector>
 #include <map>

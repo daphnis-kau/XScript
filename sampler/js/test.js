@@ -11,7 +11,7 @@
         IApplicationHandler.call(this);
     }
 
-    window.Gamma.class(CApplicationHandler, null, IApplicationHandler);
+    window.XScript.class(CApplicationHandler, null, IApplicationHandler);
     var __proto = CApplicationHandler.prototype;
 
     __proto.OnTestPureVirtual = function (

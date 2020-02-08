@@ -7,7 +7,7 @@
 // 2007-10-16
 //=====================================================================
 
-#include "core/GammaScriptDef.h"
+#include "core/XScriptDef.h"
 #include "common/TConstString.h"
 #include "common/TList.h"
 #include "common/CJson.h"

@@ -1,17 +1,53 @@
 ﻿//=============================================================
-// GammaCppParser.h
-// 生成参数类型字符串
+// CppTypeParser.h
 // 柯达昭
 // 2012-08-09
 //=====================================================================
 #pragma once
 
-#include "common/GammaCpp.h"
 #include <type_traits>
 #include <typeinfo>
+#include "common/CommonType.h"
 
 namespace XS
 {
+	//type of c++
+	enum EDataType
+	{
+		eDT_void = 0,
+		eDT_char = 1,
+		eDT_int8 = 2,
+		eDT_int16 = 3,
+		eDT_int32 = 4,
+		eDT_int64 = 5,
+		eDT_long = 6,
+		eDT_uint8 = 7,
+		eDT_uint16 = 8,
+		eDT_uint32 = 9,
+		eDT_uint64 = 10,
+		eDT_ulong = 11,
+		eDT_wchar = 12,
+		eDT_bool = 13,
+		eDT_float = 14,
+		eDT_double = 15,
+		eDT_const_char_str = 16,
+		eDT_const_wchar_t_str = 17,
+		eDT_enum = 18,
+		eDT_class = 19,
+		eDT_count = 20,
+	};
+
+	enum EDataTypeEx
+	{
+		eDTE_Invalid = 0,
+		eDTE_Value = 1,
+		eDTE_Const = 2,
+		eDTE_Pointer = 3,
+		eDTE_ConstPointer = 4,
+		eDTE_Reference = 5,
+		eDTE_Count,
+	};
+
 	template<typename T>
 	struct STypeID 
 	{
@@ -202,14 +238,18 @@ namespace XS
 	template<> struct TTypeInfo<const float		&> : public TTypeInfo<float		> {};
 	template<> struct TTypeInfo<const double	&> : public TTypeInfo<double	> {};
 
-	template<typename T>
-	void GetTypeInfo( STypeInfo& Info )
+	struct STypeInfo
 	{
-		Info.m_nSize = TTypeInfo<T>::m_eSize;
-		Info.m_nType = TTypeInfo<T>::m_eTotalType;
-		Info.m_szTypeName = typeid(typename TTypeInfo<T>::Type).name();
-	}
+		uint32		m_nSize;
+		uint32		m_nType;
+		const char*	m_szTypeName;
+	};
 
+	/**
+	* @brief Get information of the giving type
+	*
+	* @return information of the giving type
+	*/
 	template<typename T>
 	STypeInfo GetTypeInfo()
 	{

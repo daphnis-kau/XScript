@@ -8,7 +8,7 @@
 */
 //=====================================================================
 
-#include "core/GammaScriptDef.h"
+#include "core/XScriptDef.h"
 #include <vector>
 
 namespace XS

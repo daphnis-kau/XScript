@@ -1,14 +1,14 @@
-﻿#ifndef __GAMMA_SCRIPTX_H__
-#define __GAMMA_SCRIPTX_H__
+﻿#ifndef __XS_SCRIPT_MACRO_H__
+#define __XS_SCRIPT_MACRO_H__
 #pragma warning(disable: 4624)
 #pragma warning(disable: 4510)
 #pragma warning(disable: 4610)
 
-#include "core/GammaScriptDef.h"
-#include "core/GammaScriptWrap.h"
+#include "core/XScriptDef.h"
+#include "core/XScriptWrap.h"
 
 //=====================================================================
-// GammaScriptX.h 
+// XScriptMacro.h 
 // 定义脚本和C++的注册宏
 // 柯达昭
 // 2007-10-21

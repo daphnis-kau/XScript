@@ -18,15 +18,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\core\GammaScriptDef.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\core\GammaScriptWrap.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\core\GammaScriptX.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\core\CCallBase.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -42,8 +33,17 @@
     <ClInclude Include="..\..\include\core\CTypeBase.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\core\GammaScript.h">
-      <Filter>include</Filter>
+    <ClInclude Include="..\..\include\core\XScript.h">
+      <Filter>export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\core\XScriptDef.h">
+      <Filter>export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\core\XScriptMacro.h">
+      <Filter>export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\core\XScriptWrap.h">
+      <Filter>export</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -52,6 +52,9 @@
     </Filter>
     <Filter Include="source">
       <UniqueIdentifier>{ad603465-20c5-4ad1-908a-2c4d40eb54d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="export">
+      <UniqueIdentifier>{0093025f-76f8-4743-b012-e5fe24306321}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

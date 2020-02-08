@@ -1,24 +1,13 @@
-﻿#ifndef __GAMMA_SCRIPT_BASE_H__
-#define __GAMMA_SCRIPT_BASE_H__
+﻿#ifndef __XS_SCRIPT_DEF_H__
+#define __XS_SCRIPT_DEF_H__
 //=====================================================================
-// GammaScriptBase.h
+// XScriptDef.h 
 // 定义脚本和C++接口的基本数据类型
 // 柯达昭
 // 2007-10-16
 //=====================================================================
-#include "common/CommonType.h"
-#include "common/GammaCppParser.h"
+#include "common/CppTypeParser.h"
 #include <string>
-
-#if ( defined( _WIN32 ) && defined( GAMMA_DLL ) )
-	#if defined( GAMMA_SCRIPT_EXPORTS )
-		#define GAMMA_SCRIPT_API __declspec(dllexport)
-	#else
-		#define GAMMA_SCRIPT_API __declspec(dllimport)
-	#endif
-#else
-	#define GAMMA_SCRIPT_API 
-#endif
 
 namespace XS
 {

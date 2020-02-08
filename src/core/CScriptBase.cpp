@@ -26,8 +26,8 @@ namespace XS
 	#if( eFunctionTableHeadAligSize != eFunctionTableHeadSize )
 	#error "CScriptBase::SFunctionTableHead size invalid"
 	#endif
-
-	static std::string g_CacheTruckPrefix = "CacheTruck_";
+	
+	std::string CScriptBase::s_CacheTruckPrefix = "CacheTruck_";
 
 	//==================================================================
 	// 虚函数分配
@@ -302,9 +302,9 @@ namespace XS
 	void* CScriptBase::OpenFile( const char* szFileName )
 	{
 		size_t nNameLen = strlen( szFileName );
-		size_t nKeyLen = g_CacheTruckPrefix.size();
-		if( nNameLen > g_CacheTruckPrefix.size() &&
-			!memcmp( szFileName, g_CacheTruckPrefix.c_str(), nKeyLen ) )
+		size_t nKeyLen = s_CacheTruckPrefix.size();
+		if( nNameLen > s_CacheTruckPrefix.size() &&
+			!memcmp( szFileName, s_CacheTruckPrefix.c_str(), nKeyLen ) )
 		{
 			uintptr_t address = 0;
 			std::stringstream( szFileName + nKeyLen ) >> address;
@@ -396,7 +396,7 @@ namespace XS
 			itPre = m_setRuningString.insert( szString ).first;
 
 		std::stringstream name;
-		name << g_CacheTruckPrefix << (uintptr_t)(void*)( itPre->c_str() );
+		name << s_CacheTruckPrefix << (uintptr_t)(void*)( itPre->c_str() );
 		std::string strName = name.str();
 		const char* szName = strName.c_str();
 		if( !RunBuffer( itPre->c_str(), itPre->size(), szName ) )

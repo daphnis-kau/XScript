@@ -121,11 +121,10 @@ namespace XS
 			v8::String::NewFromUtf8(pIsolate, "__proto__" ) );
 
 		RunString(	
-			"var Gamma = {};\n"
+			"var XScript = {};\n"
 			"(function()\n"
 			"{\n"
-			"	var s_aryGammaPackage = [];\n"
-			"	Gamma.class = function(Derive, szGlobalName, Base)\n"
+			"	XScript.class = function(Derive, szGlobalName, Base)\n"
 			"	{\n"
 			"		if (Base)\n"
 			"		{\n"
@@ -176,7 +175,7 @@ namespace XS
 			"		return Derive;\n"
 			"	};\n"
 
-			"	Gamma.getset = function(Class, szName, funGet, funSet)\n"
+			"	XScript.getset = function(Class, szName, funGet, funSet)\n"
 			"	{\n"
 			"		if (funGet && funSet)\n"
 			"			Object.defineProperty(Class, szName, { get:funGet, set : funSet, enumerable : false, configurable : true });\n"
@@ -186,7 +185,7 @@ namespace XS
 			"			Object.defineProperty(Class, szName, { set:funSet, enumerable : false, configurable : true });\n"
 			"	};\n"
 
-			"	Gamma.getClass = function(szName)\n"
+			"	XScript.getClass = function(szName)\n"
 			"	{\n"
 			"		var CurPackage = window, aryPath = szName.split('.');\n"
 			"		for (var i = 0; i < aryPath.length - 1; i++)\n"
@@ -198,7 +197,7 @@ namespace XS
 			"		return CurPackage[aryPath[i]];\n"
 			"	}\n"
 
-			"	Gamma.ClassCast = function( obj, __class, ... arguments )\n"
+			"	XScript.classCast = function( obj, __class, ... arguments )\n"
 			"	{\n"
 			"		obj.__proto__ = __class.prototype;\n"
 			"		__class.apply( obj, arguments );\n"
@@ -209,11 +208,11 @@ namespace XS
 			"})()"
 		);
 
-		LocalValue nsGamma = globalObj->Get(v8::String::NewFromUtf8(pIsolate, "Gamma"));
-		v8::Local<v8::Object> nsGammaObject = nsGamma->ToObject(pIsolate);
-		LocalValue GammaClass = nsGammaObject->Get(v8::String::NewFromUtf8(pIsolate, "class"));
-		m_pV8Context->m_GammaClass.Reset(pIsolate, v8::Local<v8::Function>::Cast(GammaClass));
-		m_pV8Context->m_GammaNameSpace.Reset(pIsolate, nsGammaObject);
+		LocalValue nsXS = globalObj->Get(v8::String::NewFromUtf8(pIsolate, "XScript"));
+		v8::Local<v8::Object> nsXSObject = nsXS->ToObject(pIsolate);
+		LocalValue XSClass = nsXSObject->Get(v8::String::NewFromUtf8(pIsolate, "class"));
+		m_pV8Context->m_XSClass.Reset(pIsolate, v8::Local<v8::Function>::Cast(XSClass));
+		m_pV8Context->m_XSNameSpace.Reset(pIsolate, nsXSObject);
 
 		BuildRegisterInfo();
     }
@@ -538,10 +537,10 @@ namespace XS
 			}
 
 			std::string strNewPath = szClass;
-			v8::Local<v8::Function> GammaClass = Context.m_GammaClass.Get( isolate );
+			v8::Local<v8::Function> XSClass = Context.m_XSClass.Get( isolate );
 			v8::Local<v8::String> strPathName = v8::String::NewFromUtf8( isolate, strNewPath.c_str() );
 			LocalValue args[] = { NewClass, strPathName, Base };
-			GammaClass->Call( globalObj, 3, args );
+			XSClass->Call( globalObj, 3, args );
 
 			v8::MaybeLocal<v8::Value> Prototype = NewClass->Get( context, Context.m_Prototype.Get( isolate ) );
 			v8::Local<v8::Object> PrototypeObj = Prototype.ToLocalChecked()->ToObject( isolate );

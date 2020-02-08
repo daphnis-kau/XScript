@@ -15,8 +15,6 @@ extern "C"
 	#include "lualib.h"
 }
 
-#include "core/GammaScriptX.h"
-
 #include "CTypeLua.h"
 #include "CDebugLua.h"
 #include "CScriptLua.h"
@@ -1170,7 +1168,7 @@ namespace XS
 		 if( bOut )
 		 {
 			 lua_getinfo ( pState, "S", pDebug );
-			 if( strncmp( "@GammaScriptStringTrunk", pDebug->source, 13 ) )
+			 if( strncmp( s_CacheTruckPrefix.c_str(), pDebug->source + 1, 13 ) )
 			 {
 				 lua_getinfo ( pState, "l", pDebug );
 				 uint32 nIndex = ( g_nIndex++ )%1024;

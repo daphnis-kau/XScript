@@ -119,7 +119,7 @@ namespace XS
 		// instance to the channel
 		m_Session = m_Inspector->connect(1, this, view);
 
-		const char* szName = "GammaJavaScriptDebugger";
+		const char* szName = "XScriptDebugger";
 		v8_inspector::StringView ContextName((const uint8_t*)szName, strlen(szName));
 		// make sure you register Context objects in the V8Inspector.
 		// ctx_name will be shown in CDT/console. Call this for each context 
@@ -139,7 +139,7 @@ namespace XS
 	{
 		if( nCurSize < 0 )
 			return false;
-		//GammaLog << szBuffer << endl;
+
 		// 确定是否V8协议（websocket)
 		if( !memcmp( szBuffer, "Content-Length", 14 ) )
 		{
@@ -161,7 +161,7 @@ namespace XS
 				"Content-Type: application/json; charset=UTF-8\r\n"
 				"Cache-Control: no-cache\r\n"
 				"Content-Length: 53\r\n\r\n"
-				"{\"Browser\": \"gamma/v0.1\",\"Protocol-Version\" : \"1.1\" }";
+				"{\"Browser\": \"xscript/v0.1\",\"Protocol-Version\" : \"1.1\" }";
 			static uint32 nLen = (uint32)strlen(szContent);
 			send(m_nRemoteConnecter, szContent, nLen, 0);
 			return false;
@@ -176,12 +176,12 @@ namespace XS
 			char szContent[1024];
 			char_stream(szContent) <<
 				"[{"
-					"\"description\": \"gamma instance\","
+					"\"description\": \"xscript instance\","
 					"\"devtoolsFrontendUrl\": "
 					"\"chrome-devtools://devtools/bundled/"
 						"inspector.html?" << szParam << "\","
 					"\"id\": \"" << szKey << "\","
-					"\"title\": \"gamma\","
+					"\"title\": \"xscript\","
 					"\"type\": \"node\","
 					"\"webSocketDebuggerUrl\": "
 						"\"ws://127.0.0.1:" << m_nDebugPort << "/" << szKey << "\""

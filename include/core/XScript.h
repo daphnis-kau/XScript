@@ -1,10 +1,10 @@
-﻿#ifndef __GAMMA_SCRIPT_H__
-#define __GAMMA_SCRIPT_H__
+﻿#ifndef __XS_XSCRIPT_H__
+#define __XS_XSCRIPT_H__
 #pragma warning(disable: 4624)
 #pragma warning(disable: 4510)
 #pragma warning(disable: 4610)
 
-#include "core/GammaScriptX.h"
+#include "core/XScriptMacro.h"
 
 // 普通类的注册
 #define DEFINE_CLASS_BEGIN( _class, ... ) \

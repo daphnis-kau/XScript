@@ -1,5 +1,5 @@
 ﻿//=============================================================
-// GammaScriptWrap.h 
+// XScriptWrap.h 
 // 生成函数调用以及回调的包装
 // 柯达昭
 // 2012-08-09
@@ -420,9 +420,7 @@ namespace XS
 			static TDestructorWrap s_instance;
 			GetCallBackIndex() = XS::GetDestructorFunIndex<ClassType>();
 			FunctionType funBoot = &TDestructorWrap::Wrap;
-			STypeInfo aryInfo[2];
-			GetTypeInfo<ClassType*>( aryInfo[0] );
-			GetTypeInfo<void>( aryInfo[1] );
+			STypeInfo aryInfo[2] = { GetTypeInfo<ClassType*>(), GetTypeInfo<void>() };
 			STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
 			XS::CScriptBase::RegistDestructor(&s_instance, 
 				*(uintptr_t*)&funBoot, GetCallBackIndex(), TypeInfo );
@@ -453,8 +451,7 @@ namespace XS
 	template<typename MemberType>
 	inline IFunctionWrap* CreateMemberGetWrap(MemberType*)
 	{
-		STypeInfo TypeInfo;
-		GetTypeInfo<MemberType>( TypeInfo );
+		STypeInfo TypeInfo = GetTypeInfo<MemberType>();
 		if( ( TypeInfo.m_nType >> 24 ) != eDT_class ||
 			( ( TypeInfo.m_nType >> 20 )&0xf ) >= eDTE_Pointer ||
 			( ( TypeInfo.m_nType >> 16 )&0xf ) >= eDTE_Pointer ||
@@ -490,17 +487,20 @@ namespace XS
 	template< typename ClassType, typename MemberType >
 	inline STypeInfoArray MakeMemberArg( ClassType*, MemberType* )
 	{
-		static STypeInfo aryInfo[2];
-		GetTypeInfo<ClassType*>( aryInfo[0] );
-		GetTypeInfo<MemberType>( aryInfo[1] );
-		if( ( aryInfo[1].m_nType >> 24 ) == eDT_class &&
-			( ( aryInfo[1].m_nType >> 20 )&0xf ) < eDTE_Pointer &&
-			( ( aryInfo[1].m_nType >> 16 )&0xf ) < eDTE_Pointer &&
-			( ( aryInfo[1].m_nType >> 12 )&0xf ) < eDTE_Pointer &&
-			( ( aryInfo[1].m_nType >>  8 )&0xf ) < eDTE_Pointer &&
-			( ( aryInfo[1].m_nType >>  4 )&0xf ) < eDTE_Pointer &&
-			( ( aryInfo[1].m_nType       )&0xf ) < eDTE_Pointer )
-			GetTypeInfo<MemberType&>( aryInfo[1] );
+		static STypeInfo MemberInfo = GetTypeInfo<MemberType>();
+		static STypeInfo aryInfo[2] = 
+		{ 
+			GetTypeInfo<ClassType*>(), 
+			( ( MemberInfo.m_nType >> 24 ) == eDT_class &&
+			( ( MemberInfo.m_nType >> 20 )&0xf ) < eDTE_Pointer &&
+			( ( MemberInfo.m_nType >> 16 )&0xf ) < eDTE_Pointer &&
+			( ( MemberInfo.m_nType >> 12 )&0xf ) < eDTE_Pointer &&
+			( ( MemberInfo.m_nType >>  8 )&0xf ) < eDTE_Pointer &&
+			( ( MemberInfo.m_nType >>  4 )&0xf ) < eDTE_Pointer &&
+			( ( MemberInfo.m_nType )&0xf ) < eDTE_Pointer ) ?
+			GetTypeInfo<MemberType&>() : GetTypeInfo<MemberType>()
+		};
+
 		STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
 		return TypeInfo;
 	}	

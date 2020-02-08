@@ -332,9 +332,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="..\..\include\common\TCircelBuffer.inl" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\..\src\common\CJson.cpp" />
     <ClCompile Include="..\..\src\common\CVirtualFun.cpp" />
     <ClCompile Include="..\..\src\common\Http.cpp" />
@@ -344,14 +341,12 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\common\CJson.h" />
     <ClInclude Include="..\..\include\common\CommonType.h" />
+    <ClInclude Include="..\..\include\common\CppTypeParser.h" />
     <ClInclude Include="..\..\include\common\CVirtualFun.h" />
-    <ClInclude Include="..\..\include\common\GammaCpp.h" />
-    <ClInclude Include="..\..\include\common\GammaCppParser.h" />
     <ClInclude Include="..\..\include\common\Http.h" />
     <ClInclude Include="..\..\include\common\Memory.h" />
     <ClInclude Include="..\..\include\common\Help.h" />
     <ClInclude Include="..\..\include\common\SHA1.h" />
-    <ClInclude Include="..\..\include\common\TCircelBuffer.h" />
     <ClInclude Include="..\..\include\common\TConstString.h" />
     <ClInclude Include="..\..\include\common\TList.h" />
     <ClInclude Include="..\..\include\common\TRBTree.h" />

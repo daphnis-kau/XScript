@@ -6,7 +6,7 @@
 #ifndef __XS_VIRTUALFUN_H__
 #define __XS_VIRTUALFUN_H__
 
-#include "common/GammaCpp.h"
+#include "common/Help.h"
 
 namespace XS
 {

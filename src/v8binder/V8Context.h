@@ -83,8 +83,8 @@ namespace XS
 		v8::Platform*				m_platform;
 		v8::Isolate*				m_pIsolate;
 		PersistentContext			m_Context;
-		PersistentObject			m_GammaNameSpace;
-		PersistentFunction			m_GammaClass;
+		PersistentObject			m_XSNameSpace;
+		PersistentFunction			m_XSClass;
 		PersistentString			m_CppField;
 		PersistentString			m_Prototype;
 		PersistentString			m_Deconstruction;
