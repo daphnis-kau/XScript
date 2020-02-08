@@ -2,7 +2,7 @@
 #include "core/CScriptBase.h"
 #include "core/CClassRegistInfo.h"
 
-namespace Gamma
+namespace XS
 {
 	//=====================================================================
 	// 类型管理器
@@ -39,7 +39,7 @@ namespace Gamma
 	const CClassRegistInfo* CClassRegistInfo::RegisterClass(
 		const char* szClassName, const char* szTypeIDName, uint32 nSize, bool bEnum )
 	{
-		gammacstring strKey( szTypeIDName, true );
+		const_string strKey( szTypeIDName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
 		if( !pInfo )
@@ -59,7 +59,7 @@ namespace Gamma
 
 	const CClassRegistInfo* CClassRegistInfo::GetRegistInfo( const char* szTypeInfoName )
 	{
-		gammacstring strKey( szTypeInfoName, true );
+		const_string strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		return Inst.m_mapTypeID2ClassInfo.Find( strKey );
 	}
@@ -67,7 +67,7 @@ namespace Gamma
 	const CClassRegistInfo* CClassRegistInfo::SetObjectConstruct( 
 		const char* szTypeInfoName, IObjectConstruct* pObjectConstruct )
 	{
-		gammacstring strKey( szTypeInfoName, true );
+		const_string strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		assert( Inst.m_mapTypeID2ClassInfo.Find( strKey ) );
 		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
@@ -79,9 +79,9 @@ namespace Gamma
 		const char* szTypeInfoName, const char* szBaseTypeInfoName, ptrdiff_t nOffset )
 	{
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
-		gammacstring strDeriveKey( szTypeInfoName, true );
+		const_string strDeriveKey( szTypeInfoName, true );
 		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strDeriveKey );
-		gammacstring strBaseKey( szBaseTypeInfoName, true );
+		const_string strBaseKey( szBaseTypeInfoName, true );
 		CClassRegistInfo* pBaseInfo = Inst.m_mapTypeID2ClassInfo.Find( strBaseKey );
 		assert( pInfo && pBaseInfo && nOffset >= 0 );
 		SBaseInfo BaseInfo = { pBaseInfo, (int32)nOffset };
@@ -108,10 +108,10 @@ namespace Gamma
 		return pInfo;
 	}
 
-	const Gamma::CByScriptBase* CClassRegistInfo::RegisterFunction(
+	const XS::CByScriptBase* CClassRegistInfo::RegisterFunction(
 		const char* szTypeInfoName, CByScriptBase* pCallBase )
 	{
-		gammacstring strKey( szTypeInfoName, true );
+		const_string strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
 		if( !pInfo )
@@ -125,7 +125,7 @@ namespace Gamma
 	const CByScriptBase* CClassRegistInfo::RegisterCallBack(
 		const char* szTypeInfoName, uint32 nIndex, CCallScriptBase* pCallScriptBase )
 	{
-		gammacstring strKey( szTypeInfoName, true );
+		const_string strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
 		if( !pInfo )
@@ -146,7 +146,7 @@ namespace Gamma
 		return pCallScriptBase;
 	}
 
-	const Gamma::CTypeIDNameMap& CClassRegistInfo::GetAllRegisterInfo()
+	const XS::CTypeIDNameMap& CClassRegistInfo::GetAllRegisterInfo()
 	{
 		return CGlobalClassRegist::GetInst().m_mapTypeID2ClassInfo;
 	}
@@ -217,7 +217,7 @@ namespace Gamma
 		m_pObjectConstruct->Destruct( pObject );
 	}
 
-	const CByScriptBase* CClassRegistInfo::GetCallBase( const gammacstring& strFunName ) const
+	const CByScriptBase* CClassRegistInfo::GetCallBase( const const_string& strFunName ) const
 	{
 		return m_mapRegistFunction.Find( strFunName );
 	}

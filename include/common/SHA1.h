@@ -34,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/Help.h"
 #define MAX_MESSAGE_LENGTH 4096
 
-namespace Gamma
+namespace XS
 {
 	inline void sha1( const tbyte* pBuffer, uint32 nSize, tbyte* sha1 )
 	{

@@ -11,7 +11,7 @@
 #include "core/GammaScriptDef.h"
 #include <vector>
 
-namespace Gamma
+namespace XS
 {
 	// 特别注意，为了处理方便，将eDT_enum类型定义为buffer
 	typedef ptrdiff_t DataType;

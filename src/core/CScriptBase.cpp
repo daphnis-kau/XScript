@@ -5,7 +5,7 @@
 #include "core/CCallBase.h"
 #include "core/CDebugBase.h"
 
-namespace Gamma
+namespace XS
 {
 	struct SFunctionTableHead
 	{
@@ -132,7 +132,7 @@ namespace Gamma
 		const STypeInfoArray& aryTypeInfo, const char* szMemberName )
 	{
 		assert( funGetSet && ( funGetSet[0] || funGetSet[1] ) );
-		gammacstring keyName( szMemberName, true );
+		const_string keyName( szMemberName, true );
 		const char* szTypeInfoName = aryTypeInfo.aryInfo[0].m_szTypeName;
 		assert( CClassRegistInfo::GetRegistInfo( szTypeInfoName )->
 			GetRegistFunction().Find( keyName ) == nullptr );
@@ -390,7 +390,7 @@ namespace Gamma
 	{
 		CheckDebugCmd();
 
-		gammacstring strKey( szString, true );
+		const_string strKey( szString, true );
 		auto itPre = m_setRuningString.find( strKey );
 		if( itPre == m_setRuningString.end() )
 			itPre = m_setRuningString.insert( szString ).first;

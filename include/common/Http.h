@@ -1,13 +1,13 @@
 /*
-*	CGammaHttp.h	http协议类
+*	Http.h	http协议类
 */
 
-#ifndef _GAMMA_HTTP_H_
-#define _GAMMA_HTTP_H_
+#ifndef _XS_HTTP_H_
+#define _XS_HTTP_H_
 
 #include "common/CommonType.h"
 
-namespace Gamma
+namespace XS
 {
 	#define HTTP_REQUEST_HEAD_SIZE 256
 

@@ -11,7 +11,7 @@
 #include "common/TTinyList.h"
 #include <memory>
 
-namespace Gamma
+namespace XS
 {
 	class CJson
 		: private TList<CJson>
@@ -109,55 +109,55 @@ namespace Gamma
 	template<>
 	inline uint8 CJson::As<uint8>() const
 	{
-		return (uint8)GammaA2I( m_szContent );
+		return (uint8)ToInt32( m_szContent );
 	}
 
 	template<>
 	inline int8 CJson::As<int8>() const
 	{
-		return (int8)GammaA2I( m_szContent );
+		return (int8)ToInt32( m_szContent );
 	}
 
 	template<>
 	inline uint16 CJson::As<uint16>() const
 	{
-		return (uint16)GammaA2I( m_szContent );
+		return (uint16)ToInt32( m_szContent );
 	}
 
 	template<>
 	inline int16 CJson::As<int16>() const
 	{
-		return (int16)GammaA2I( m_szContent );
+		return (int16)ToInt32( m_szContent );
 	}
 
 	template<>
 	inline uint32 CJson::As<uint32>() const
 	{
-		return (uint32)GammaA2I( m_szContent );
+		return (uint32)ToInt32( m_szContent );
 	}
 
 	template<>
 	inline int32 CJson::As<int32>() const
 	{
-		return GammaA2I( m_szContent );
+		return ToInt32( m_szContent );
 	}
 
 	template<>
 	inline float CJson::As<float>() const
 	{
-		return (float)GammaA2F( m_szContent );
+		return (float)ToFloat( m_szContent );
 	}
 
 	template<>
 	inline uint64 CJson::As<uint64>() const
 	{
-		return (uint64)GammaA2I64( m_szContent );
+		return (uint64)ToInt64( m_szContent );
 	}
 
 	template<>
 	inline int64 CJson::As<int64>() const
 	{
-		return (int64)GammaA2I64( m_szContent );
+		return (int64)ToInt64( m_szContent );
 	}
 
 	template<>

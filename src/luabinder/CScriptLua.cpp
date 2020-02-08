@@ -23,7 +23,7 @@ extern "C"
 #include "CCallLua.h"
 #include "core/CClassRegistInfo.h"
 
-namespace Gamma
+namespace XS
 {
     //====================================================================================
     // CScriptLua

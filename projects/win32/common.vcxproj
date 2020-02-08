@@ -350,6 +350,7 @@
     <ClInclude Include="..\..\include\common\Http.h" />
     <ClInclude Include="..\..\include\common\Memory.h" />
     <ClInclude Include="..\..\include\common\Help.h" />
+    <ClInclude Include="..\..\include\common\SHA1.h" />
     <ClInclude Include="..\..\include\common\TCircelBuffer.h" />
     <ClInclude Include="..\..\include\common\TConstString.h" />
     <ClInclude Include="..\..\include\common\TList.h" />

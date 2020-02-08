@@ -8,9 +8,9 @@
 #include <sys/mman.h>
 #endif
 
-using namespace Gamma;
+using namespace XS;
 
-namespace Gamma
+namespace XS
 {
 	//--------------------------------------------------------------------------
 	// 操作系统相关

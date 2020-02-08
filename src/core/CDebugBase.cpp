@@ -32,14 +32,14 @@ typedef struct linger		LINGER;
 //#define LOG_REMOTE_COMMAND
 #define LINE_COUNT_ON_SHOW 16
 
-namespace Gamma
+namespace XS
 {
 	//-----------------------------------------------------
 	// CBreakPoint
 	//-----------------------------------------------------
     CBreakPoint::CBreakPoint( uint32 nID, 
 		const char* szFileName, bool bRef, uint32 nLineNum )
-		: gammacstring( szFileName, bRef )
+		: const_string( szFileName, bRef )
 		, m_nBreakPointID( nID )
 		, m_nLineNum( nLineNum )
 		, m_nFileNameStart( 0 )
@@ -288,7 +288,7 @@ namespace Gamma
 				std::string::size_type nEndPos = strBuffer.find("\r\n\r\n", nStartPos);
 				if (nEndPos == std::string::npos)
 					break;
-				uint32 nDataSize = GammaA2I(strBuffer.c_str() + nStartPos + 1);
+				uint32 nDataSize = ToInt32(strBuffer.c_str() + nStartPos + 1);
 				if (strBuffer.size() < nEndPos + 4 + nDataSize)
 					break;
 				CDebugCmd* pCmd = new CDebugCmd;

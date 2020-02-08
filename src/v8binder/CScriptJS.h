@@ -9,7 +9,7 @@
 #include "common/TRBTree.h"
 #include "core/CScriptBase.h"
 
-namespace Gamma
+namespace XS
 {
 	struct SV8Context;
 	struct SClassInfo;

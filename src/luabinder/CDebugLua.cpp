@@ -14,7 +14,7 @@ extern "C"
 	#include "lualib.h"
 }
 
-namespace Gamma
+namespace XS
 {
 	enum EPreDefinedVariableID
 	{
@@ -287,7 +287,7 @@ namespace Gamma
 		}
 
 		CFieldMap& mapFields = pInfo->m_mapFields[bIndex];
-		SFieldInfo* pField = mapFields.Find( gammacstring( szField, true ) );
+		SFieldInfo* pField = mapFields.Find( const_string( szField, true ) );
 		if( pField )
 			return static_cast<SVariableNode*>( pField )->m_nVariableID;
 
@@ -338,7 +338,7 @@ namespace Gamma
 		return ePDVID_Scopes;
 	}
 
-	Gamma::SValueInfo CDebugLua::GetVariable( uint32 nID )
+	XS::SValueInfo CDebugLua::GetVariable( uint32 nID )
 	{
 		SValueInfo Info;
 		Info.nID = nID;
@@ -447,7 +447,7 @@ namespace Gamma
 	{
 		if (szName == NULL)
 			return INVALID_32BITID;
-		gammacstring strKey(szName, true);
+		const_string strKey(szName, true);
 
 		uint32 aryID[] = { ePDVID_Local, ePDVID_UpValue, ePDVID_Global };
 		for (uint32 i = 0; i < ELEM_COUNT(aryID); i++)

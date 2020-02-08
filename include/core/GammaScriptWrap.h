@@ -8,7 +8,7 @@
 #include <array>
 #include "core/CScriptBase.h"
 
-namespace Gamma
+namespace XS
 {
 	//=======================================================================
 	// 捕获编译时错误
@@ -41,9 +41,9 @@ namespace Gamma
 			return s_fun;
 		}
 
-		static Gamma::SFunctionTable*& GetVTbInst()
+		static XS::SFunctionTable*& GetVTbInst()
 		{
-			static Gamma::SFunctionTable* s_table;
+			static XS::SFunctionTable* s_table;
 			return s_table;
 		}
 
@@ -81,7 +81,7 @@ namespace Gamma
 			ClassType* pNew = new( pObj )ClassType;
 			if( !GetVTableType::GetFunInst() )
 				return;
-			( ( Gamma::SVirtualObj* )pNew )->m_pTable = GetVTableType::GetVTbInst();
+			( ( XS::SVirtualObj* )pNew )->m_pTable = GetVTableType::GetVTbInst();
 		}
 
 		virtual void Destruct( void* pObj )
@@ -344,7 +344,7 @@ namespace Gamma
 			typedef decltype(&TCallBackWrap::BootFunction) FunctionType;
 		};
 	public:
-		static Gamma::SFunctionTable* GetVirtualTable( void* p )
+		static XS::SFunctionTable* GetVirtualTable( void* p )
 		{ 
 			return ( (SVirtualObj*)(ClassFunType*)p )->m_pTable; 
 		}
@@ -418,13 +418,13 @@ namespace Gamma
 			typedef typename SizeCheck::Succeeded Succeeded;
 
 			static TDestructorWrap s_instance;
-			GetCallBackIndex() = Gamma::GetDestructorFunIndex<ClassType>();
+			GetCallBackIndex() = XS::GetDestructorFunIndex<ClassType>();
 			FunctionType funBoot = &TDestructorWrap::Wrap;
 			STypeInfo aryInfo[2];
 			GetTypeInfo<ClassType*>( aryInfo[0] );
 			GetTypeInfo<void>( aryInfo[1] );
 			STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
-			Gamma::CScriptBase::RegistDestructor(&s_instance, 
+			XS::CScriptBase::RegistDestructor(&s_instance, 
 				*(uintptr_t*)&funBoot, GetCallBackIndex(), TypeInfo );
 		}
 	};

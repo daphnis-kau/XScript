@@ -5,8 +5,8 @@
 // 2007-09-07
 //===============================================
 
-#ifndef __GAMMA_HELP_H__
-#define __GAMMA_HELP_H__
+#ifndef __XS_HELP_H__
+#define __XS_HELP_H__
 
 #include "common/CommonType.h"
 #include <assert.h>
@@ -63,7 +63,7 @@
 #define HIINT8(w)	((int8)((uint16)((int16)(w)) >> 8))
 #define LOINT8(w)	((int8)((uint16)((int16)(w)) & 0xff))
 
-namespace Gamma
+namespace XS
 {	
 	//========================================================================
 	// 整数向上对其
@@ -459,12 +459,12 @@ namespace Gamma
 		return vecStr;
 	}
 
-	int32 GammaA2I( const wchar_t* szStr );
-	int32 GammaA2I( const char* szStr );
-	int64 GammaA2I64( const wchar_t* szStr );
-	int64 GammaA2I64( const char* szStr );
-	double GammaA2F( const wchar_t* szStr );
-	double GammaA2F( const char* szStr );
+	int32 ToInt32( const wchar_t* szStr );
+	int32 ToInt32( const char* szStr );
+	int64 ToInt64( const wchar_t* szStr );
+	int64 ToInt64( const char* szStr );
+	double ToFloat( const wchar_t* szStr );
+	double ToFloat( const char* szStr );
 
     template< class _CharType, class _intType >
     inline std::vector<_intType> SeparateStringToIntArray( const _CharType* szSrc, _CharType nSeparator )
@@ -485,9 +485,9 @@ namespace Gamma
 			{
 				szBuffer[n] = 0;       
 				if( bDot )
-					results.push_back( (_intType)GammaA2F( szBuffer ) );
+					results.push_back( (_intType)ToFloat( szBuffer ) );
 				else
-					results.push_back( (_intType)GammaA2I64( szBuffer ) );
+					results.push_back( (_intType)ToInt64( szBuffer ) );
 				bDot = false;
 				n = 0;
 			} 
@@ -495,9 +495,9 @@ namespace Gamma
 		}
 		szBuffer[n] = 0;       
 		if( bDot )
-			results.push_back( (_intType)GammaA2F( szBuffer ) );
+			results.push_back( (_intType)ToFloat( szBuffer ) );
 		else
-			results.push_back( (_intType)GammaA2I64( szBuffer ) );
+			results.push_back( (_intType)ToInt64( szBuffer ) );
         return results;
 	}
 

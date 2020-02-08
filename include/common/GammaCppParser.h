@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <typeinfo>
 
-namespace Gamma
+namespace XS
 {
 	template<typename T>
 	struct STypeID 

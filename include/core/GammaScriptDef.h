@@ -20,7 +20,7 @@
 	#define GAMMA_SCRIPT_API 
 #endif
 
-namespace Gamma
+namespace XS
 {
 #define MAX_BASE_CLASS_NUM 5
 #define MAX_FUNCTION_PARAM_NUM 10

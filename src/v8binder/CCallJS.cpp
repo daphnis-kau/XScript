@@ -12,7 +12,7 @@
 #include <alloca.h>
 #endif
 
-namespace Gamma
+namespace XS
 {
 	CJSTypeBase* s_aryJSType[eDT_count] =
 	{

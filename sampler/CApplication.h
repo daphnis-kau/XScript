@@ -3,7 +3,7 @@
 #include "../src/luabinder/CScriptLua.h"
 #include "../src/v8binder/CScriptJS.h"
 
-using namespace Gamma;
+using namespace XS;
 
 enum ETestEnum
 {

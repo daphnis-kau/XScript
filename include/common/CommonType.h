@@ -5,8 +5,8 @@
 // 2007-08-30
 //===============================================
 
-#ifndef __GAMMA_COMMON_TYPE__
-#define __GAMMA_COMMON_TYPE__
+#ifndef __XS_COMMON_TYPE__
+#define __XS_COMMON_TYPE__
 
 #pragma warning( disable: 4100 )
 #pragma warning( disable: 4121 )

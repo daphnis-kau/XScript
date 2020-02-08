@@ -11,7 +11,7 @@
 // 2020-01-10
 //=====================================================================
 
-namespace Gamma
+namespace XS
 {
 	class CScriptJS;
 	class CByScriptBase;

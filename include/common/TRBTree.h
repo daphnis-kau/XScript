@@ -7,12 +7,12 @@
 // 柯达昭
 // 2017-06-16
 //=========================================================================================
-#ifndef __TGAMMA_RBTREE_H__
-#define __TGAMMA_RBTREE_H__
+#ifndef __XS_RBTREE_H__
+#define __XS_RBTREE_H__
 
 #include "common/Help.h"
 
-namespace Gamma
+namespace XS
 {
 	template<typename ImpClass>
 	class TRBTree
@@ -694,27 +694,27 @@ namespace Gamma
 	};
 
 	template<typename DataType>
-	class TGammaRBSetNode : 
-		public TRBTree< TGammaRBSetNode<DataType> >::CRBTreeNode
+	class TRBSetNode : 
+		public TRBTree< TRBSetNode<DataType> >::CRBTreeNode
 	{
 	protected:
 		DataType	m_Data;
 	public:
-		TGammaRBSetNode( const DataType& Data ) : m_Data( Data ){}
+		TRBSetNode( const DataType& Data ) : m_Data( Data ){}
 		operator const DataType&() { return m_Data; }
 		bool operator< ( const DataType& r ) { return m_Data < r; }
 		const DataType& Get() const { return m_Data; }
 	};
 
 	template<typename KeyType, typename DataType>
-	class TGammaRBMapNode : 
-		public TRBTree< TGammaRBMapNode<KeyType, DataType> >::CRBTreeNode
+	class TRBMapNode : 
+		public TRBTree< TRBMapNode<KeyType, DataType> >::CRBTreeNode
 	{
 	protected:
 		KeyType		m_Key;
 		DataType	m_Data;
 	public:
-		TGammaRBMapNode( const KeyType& Key, const DataType& Data ) : m_Key( Key ), m_Data( Data ){}
+		TRBMapNode( const KeyType& Key, const DataType& Data ) : m_Key( Key ), m_Data( Data ){}
 		operator const KeyType&() { return m_Key; }
 		bool operator< ( const KeyType& r ) { return m_Key < r; }
 		DataType& GetData() { return m_Data; }

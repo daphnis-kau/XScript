@@ -3,7 +3,7 @@
 #include "Memory.h"
 #include <functional>
 
-namespace Gamma
+namespace XS
 {
 	template<class Alloc, uint32 nPageSize>
 	class TCircelBuffer 

@@ -16,7 +16,7 @@
 #include <map>
 #include <set>
 
-namespace Gamma
+namespace XS
 {
 	class CTypeBase;
 	class CDebugBase;
@@ -33,7 +33,7 @@ namespace Gamma
 		CFunctionTableMap		m_mapVirtualTableOld2New;
 		CNewFunctionTableMap	m_mapNewVirtualTable;
 		std::list<std::string>	m_listSearchPath;
-		std::set<gammacstring>	m_setRuningString;
+		std::set<const_string>	m_setRuningString;
 
 		virtual bool			CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray ) = 0;
 		virtual void			DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject ) = 0;

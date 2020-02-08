@@ -5,13 +5,13 @@
 // 2007-09-07
 //===============================================
 
-#ifndef __GAMMA_CONSTSTRING_H__
-#define __GAMMA_CONSTSTRING_H__
+#ifndef __XS_CONST_STRING_H__
+#define __XS_CONST_STRING_H__
 
 #include "common/Help.h"
 #include <string>
 
-namespace Gamma
+namespace XS
 {
 	template<typename _Elem>
 	class TConstString
@@ -231,8 +231,8 @@ namespace Gamma
 		}
 	};
 
-	typedef TConstString<char>		gammacstring;
-	typedef TConstString<wchar_t>	wgammacstring;
+	typedef TConstString<char>		const_string;
+	typedef TConstString<wchar_t>	const_wstring;
 }
 
 #endif

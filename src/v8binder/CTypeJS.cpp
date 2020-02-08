@@ -4,7 +4,7 @@
 #include "common/Help.h"
 #include <string>
 
-namespace Gamma
+namespace XS
 {
 	//=====================================================================
 	/// CJSObject
@@ -72,7 +72,7 @@ namespace Gamma
 		return pObjInfo;
 	}
 
-	inline Gamma::LocalValue CJSObject::_ToVMValue(DataType eType, 
+	inline XS::LocalValue CJSObject::_ToVMValue(DataType eType, 
 		CScriptJS& Script, void* pObj, bool bCopy )
 	{
 		auto pClassInfo = (const CClassRegistInfo*)((eType >> 1) << 1);
@@ -113,7 +113,7 @@ namespace Gamma
 		_FromVMValue(eType, Script, pDataBuf, obj);
 	}
 
-	Gamma::LocalValue CJSObject::ToVMValue(DataType eType, 
+	XS::LocalValue CJSObject::ToVMValue(DataType eType, 
 		CScriptJS& Script, char* pDataBuf)
 	{
 		void* pObj = *(void**)(pDataBuf);
@@ -151,7 +151,7 @@ namespace Gamma
 		pCurClassInfo->Assign( &Script, pDataBuf, pObject );
 	}
 
-	Gamma::LocalValue CJSValueObject::ToVMValue(DataType eType, 
+	XS::LocalValue CJSValueObject::ToVMValue(DataType eType, 
 		CScriptJS& Script, char* pDataBuf)
 	{
 		void* pObj = pDataBuf;

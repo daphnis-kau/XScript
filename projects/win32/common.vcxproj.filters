@@ -60,6 +60,9 @@
     <ClInclude Include="..\..\include\common\CVirtualFun.h">
       <Filter>inlude</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\common\SHA1.h">
+      <Filter>inlude</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="inlude">

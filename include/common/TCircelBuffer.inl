@@ -1,5 +1,5 @@
 ﻿
-namespace Gamma
+namespace XS
 {
 	template<class Alloc, uint32 nPageSize>
 	TCircelBuffer<Alloc, nPageSize>::TCircelBuffer()
@@ -155,7 +155,7 @@ namespace Gamma
 	}
 
 	template<class Alloc, uint32 nPageSize>
-	bool Gamma::TCircelBuffer<Alloc, nPageSize>::CanPop() const
+	bool XS::TCircelBuffer<Alloc, nPageSize>::CanPop() const
 	{
 		if( m_pWriteBuffer->m_nWritePos == nNodeBufferSize )
 			return false;
@@ -167,7 +167,7 @@ namespace Gamma
 	}
 
 	template<class Alloc, uint32 nPageSize>
-	uint32 Gamma::TCircelBuffer<Alloc, nPageSize>::GetWaitingBufferCount() const
+	uint32 XS::TCircelBuffer<Alloc, nPageSize>::GetWaitingBufferCount() const
 	{
 		return (uint32)( m_nPushCount - m_nPopCount );
 	}

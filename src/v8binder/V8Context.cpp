@@ -5,7 +5,7 @@
 
 #define MAX_STRING_BUFFER_SIZE	65536
 
-namespace Gamma
+namespace XS
 {
 	SV8Context::SV8Context( CScriptJS* pScript )
 		: m_pScript(pScript)

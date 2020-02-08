@@ -21,7 +21,7 @@ extern "C"
 #include "CDebugLua.h"
 #include "CScriptLua.h"
 
-namespace Gamma
+namespace XS
 {
 	CLuaTypeBase* s_aryLuaType[eDT_count] =
 	{

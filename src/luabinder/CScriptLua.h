@@ -12,7 +12,7 @@
 struct lua_State;
 struct lua_Debug;
 
-namespace Gamma
+namespace XS
 {
     //========================================定义的全局table==========================================
 

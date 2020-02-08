@@ -12,7 +12,7 @@
 #include "V8Context.h"
 #include "CScriptJS.h"
 
-namespace Gamma
+namespace XS
 {
 	#define MAX_UNKNOW_ARRAYBUFFER_SIZE	(100*1024*1024)
 

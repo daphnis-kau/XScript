@@ -4,12 +4,12 @@
 // 柯达昭
 // 2007-10-19
 //=====================================================================
-#ifndef ___GAMMA_CPP_H___
-#define ___GAMMA_CPP_H___
+#ifndef ___XS_CPP_H___
+#define ___XS_CPP_H___
 #include "common/Help.h"
 #include "common/CommonType.h"
 
-namespace Gamma
+namespace XS
 {
 	enum EDataType
 	{

@@ -41,7 +41,7 @@ typedef struct linger		LINGER;
 #define DEBUG_LOG( msg )
 //#define DEBUG_LOG( msg )	m_pBase->Output( msg, -1 )
 
-namespace Gamma
+namespace XS
 {
 	std::string ReadIDFromJson( CJson* pJson )
 	{
@@ -171,10 +171,10 @@ namespace Gamma
 		{
 			char szParam[256];
 			const char* szKey = "9F2FF3E5-BE28-4C06-BADC-83688C4AFFB7";
-			gammasstream( szParam ) << "experiments=true&v8only=true&ws=127.0.0.1:"
+			char_stream( szParam ) << "experiments=true&v8only=true&ws=127.0.0.1:"
 				<< m_nDebugPort << "/" << szKey;
 			char szContent[1024];
-			gammasstream(szContent) <<
+			char_stream(szContent) <<
 				"[{"
 					"\"description\": \"gamma instance\","
 					"\"devtoolsFrontendUrl\": "
@@ -189,7 +189,7 @@ namespace Gamma
 
 			uint32 nContentLen = (uint32)strlen(szContent);
 			char szTotal[2048];
-			gammasstream(szTotal) <<
+			char_stream(szTotal) <<
 				"HTTP/1.0 200 OK\r\n"
 				"Content-Type: application/json; charset=UTF-8\r\n"
 				"Cache-Control: no-cache\r\n"
@@ -283,7 +283,7 @@ namespace Gamma
 		if (m_eProtocol == ePT_VSCode)
 		{
 			char szCommand[256];
-			gammasstream(szCommand) << "{\"id\":" << m_nMessageID++
+			char_stream(szCommand) << "{\"id\":" << m_nMessageID++
 				<< ",\"method\":\"Debugger.enable\"}";
 			v8_inspector::StringView view((const uint8_t*)szCommand, strlen(szCommand));
 			m_strUtf8Buffer.clear();
@@ -545,7 +545,7 @@ namespace Gamma
 		ObjInfo.bChildrenFetched = true;
 		char szCommand[4096];
 		uint32 nMessageID = m_nMessageID++;
-		gammasstream(szCommand)
+		char_stream(szCommand)
 			<< "{\"id\":" << nMessageID << ","
 			<< "\"method\":\"Runtime.getProperties\","
 			<< "\"params\":{\"objectId\":\"" << ObjInfo.strID
@@ -584,7 +584,7 @@ namespace Gamma
 
 		char szCommand[4096];
 		uint32 nMessageID = m_nMessageID++;
-		gammasstream( szCommand )
+		char_stream( szCommand )
 			<< "{\"id\":" << nMessageID << ","
 			<< "\"method\":\"Debugger.setBreakpoint\","
 			<< "\"params\":{\"location\":{\"scriptId\":\"" 
@@ -610,7 +610,7 @@ namespace Gamma
 		if (it == m_mapBreakPoint.end())
 			return;
 		char szCommand[4096];
-		gammasstream(szCommand)
+		char_stream(szCommand)
 			<< "{\"id\":" << m_nMessageID++ << ","
 			<< "\"method\":\"Debugger.removeBreakpoint\","
 			<< "\"params\":{\"breakpointId\":\"" << it->second << "\"}}";
@@ -684,7 +684,7 @@ namespace Gamma
 	SValueInfo CDebugJS::GetVariable( uint32 nID )
 	{
 		if (m_nCurFrame >= (int32)GetFrameCount())
-			return Gamma::SValueInfo();
+			return XS::SValueInfo();
 
 		SFrameInfo& CurFrame = m_aryFrame[m_nCurFrame];
 		SValueInfo Info;
@@ -698,7 +698,7 @@ namespace Gamma
 
 		auto itRef = CurFrame.mapObjRefs.find(nID);
 		if(itRef == CurFrame.mapObjRefs.end())
-			return Gamma::SValueInfo();
+			return XS::SValueInfo();
 
 		auto pInfo = itRef->second.pObjectInfo;
 		FetchChildren(*pInfo);
@@ -713,7 +713,7 @@ namespace Gamma
 	void CDebugJS::Stop()
 	{
 		char szCommand[256];
-		gammasstream( szCommand ) << "{\"id\":" << m_nMessageID++
+		char_stream( szCommand ) << "{\"id\":" << m_nMessageID++
 			<< ",\"method\":\"Debugger.enable\"}";
 		v8_inspector::StringView view( (const uint8_t*)szCommand, strlen( szCommand ) );
 		m_Session->dispatchProtocolMessage( view );
@@ -731,7 +731,7 @@ namespace Gamma
 	void CDebugJS::StepIn()
 	{
 		char szCommand[256];
-		gammasstream(szCommand) << "{\"id\":" << m_nMessageID++ 
+		char_stream(szCommand) << "{\"id\":" << m_nMessageID++ 
 			<< ",\"method\":\"Debugger.stepInto\"}";
 		v8_inspector::StringView view((const uint8_t*)szCommand, strlen(szCommand));
 		m_Session->dispatchProtocolMessage(view);
@@ -745,7 +745,7 @@ namespace Gamma
 	void CDebugJS::StepOut()
 	{
 		char szCommand[256];
-		gammasstream(szCommand) << "{\"id\":" << m_nMessageID++
+		char_stream(szCommand) << "{\"id\":" << m_nMessageID++
 			<< ",\"method\":\"Debugger.stepOut\"}";
 		v8_inspector::StringView view((const uint8_t*)szCommand, strlen(szCommand));
 		m_Session->dispatchProtocolMessage(view);
@@ -758,7 +758,7 @@ namespace Gamma
 		SFrameInfo& CurFrame = m_aryFrame[m_nCurFrame];
 		char szCommand[4096];
 		uint32 nMessageID = m_nMessageID++;
-		gammasstream(szCommand)
+		char_stream(szCommand)
 			<< "{\"id\":" << nMessageID << ","
 			<< "\"method\":\"Debugger.evaluateOnCallFrame\",\"params\":{"
 			<< "\"callFrameId\":\"" << CurFrame.strCallFrameID << "\","

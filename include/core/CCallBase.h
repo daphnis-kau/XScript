@@ -12,7 +12,7 @@
 #include "CTypeBase.h"
 #include <list>
 
-namespace Gamma
+namespace XS
 {
 	enum ECallingType
 	{
@@ -38,8 +38,8 @@ namespace Gamma
     public:
 		CByScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, 
 			uintptr_t funOrg, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName );
-		operator const gammacstring&( ) const { return m_sFunName; }
-		bool operator < ( const gammacstring& strKey ) { return (const gammacstring&)*this < strKey; }
+		operator const const_string&( ) const { return m_sFunName; }
+		bool operator < ( const const_string& strKey ) { return (const const_string&)*this < strKey; }
 
 		virtual void			Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const;
 		IFunctionWrap*			GetFunWrap()		const { return m_funWrap; }
@@ -47,12 +47,12 @@ namespace Gamma
 		DataType				GetResultType()		const { return m_nResult; }
 		uint32					GetParamCount()		const { return m_nParamCount; }
 		int32					GetFunctionIndex()	const { return m_nFunIndex; }
-		const gammacstring&		GetFunctionName()	const { return m_sFunName; }
+		const const_string&		GetFunctionName()	const { return m_sFunName; }
 
 	protected:
 		IFunctionWrap*			m_funWrap;
 		uintptr_t				m_funOrg;
-		gammacstring			m_sFunName;
+		const_string			m_sFunName;
 		DataType				m_nResult;
 		DataTypeArray			m_listParam;
 		uint32					m_nParamCount;

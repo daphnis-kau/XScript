@@ -13,7 +13,7 @@
 #include "CScriptLua.h"
 
 struct lua_State;
-namespace Gamma
+namespace XS
 {
 	//=====================================================================
 	/// lua对C++数据的操作方法封装

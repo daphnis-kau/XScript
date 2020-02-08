@@ -10,7 +10,7 @@
 #include "core/CCallBase.h"
 #include "CTypeLua.h"
 
-namespace Gamma
+namespace XS
 {
 	class CScriptLua;
 

@@ -12,7 +12,7 @@
 #include "common/TRBTree.h"
 #include "core/CDebugBase.h"
 
-namespace Gamma
+namespace XS
 {
 	typedef v8::Local<v8::Context> CV8Context;
 	typedef std::unique_ptr<v8_inspector::V8Inspector> CInspectorPtr;

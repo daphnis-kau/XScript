@@ -16,7 +16,7 @@ extern "C"
 #include "CScriptLua.h"
 #include "core/CClassRegistInfo.h"
 
-namespace Gamma
+namespace XS
 {
     //=====================================================================
     // lua数据类型之C++对象类型
@@ -107,7 +107,7 @@ namespace Gamma
 		auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
         if( !lua_isnil( pL, -1 ) )
 		{
-            const gammacstring& sObjectIndex = pClassInfo->GetObjectIndex();
+            const const_string& sObjectIndex = pClassInfo->GetObjectIndex();
             lua_getfield( pL, -1, sObjectIndex.c_str() );
             bool bNil = lua_isnil( pL, -1 );
             lua_pop( pL, 1 );

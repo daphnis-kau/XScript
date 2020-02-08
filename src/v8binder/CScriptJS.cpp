@@ -38,7 +38,7 @@
 #include "v8/v8-natives_blob.h"
 #include "v8/libplatform/libplatform.h"
 
-namespace Gamma
+namespace XS
 {
 
 	//====================================================================================

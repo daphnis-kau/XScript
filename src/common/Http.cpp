@@ -3,7 +3,7 @@
 #include "common/SHA1.h"
 #include "common/TStrStream.h"
 
-namespace Gamma
+namespace XS
 {
 #define INVALID_DATA_SIZE ( (uint32)( INVALID_32BITID - 1 ) )
 
@@ -329,7 +329,7 @@ namespace Gamma
 	{
 	}
 
-	Gamma::EHttpReadState CHttpRequestState::CheckHttpBuffer( 
+	XS::EHttpReadState CHttpRequestState::CheckHttpBuffer( 
 		const char* szBuffer, uint32 nBufferSize )
 	{
 		if( nBufferSize < 6 )
@@ -473,7 +473,7 @@ namespace Gamma
 			Info.szHost[Info.nHostLen] != ':' )
 			Info.nHostLen++;
 		if( Info.szHost[Info.nHostLen] == ':' )
-			Info.nPort = (uint16)GammaA2I( Info.szHost + Info.nHostLen + 1 );
+			Info.nPort = (uint16)ToInt32( Info.szHost + Info.nHostLen + 1 );
 		return Info;
 	}
 	
@@ -486,9 +486,9 @@ namespace Gamma
 		SUrlInfo Info = GetHostAndPortFromUrl( szUrl );
 		const char* szMeth = bPost ? "POST " : "GET ";
 		uint32 nLen =
-			(uint32)( gammasstream( szBuffer, nBufferSize ) 
+			(uint32)( char_stream( szBuffer, nBufferSize ) 
 			<< szMeth << ( Info.szHost + Info.nHostLen ) << " HTTP/1.1\r\n"
-			<< "Host: " << gammacstring( Info.szHost, Info.nHostLen, true ) << "\r\n"
+			<< "Host: " << const_string( Info.szHost, Info.nHostLen, true ) << "\r\n"
 			<< "Accept: */*\r\n" 
 			<< "Content-Length: " << nDataSize << "\r\n"
 			<< "Content-Type: application/x-www-form-urlencoded\r\n\r\n"
@@ -509,10 +509,10 @@ namespace Gamma
 		char szUUID[64];
 		Base64Encode(szUUID, ELEM_COUNT(szUUID), aryBinKey, sizeof(aryBinKey));
 
-		gammasstream ssShakeHand( szBuffer, nBufferSize );
+		char_stream ssShakeHand( szBuffer, nBufferSize );
 		ssShakeHand <<
 			"GET " << ( Info.szHost + Info.nHostLen ) << " HTTP/1.1\r\n"
-			"Host: " << gammacstring( Info.szHost, Info.nHostLen, true ) << " \r\n"
+			"Host: " << const_string( Info.szHost, Info.nHostLen, true ) << " \r\n"
 			"Upgrade: websocket\r\n"
 			"Connection: Upgrade\r\n"
 			"Sec-WebSocket-Key: " << szUUID << "\r\n"
@@ -623,7 +623,7 @@ namespace Gamma
 		char szBase64[256];
 		Base64Encode(szBase64, ELEM_COUNT(szBase64), shaHash, sizeof(shaHash));
 
-		gammasstream ssBuffer(szBuffer, nBufferSize);
+		char_stream ssBuffer(szBuffer, nBufferSize);
 		ssBuffer <<	"HTTP/1.1 101 Switching Protocols\r\n"
 			"Upgrade: websocket\r\n"
 			"Connection: upgrade\r\n"

@@ -12,7 +12,7 @@
 
 #pragma warning( disable: 4611 )
 
-namespace Gamma
+namespace XS
 {
 	class CCheckMemoryExecutable
 	{
@@ -65,7 +65,7 @@ namespace Gamma
 			FILE* fp;
 			uint32 nPID = (uint32)getpid();
 			char szBuffer[2048];
-			gammasstream( szBuffer ) << "/proc/" << nPID << "/maps";
+			char_stream( szBuffer ) << "/proc/" << nPID << "/maps";
 			if( NULL != ( fp = fopen( szBuffer, "r" ) ) )
 			{
 				while ( fgets( szBuffer, 2048, fp ) )

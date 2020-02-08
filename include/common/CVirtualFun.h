@@ -1,7 +1,14 @@
-﻿#pragma once
+﻿//=========================================================================================
+// CVirtualFun.h 
+// 柯达昭
+// 2008-02-27
+//=========================================================================================
+#ifndef __XS_VIRTUALFUN_H__
+#define __XS_VIRTUALFUN_H__
+
 #include "common/GammaCpp.h"
 
-namespace Gamma
+namespace XS
 {
 #ifndef AS3_ALCHEMY_SWIG
 
@@ -64,3 +71,5 @@ namespace Gamma
 
 #endif
 }
+
+#endif

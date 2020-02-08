@@ -14,7 +14,7 @@
 struct lua_State;
 struct lua_Debug;
 
-namespace Gamma
+namespace XS
 {
     class CDebugLua : public CDebugBase
 	{
@@ -25,10 +25,10 @@ namespace Gamma
 
 		struct SFieldInfo : public CFieldMap::CRBTreeNode
 		{
-			gammacstring	m_strField;
+			const_string	m_strField;
 			uint32			m_nRegisterID;
-			operator const gammacstring&( ) const { return m_strField; }
-			bool operator < ( const gammacstring& strKey ) { return m_strField < strKey; }
+			operator const const_string&( ) const { return m_strField; }
+			bool operator < ( const const_string& strKey ) { return m_strField < strKey; }
 		};
 
 		struct SVariableInfo : public CVariableMap::CRBTreeNode

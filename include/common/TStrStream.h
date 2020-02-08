@@ -1,12 +1,12 @@
 ﻿//===============================================
-// GammaStrStream.h 
+// TStrStream.h 
 // 定义字符串构造类，替代swprintf以及sprintf
 // 柯达昭
 // 2007-09-07
 //===============================================
 
-#ifndef __GAMMA_STRSTREAM_H__
-#define __GAMMA_STRSTREAM_H__
+#ifndef __XS_STR_STREAM_H__
+#define __XS_STR_STREAM_H__
 #include "common/CommonType.h"
 #include "common/TConstString.h"
 #include <string.h>
@@ -14,10 +14,10 @@
 #include <sstream>
 #include <iomanip>
 
-namespace Gamma
+namespace XS
 {
 	//========================================================================
-	// 字符串构造类，作用类似wprintf以及printf
+	// 字符串构造类，作用类似sprintf
 	//========================================================================
 	template<class _Elem, class _Traits = std::char_traits<_Elem> >
 	class TStrStream
@@ -248,18 +248,18 @@ namespace Gamma
 		}
 	};
 
-	typedef TStrStream<char>	gammasstream;
-	typedef TStrStream<wchar_t>	wgammasstream;
-	#define gammasstreamf		gammasstream::GenFormat
-	#define wgammasstreamf		wgammasstream::GenFormat
+	typedef TStrStream<char>	char_stream;
+	typedef TStrStream<wchar_t>	wchar_stream;
+	#define char_stream_f		char_stream::GenFormat
+	#define wchar_stream_f		wchar_stream::GenFormat
 
 	/**
 	 * example:
-	 * gammasstream( szElem ) << "0x" << gammasstreamf( 26, iostream::hex, 8, '0' ) << endl;
+	 * char_stream( szElem ) << "0x" << char_stream_f( 26, iostream::hex, 8, '0' ) << endl;
 	 * szElem: 0x0000001a
-	 * gammasstream( szElem ) << "0x" << gammasstreamf( 26, iostream::dec, 8, '0' ) << endl;
+	 * char_stream( szElem ) << "0x" << char_stream_f( 26, iostream::dec, 8, '0' ) << endl;
 	 * szElem: 0x00000026
-	 * gammasstream( szElem ) << "0x" << gammasstreamf( 26, iostream::dec|iostream::left, 8, '0' ) << endl;
+	 * char_stream( szElem ) << "0x" << char_stream_f( 26, iostream::dec|iostream::left, 8, '0' ) << endl;
 	 * szElem: 0x26000000
 	 */
 }

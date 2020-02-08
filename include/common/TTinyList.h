@@ -21,7 +21,7 @@
 #include "common/Help.h"
 
 
-namespace Gamma
+namespace XS
 {
 	template<typename ImpClass>
 	class TTinyList

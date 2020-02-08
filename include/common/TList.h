@@ -7,12 +7,12 @@
 // 柯达昭
 // 2008-02-27
 //=========================================================================================
-#ifndef __TGAMMA_LIST_H__
-#define __TGAMMA_LIST_H__
+#ifndef __XS_LIST_H__
+#define __XS_LIST_H__
 
 #include "common/Help.h"
 
-namespace Gamma
+namespace XS
 {
 
 	template<typename ImpClass>
@@ -194,13 +194,13 @@ namespace Gamma
 	};
 
 	template<typename DataType>
-	class TGammaListNode : 
-		public TList< TGammaListNode<DataType> >::CListNode
+	class TListNode : 
+		public TList< TListNode<DataType> >::CListNode
 	{
 		DataType m_Data;
 	public:
-		TGammaListNode() {}
-		TGammaListNode( const DataType& v ) : m_Data( v ) {}
+		TListNode() {}
+		TListNode( const DataType& v ) : m_Data( v ) {}
 		const DataType& Get() { return m_Data; }
 		void Set( const DataType& v ) { m_Data = v; }
 	};

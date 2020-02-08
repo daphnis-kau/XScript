@@ -19,7 +19,7 @@
 #include <thread>
 #include <mutex>
 
-namespace Gamma
+namespace XS
 {
 	class CDebugCmd;
 	class CScriptBase;
@@ -52,7 +52,7 @@ namespace Gamma
 		uint32		nIndexValues;
 	};
 
-    class CBreakPoint : public gammacstring
+    class CBreakPoint : public const_string
 	{
 		uint32				m_nBreakPointID;
 		uint32				m_nFileNameStart;

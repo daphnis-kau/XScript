@@ -1,7 +1,7 @@
 ﻿#include "core/CTypeBase.h"
 #include "core/CScriptBase.h"
 
-namespace Gamma
+namespace XS
 {
 	const size_t s_aryOrgSize[] =
 	{

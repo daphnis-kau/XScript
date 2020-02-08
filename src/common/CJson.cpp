@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <codecvt>
 
-namespace Gamma
+namespace XS
 {
 	static char s_nArrayFlag  = 0;
 	static char s_nObjectFlag = 0;

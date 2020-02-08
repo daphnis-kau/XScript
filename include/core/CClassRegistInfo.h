@@ -16,7 +16,7 @@
 #include <vector>
 #include <map>
 
-namespace Gamma
+namespace XS
 {
 	class CTypeBase;
 	class CScriptBase;
@@ -35,8 +35,8 @@ namespace Gamma
 			int32						m_nBaseOff;         // 包含的基类相对于子类的偏移
 		};
 
-		gammacstring					m_szClassName;		// 类的名字
-		gammacstring					m_szTypeIDName;		// 编译器生成的类型信息
+		const_string					m_szClassName;		// 类的名字
+		const_string					m_szTypeIDName;		// 编译器生成的类型信息
 
 		std::vector<CCallScriptBase*>	m_vecOverridableFun;// 可重写的函数
 		std::vector<SBaseInfo>			m_vecBaseRegist;    // 包含的基类信息
@@ -53,8 +53,8 @@ namespace Gamma
 		~CClassRegistInfo( void );
     public:
 
-		operator const gammacstring&( ) const { return m_szTypeIDName; }
-		bool operator < ( const gammacstring& strKey ) { return (const gammacstring&)*this < strKey; }
+		operator const const_string&( ) const { return m_szTypeIDName; }
+		bool operator < ( const const_string& strKey ) { return (const const_string&)*this < strKey; }
 
 		static const CClassRegistInfo*	RegisterClass( const char* szClassName, const char* szTypeIDName, uint32 nSize, bool bEnum );
 		static const CClassRegistInfo*	GetRegistInfo( const char* szTypeInfoName );
@@ -73,14 +73,14 @@ namespace Gamma
 		void                            RecoverVirtualTable( CScriptBase* pScript, void* pObj ) const;
 		bool                            IsCallBack() const;
 		int32                       	GetBaseOffset( const CClassRegistInfo* pRegist ) const;
-		const CByScriptBase*			GetCallBase( const gammacstring& strFunName ) const;
+		const CByScriptBase*			GetCallBase( const const_string& strFunName ) const;
         bool                            FindBase( const CClassRegistInfo* pRegistBase ) const;
 		bool							IsBaseObject(ptrdiff_t nDiff) const;
 		bool							IsEnum() const { return m_bIsEnum; }
 		const std::vector<SBaseInfo>&  	BaseRegist() const { return m_vecBaseRegist; }
-		const gammacstring&            	GetTypeIDName() const { return m_szTypeIDName; }
-		const gammacstring&            	GetClassName() const { return m_szClassName; }
-		const gammacstring&            	GetObjectIndex() const { return m_szTypeIDName; }
+		const const_string&            	GetTypeIDName() const { return m_szTypeIDName; }
+		const const_string&            	GetClassName() const { return m_szClassName; }
+		const const_string&            	GetObjectIndex() const { return m_szTypeIDName; }
 		uint32                          GetClassSize() const { return m_nSizeOfClass; }
 		uint32                          GetClassAligenSize() const { return m_nAligenSizeOfClass; }
 		uint8							GetInheritDepth() const { return m_nInheritDepth; }

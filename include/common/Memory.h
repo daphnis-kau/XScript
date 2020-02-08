@@ -1,16 +1,16 @@
 ﻿//=====================================================================
-// GammaMemory.h 
+// Memory.h 
 // 内存分配器
 // 柯达昭
 // 2010-07-26
 //=======================================================================
 
-#ifndef _GAMMA_MEMORY_H_
-#define _GAMMA_MEMORY_H_
+#ifndef __XS_MEMORY_H__
+#define __XS_MEMORY_H__
 
 #include "common/CommonType.h"
 
-namespace Gamma
+namespace XS
 {
 	#define VIRTUAL_PAGE_READ		0x01
 	#define VIRTUAL_PAGE_WRITE		0x02
