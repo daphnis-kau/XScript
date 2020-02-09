@@ -2,6 +2,7 @@
 #include <string>
 #include <locale>
 #include <codecvt>
+#include <algorithm>
 
 extern "C"
 {
@@ -12,9 +13,10 @@ extern "C"
 }
 
 #include "common/Help.h"
+#include "common/TStrStream.h"
+#include "core/CClassRegistInfo.h"
 #include "CTypeLua.h"
 #include "CScriptLua.h"
-#include "core/CClassRegistInfo.h"
 
 namespace XS
 {
@@ -309,7 +311,7 @@ namespace XS
 		if( pInfo == NULL || pInfo->pBuffer == NULL || nTotalSize > pInfo->nCapacity )
 		{
 			lua_pushstring( pL, s_szLuaBufferInfo );
-			uint32 nLen = Max<uint32>( nTotalSize, 16 );
+			uint32 nLen = std::max<uint32>( nTotalSize, 16 );
 			uint32 nCapacity = nLen + nLen/2;
 			uint32 nAlocSize = nCapacity + sizeof(SBufferInfo);
 			SBufferInfo* pNewBufferInfo = (SBufferInfo*)lua_newuserdata( pL, nAlocSize );
@@ -609,7 +611,7 @@ namespace XS
 				return 0;
 			}
 			pInfoSrc->nPosition += nReadCount;
-			pInfoDes->nDataSize = Max<uint32>( nOffset + nReadCount, pInfoDes->nDataSize );
+			pInfoDes->nDataSize = std::max<uint32>( nOffset + nReadCount, pInfoDes->nDataSize );
 			return 0;
 		}
 	}
@@ -621,7 +623,7 @@ namespace XS
 		pInfo = CheckBufferSpace( pInfo, ( pInfo ? pInfo->nPosition : 0 )  + sizeof(Type), pL, 1 );
 		memcpy( pInfo->pBuffer + pInfo->nPosition, &v, sizeof(Type) );
 		pInfo->nPosition += sizeof(Type);
-		pInfo->nDataSize = Max<uint32>( pInfo->nPosition, pInfo->nDataSize );
+		pInfo->nDataSize = std::max<uint32>( pInfo->nPosition, pInfo->nDataSize );
 		lua_settop( pL, 0 );
 	}
 
@@ -721,7 +723,7 @@ namespace XS
 		memcpy( pInfo->pBuffer + pInfo->nPosition, &nSize, sizeof(uint16) );
 		memcpy( pInfo->pBuffer + pInfo->nPosition + sizeof(uint16), szString, nSize );
 		pInfo->nPosition += nSize + sizeof(uint16);
-		pInfo->nDataSize = Max<uint32>( pInfo->nPosition, pInfo->nDataSize );
+		pInfo->nDataSize = std::max<uint32>( pInfo->nPosition, pInfo->nDataSize );
 		return 0;
 	}
 
@@ -736,11 +738,11 @@ namespace XS
 		lua_settop( pL, 0 );
 
 		szString = szString ? szString : "";
-		memcpy( pInfo->pBuffer + pInfo->nPosition, szString, Min( nSize, nLen ) );
+		memcpy( pInfo->pBuffer + pInfo->nPosition, szString, std::min( nSize, nLen ) );
 		if( nSize > nLen )
 			memset( pInfo->pBuffer + pInfo->nPosition + nLen, 0, nSize - nLen );
 		pInfo->nPosition += nSize;
-		pInfo->nDataSize = Max<uint32>( pInfo->nPosition, pInfo->nDataSize );
+		pInfo->nDataSize = std::max<uint32>( pInfo->nPosition, pInfo->nDataSize );
 		return 0;
 	}
 
@@ -776,7 +778,7 @@ namespace XS
 
 			memmove( pInfoDes->pBuffer + pInfoDes->nPosition, szSrc + nOffset, nWriteCount );
 			pInfoDes->nPosition += nWriteCount;
-			pInfoDes->nDataSize = Max<uint32>( pInfoDes->nPosition, pInfoDes->nDataSize );
+			pInfoDes->nDataSize = std::max<uint32>( pInfoDes->nPosition, pInfoDes->nDataSize );
 			return 0;
 		}
 		else
@@ -812,7 +814,7 @@ namespace XS
 				return 0;
 			}
 			pInfoDes->nPosition += nWriteCount;
-			pInfoDes->nDataSize = Max<uint32>( pInfoDes->nPosition, pInfoDes->nDataSize );
+			pInfoDes->nDataSize = std::max<uint32>( pInfoDes->nPosition, pInfoDes->nDataSize );
 			return 0;
 		}
 	}
@@ -977,15 +979,14 @@ namespace XS
 		lua_settop( pL, 0 );
 
 		memset( pInfo->pBuffer + nOffset, 0, nClearCount );
-		pInfo->nDataSize = Max<uint32>( nOffset + nClearCount, pInfo->nDataSize );
+		pInfo->nDataSize = std::max<uint32>( nOffset + nClearCount, pInfo->nDataSize );
 		return 0;
 	}
 
     void CLuaBuffer::RegistClass( CScriptLua* pScript )
 	{
-		char szSrc[256] = { 0 };
-		strcat2array_safe( szSrc, s_szLuaBufferClass );
-		strcat2array_safe( szSrc, " = class();" );
+		char szSrc[256];
+		char_stream( szSrc ) << s_szLuaBufferClass << " = class();";
 		pScript->RunString( szSrc );
 
 		lua_State* pL = pScript->GetLuaState();

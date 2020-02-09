@@ -1,9 +1,11 @@
-﻿//=============================================================
-// CppTypeParser.h
-// 柯达昭
-// 2012-08-09
-//=====================================================================
-#pragma once
+﻿/**@file  		CppTypeParser.h
+* @brief		Fetch type information of C++ base type
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+*/
+#ifndef _XS_CPP_TYPE_H_
+#define _XS_CPP_TYPE_H_
 
 #include <type_traits>
 #include <typeinfo>
@@ -11,7 +13,7 @@
 
 namespace XS
 {
-	//type of c++
+	/// type of c++
 	enum EDataType
 	{
 		eDT_void = 0,
@@ -58,7 +60,7 @@ namespace XS
 		};
 	};
 
-	///< 特化c++内置基本类型
+	/// Builtin type of c++
 	template<> struct STypeID<void>		{ enum{ eTypeID = eDT_void	, eSize = 0					}; };
 	template<> struct STypeID<char>		{ enum{ eTypeID = eDT_char	, eSize = sizeof(char)		}; };
 	template<> struct STypeID<int8>		{ enum{ eTypeID = eDT_int8	, eSize = sizeof(int8)		}; };
@@ -76,10 +78,9 @@ namespace XS
 	template<> struct STypeID<float>	{ enum{ eTypeID = eDT_float	, eSize = sizeof(float)		}; };
 	template<> struct STypeID<double>	{ enum{ eTypeID = eDT_double, eSize = sizeof(double)	}; };
 
-	/** 
-	使用模板的方式分析出模板参数的类型
-	默认为class类型
-	其他c++内置类型通过模板特化解释
+	/**@struct template of type information
+	* @brief Fetch typeinfo by template, default type is class, \n
+	*		other types' information is fetched by template specialization
 	*/
 	template<typename T>
 	struct TTypeInfo
@@ -100,7 +101,7 @@ namespace XS
 		};
 	};
 
-	///< 特化const类型
+	/// Constant type
 	template<typename T>
 	struct TTypeInfo<const T> : public TTypeInfo<T>
 	{
@@ -115,7 +116,7 @@ namespace XS
 		};
 	};
 
-	///< 特化指针类型
+	/// Pointer type
 	template<typename T>
 	struct TTypeInfo<T*> : public TTypeInfo<T>
 	{
@@ -130,7 +131,7 @@ namespace XS
 		};
 	};
 
-	///< 特化常量指针的类型
+	/// Constant pointer type
 	template<typename T>
 	struct TTypeInfo<T *const> : public TTypeInfo<T>
 	{
@@ -145,7 +146,7 @@ namespace XS
 		};
 	};
 
-	///< 特化引用的类型
+	/// Reference type
 	template<typename T>
 	struct TTypeInfo<T&> : public TTypeInfo<T>
 	{
@@ -160,7 +161,7 @@ namespace XS
 		};
 	};
 
-	///< 特化字符串的类型
+	/// Wide string type
 	template<>
 	struct TTypeInfo<const wchar_t*>
 	{
@@ -180,7 +181,7 @@ namespace XS
 		};
 	};
 
-	///< 特化字符串的类型
+	/// C string type
 	template<>
 	struct TTypeInfo<const char*>
 	{
@@ -200,7 +201,7 @@ namespace XS
 		};
 	};
 
-	///< 特化void类型
+	/// Void type
 	template<>
 	struct TTypeInfo<void>
 	{
@@ -220,9 +221,7 @@ namespace XS
 		};
 	};
 
-	//=======================================================================
-	// 特化简单类型的常量引用
-	//=======================================================================
+	/// POD reference type
 	template<> struct TTypeInfo<const char		&> : public TTypeInfo<char		> {};
 	template<> struct TTypeInfo<const int8		&> : public TTypeInfo<int8		> {};
 	template<> struct TTypeInfo<const int16		&> : public TTypeInfo<int16		> {};
@@ -247,7 +246,6 @@ namespace XS
 
 	/**
 	* @brief Get information of the giving type
-	*
 	* @return information of the giving type
 	*/
 	template<typename T>
@@ -260,3 +258,5 @@ namespace XS
 		return Info;
 	}
 }
+
+#endif

@@ -27,11 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /* ToDo:                                                        */
 /*   Sort out endian tolerance. Currently little endian.        */
 /****************************************************************/
-#ifndef _WIN32
-#include <alloca.h>
-#endif
-
 #include "common/Help.h"
+#include <memory.h>
 #define MAX_MESSAGE_LENGTH 4096
 
 namespace XS

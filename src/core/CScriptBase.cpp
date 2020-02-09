@@ -1,4 +1,4 @@
-﻿#include <stdlib.h>
+﻿#include <sstream>
 #include "common/Help.h"
 #include "common/Memory.h"
 #include "core/CScriptBase.h"

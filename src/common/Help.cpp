@@ -1,4 +1,5 @@
 ﻿#include "common/Help.h"
+#include <algorithm>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -6,7 +7,6 @@
 
 namespace XS
 {
-
 	int32 ToInt32( const wchar_t* szStr )
 	{
 		if( !szStr )
@@ -14,7 +14,7 @@ namespace XS
 		char szBuf[256];
 		uint32 i = 0;
 		while( i < 128 && szStr[i] )
-			szBuf[i] = (char)Min<uint32>( szStr[i], 0x7f );
+			szBuf[i] = (char)std::min<uint32>( szStr[i], 0x7f );
 		szBuf[i] = 0;
 		return (int32)strtol( szBuf, NULL, 0 );
 	}
@@ -33,7 +33,7 @@ namespace XS
 		char szBuf[256];
 		uint32 i = 0;
 		while( i < 128 && szStr[i] )
-			szBuf[i] = (char)Min<uint32>( szStr[i], 0x7f );
+			szBuf[i] = (char)std::min<uint32>( szStr[i], 0x7f );
 		szBuf[i] = 0;
 		return ToInt64( szBuf );
 	}
@@ -55,7 +55,7 @@ namespace XS
 		char szBuf[256];
 		uint32 i = 0;
 		while( i < 128 && szStr[i] )
-			szBuf[i] = (char)Min<uint32>(szStr[i], 0x7f);
+			szBuf[i] = (char)std::min<uint32>(szStr[i], 0x7f);
 		szBuf[i] = 0;
 		return atof( szBuf );
 	}

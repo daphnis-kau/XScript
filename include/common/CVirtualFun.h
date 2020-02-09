@@ -1,8 +1,9 @@
-﻿//=========================================================================================
-// CVirtualFun.h 
-// 柯达昭
-// 2008-02-27
-//=========================================================================================
+﻿/**@file  		CVirtualFun.h
+* @brief		Define virtual function structure and interface
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+*/
 #ifndef __XS_VIRTUALFUN_H__
 #define __XS_VIRTUALFUN_H__
 
@@ -14,19 +15,22 @@ namespace XS
 
 	#define MAX_VTABLE_SIZE        512
 
-	//假定c++对象虚表结构为：（与编译器相关，在vc++和gcc中成立）
-	// pObj-> ----------------
-	//       | SFunctionTable |  -> --------------
-	//        ----------------       |  FunMember1  |
-	//       |   DataMember1  |    |  FunMember2  |
-	//       |   DataMember2  |    |  FunMember3  |
-	//       |   DataMember3  |    |  FunMember4  |
-	//       |   DataMember4  |    |  FunMember5  |
-	//       |   DataMember5  |    | ...........  |
-	//       |   ...........  |     --------------
-	//        --------------     
-	//                             
-	//
+	/**@struct Define virtual table
+	 * @brief Assume C++ Object structure as blow		
+	 * （Depend on compiler，such as vc++/gcc/clang）	
+	 * pObj-> ----------------							
+	 *       | SFunctionTable |  -> --------------		
+	 *        ----------------     |  FunMember1  |		
+	 *       |   DataMember1  |    |  FunMember2  |		
+	 *       |   DataMember2  |    |  FunMember3  |		
+	 *       |   DataMember3  |    |  FunMember4  |		
+	 *       |   DataMember4  |    |  FunMember5  |		
+	 *       |   DataMember5  |    | ...........  |		
+	 *       |   ...........  |     --------------		
+	 *        --------------     						
+	 *                             						
+	 *													
+	 */
 	struct SFunctionTable
 	{
 		SFunctionTable();
@@ -40,12 +44,12 @@ namespace XS
 		SFunctionTable* m_pTable;
 	};
 
-	// 获取虚表索引导出函数
+	/// Find virtual function index in virtual table
 	typedef void( *VirtualFunCallback )( void*, void* );
 	uint32 FindVirtualFunction( uint32 nSize,
 		VirtualFunCallback funCallback, void* pContext );
 
-	// 获取普通函数虚表索引
+	/// Find normal virtual function's index in virtual table
 	template< typename ClassType, typename RetType, typename... Param >
 	static uint32 GetVirtualFunIndex( RetType ( ClassType::*pFun )( Param... ) )
 	{
@@ -57,7 +61,7 @@ namespace XS
 		return FindVirtualFunction( sizeof( ClassType ), funCallback, &funCall );
 	}
 
-	// 获取析构函数虚表索引
+	/// Find destructor's index in virtual table
 	template<typename ClassType>
 	uint32 GetDestructorFunIndex()
 	{

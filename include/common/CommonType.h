@@ -1,10 +1,9 @@
-﻿//===============================================
-// CommonType.h 
-// 定义常用类型
-// 柯达昭
-// 2007-08-30
-//===============================================
-
+﻿/**@file  		CommonType.h
+* @brief		Common type definition
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+*/
 #ifndef __XS_COMMON_TYPE__
 #define __XS_COMMON_TYPE__
 
@@ -22,20 +21,6 @@
 #pragma warning( disable: 4996 )
 #pragma warning( error: 4553 )
 #pragma warning( error: 4715 )
-
-#ifdef _WIN32
-	#define		chdir				_chdir
-	#define		itoa				_itoa
-#else
-	#include <sys/types.h>
-	#include <stdint.h>
-	#include <stddef.h>
-	#define		_vsnprintf			vsnprintf
-
-#ifndef MAX_PATH
-	#define		MAX_PATH			260
-#endif
-#endif
 
 	typedef		signed char			int8;
 	typedef		signed short		int16;

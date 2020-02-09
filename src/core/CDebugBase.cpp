@@ -2,6 +2,8 @@
 #include "common/CJson.h"
 #include "core/CDebugBase.h"
 #include "core/CScriptBase.h"
+#include <algorithm>
+#include <sstream>
 #include <string>
 
 #ifdef _WIN32
@@ -28,6 +30,9 @@ typedef struct linger		LINGER;
 #define SOCKET_ERROR		-1
 #define SD_SEND				SHUT_WR
 #endif
+
+#undef min
+#undef max
 
 //#define LOG_REMOTE_COMMAND
 #define LINE_COUNT_ON_SHOW 16
@@ -617,8 +622,8 @@ namespace XS
 			int32 nStartFrame = pArg->At<int32>( "startFrame", -1 );
 			int32 nFrameCount = pArg->At<int32>( "levels", -1 );
 			int32 nMaxFrameEnd = (int32)GetFrameCount() - 1;
-			int32 nEndFrame = Min( nStartFrame + nFrameCount, nMaxFrameEnd );
-			nStartFrame = Min( nStartFrame, nMaxFrameEnd );
+			int32 nEndFrame = std::min( nStartFrame + nFrameCount, nMaxFrameEnd );
+			nStartFrame = std::min( nStartFrame, nMaxFrameEnd );
 			sprintf_s( szBuf, ELEM_COUNT(szBuf) - 1, "%d", nMaxFrameEnd + 1);
 
 			CJson* pBody = new CJson( "body" );
@@ -711,7 +716,7 @@ namespace XS
 
 			CJson* pBody = new CJson( "body" );
 			CJson* pVariableArray = pBody->AddChild( "variables" );
-			for( uint32 i = 0; i < Max( nCount, nResult ); i++ )
+			for( uint32 i = 0; i < std::max( nCount, nResult ); i++ )
 			{
 				SValueInfo Info = GetVariable( i < nResult ? aryChild[i] : 0 );
 				if( !Info.nNameValues && !Info.nIndexValues )

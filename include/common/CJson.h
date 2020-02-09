@@ -4,12 +4,13 @@
 * @date			2020-01-17
 * @version		V1.0
 */
-#ifndef _JSON_H_
-#define _JSON_H_
+#ifndef _XS_JSON_H_
+#define _XS_JSON_H_
 
 #include "common/CommonType.h"
 #include "common/TList.h"
 #include "common/TTinyList.h"
+#include <string>
 #include <memory>
 
 namespace XS

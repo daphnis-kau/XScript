@@ -9,6 +9,7 @@
 #define __XS_CONST_STRING_H__
 
 #include "common/Help.h"
+#include <algorithm>
 #include <string>
 
 namespace XS
@@ -176,7 +177,7 @@ namespace XS
 			const _Elem* dst = str.c_str();
 			uint32 srcLen = size();
 			uint32 dstLen = str.size();
-			uint32 nMinLen = Min( srcLen, dstLen );
+			uint32 nMinLen = std::min( srcLen, dstLen );
 			uint32 i = 0;
 			while( i < nMinLen && src[i] == dst[i] )
 				++i;

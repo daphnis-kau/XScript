@@ -7,6 +7,9 @@
 #include <locale>
 #include <codecvt>
 
+#undef min
+#undef max
+
 extern "C"
 {
 	#include "lua.h"
@@ -374,7 +377,7 @@ namespace XS
 		}
 
 		if( pNewBuf && nOldSize )
-			memcpy( pNewBuf, pPreBuff, Min( nOldSize, nNewSize ) );
+			memcpy( pNewBuf, pPreBuff, std::min( nOldSize, nNewSize ) );
 
 		if( nOldSize > nMaxManage )
 			delete [] (tbyte*)pPreBuff;
