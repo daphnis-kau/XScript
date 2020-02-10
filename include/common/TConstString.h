@@ -1,10 +1,11 @@
-﻿//===============================================
-// TConstString.h 
-// 定义常量字符串类，替代const char*
-// 柯达昭
-// 2007-09-07
-//===============================================
-
+﻿/**@file  		TConstString.h
+* @brief		Const string implement
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+* @note			The class can construct a instance from C string by 
+*				reference to C string's memory or use new memory.
+*/
 #ifndef __XS_CONST_STRING_H__
 #define __XS_CONST_STRING_H__
 

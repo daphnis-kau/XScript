@@ -1,9 +1,9 @@
-﻿//=====================================================================
-// Memory.h 
-// 内存分配器
-// 柯达昭
-// 2010-07-26
-//=======================================================================
+﻿/**@file  		Memory.h
+* @brief		memory interface
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+*/
 
 #ifndef __XS_MEMORY_H__
 #define __XS_MEMORY_H__
@@ -16,52 +16,49 @@ namespace XS
 	#define VIRTUAL_PAGE_WRITE		0x02
 	#define VIRTUAL_PAGE_EXECUTE	0x04
 
-	//========================================================================
-	// 获取内存页大小
-	//========================================================================
+	/**
+	* @brief Get virtual memory page size of current system
+	* @return Memory page size
+	*/
 	uint32 GetVirtualPageSize();
 
-	//========================================================================
-	// 保留一段内存
-	//========================================================================
+	/**
+	* @brief Reserve memory address in [pAddress, pAddress + nSize)
+	* @param [in] pAddress begin memory address needed to be reserved
+	* @param [in] nSize memory size needed to be reserved
+	* @note the reserved memory will be align down to the page's begin
+	*	and align up to the pages' end
+	*/
 	void* ReserveMemoryPage( void* pAddress, size_t nSize );
 
-	//========================================================================
-	// 释放保留区域保留一段内存
-	//========================================================================
+	/**
+	* @brief Free the reserved memory address in [pAddress, pAddress + nSize)
+	* @param [in] pAddress begin memory address needed to be reserved
+	* @param [in] nSize memory size needed to be reserved
+	* @note the reserved memory will be align down to the page's begin
+	*	and align up to the pages' end
+	*/
 	bool FreeMemoryPage( void* pAddress, size_t nSize );
-
-	//========================================================================
-	// 提交一段内存
-	//========================================================================
+	
+	/**
+	* @brief Alloc physical memory to reserved memory with protect flag \n
+	*	in [pAddress, pAddress + nSize)
+	* @param [in] pAddress begin memory address needed to be reserved
+	* @param [in] nSize memory size needed to be reserved
+	* @param [in] nProtectFlag protect flag for committed memory
+	* @note the memory will be align down to the page's begin
+	*	and align up to the pages' end
+	*/
 	bool CommitMemoryPage( void* pAddress, size_t nSize, uint32 nProtectFlag );
 
-	//========================================================================
-	// 取消提交的一段内存
-	//========================================================================
+	/**
+	* @brief Free physical memory from reserved memory in [pAddress, pAddress + nSize)
+	* @param [in] pAddress begin memory address needed to be reserved
+	* @param [in] nSize memory size needed to be reserved
+	* @note the memory will be align down to the page's begin
+	*	and align up to the pages' end
+	*/
 	bool DecommitMemoryPage( void* pAddress, size_t nSize );
-
-	//========================================================================
-	// 页分配器
-	//========================================================================
-	template< uint32 nPageSize = 8192, uint32 nFlag = VIRTUAL_PAGE_READ|VIRTUAL_PAGE_WRITE >
-	class TFixedPageAlloc
-	{
-	public:
-		enum { ePageSize = nPageSize, eMemoryType = nFlag };
-		static void* Alloc() 
-		{ 
-			void* pBuffer = ReserveMemoryPage( NULL, ePageSize );
-			CommitMemoryPage( pBuffer, ePageSize, eMemoryType );
-			return pBuffer;
-		}
-
-		static void Free( void* p ) 
-		{ 
-			DecommitMemoryPage( p, ePageSize );
-			FreeMemoryPage( p, ePageSize );
-		};
-	};
 }
 
 #endif

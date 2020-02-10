@@ -42,7 +42,7 @@ namespace XS
 			{ 
 				return m_pPreNode != NULL; 
 			}
-			//只是从链表中脱离  delete需要自己调用
+
 			void Remove()
 			{
 				if( !IsInList() )

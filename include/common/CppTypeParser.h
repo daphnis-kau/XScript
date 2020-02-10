@@ -13,7 +13,7 @@
 
 namespace XS
 {
-	/// type of c++
+	///< type of c++
 	enum EDataType
 	{
 		eDT_void = 0,
@@ -60,7 +60,7 @@ namespace XS
 		};
 	};
 
-	/// Builtin type of c++
+	///< Builtin type of c++
 	template<> struct STypeID<void>		{ enum{ eTypeID = eDT_void	, eSize = 0					}; };
 	template<> struct STypeID<char>		{ enum{ eTypeID = eDT_char	, eSize = sizeof(char)		}; };
 	template<> struct STypeID<int8>		{ enum{ eTypeID = eDT_int8	, eSize = sizeof(int8)		}; };
@@ -101,7 +101,7 @@ namespace XS
 		};
 	};
 
-	/// Constant type
+	///< Constant type
 	template<typename T>
 	struct TTypeInfo<const T> : public TTypeInfo<T>
 	{
@@ -116,7 +116,7 @@ namespace XS
 		};
 	};
 
-	/// Pointer type
+	///< Pointer type
 	template<typename T>
 	struct TTypeInfo<T*> : public TTypeInfo<T>
 	{
@@ -131,7 +131,7 @@ namespace XS
 		};
 	};
 
-	/// Constant pointer type
+	///< Constant pointer type
 	template<typename T>
 	struct TTypeInfo<T *const> : public TTypeInfo<T>
 	{
@@ -146,7 +146,7 @@ namespace XS
 		};
 	};
 
-	/// Reference type
+	///< Reference type
 	template<typename T>
 	struct TTypeInfo<T&> : public TTypeInfo<T>
 	{
@@ -161,7 +161,7 @@ namespace XS
 		};
 	};
 
-	/// Wide string type
+	///< Wide string type
 	template<>
 	struct TTypeInfo<const wchar_t*>
 	{
@@ -181,7 +181,7 @@ namespace XS
 		};
 	};
 
-	/// C string type
+	///< C string type
 	template<>
 	struct TTypeInfo<const char*>
 	{
@@ -201,7 +201,7 @@ namespace XS
 		};
 	};
 
-	/// Void type
+	///< Void type
 	template<>
 	struct TTypeInfo<void>
 	{
@@ -221,7 +221,7 @@ namespace XS
 		};
 	};
 
-	/// POD reference type
+	///< POD reference type
 	template<> struct TTypeInfo<const char		&> : public TTypeInfo<char		> {};
 	template<> struct TTypeInfo<const int8		&> : public TTypeInfo<int8		> {};
 	template<> struct TTypeInfo<const int16		&> : public TTypeInfo<int16		> {};

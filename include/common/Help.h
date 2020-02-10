@@ -1,10 +1,9 @@
-﻿//===============================================
-// Help.h 
-// 定义常用帮助函数  
-// 柯达昭  
-// 2007-09-07
-//===============================================
-
+﻿/**@file  		Help.h
+* @brief		Common macros and functions
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+*/
 #ifndef __XS_HELP_H__
 #define __XS_HELP_H__
 
@@ -65,7 +64,7 @@
 
 namespace XS
 {	
-	/** Return the left most integer value not less than n
+	/** @brief Return the left most integer value not less than n
 	 *  and which modulus on nAligen is zero
 	 */
 	inline uint32 AligenUp( uint32 n, uint32 nAligen )
@@ -73,7 +72,7 @@ namespace XS
 		return n ? ( ( n - 1 )/nAligen + 1 )*nAligen : 0;
 	}
 
-	/** Return the right most integer value not greater than n
+	/** @brief Return the right most integer value not greater than n
 	 *  and which modulus on nAligen is zero
 	 */
 	inline uint32 AligenDown( uint32 n, uint32 nAligen )
@@ -81,28 +80,25 @@ namespace XS
 		return ( n / nAligen )*nAligen;
 	}
 
-	// 判断是否字母
 	template<class CharType>
 	inline bool IsLetter( CharType c )
 	{
 		return ( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' );
 	}
 
-	// 判断是否文字
 	template<class CharType>
 	inline bool IsWordChar( CharType c )
 	{
 		return IsLetter( c ) || ( (uint32)c ) > 127;
 	}
 
-	// 判断是否数字
 	template<class CharType>
 	inline bool IsNumber( CharType c )
 	{
 		return c >= '0' && c <= '9';
 	}
 
-	// 16进制数字转为数值
+	///< Convert hex character to integer
 	template<class CharType>
 	inline int ValueFromHexNumber( CharType c )
 	{
@@ -115,7 +111,7 @@ namespace XS
 		return -1;
 	}
 
-	// 数值转为16进制数字
+	///< Convert integer to hex character
 	inline int ValueToHexNumber( int n )
 	{
 		assert( n >= 0 && n <= 0xf );
@@ -124,21 +120,19 @@ namespace XS
 		return n - 10 + 'A';
 	}
 
-	// 判断是否16进制数字
 	template<class CharType>
 	inline bool IsHexNumber( CharType c )
 	{
 		return ValueFromHexNumber( c ) >= 0;
 	}
 
-	// 判断是空格
 	template<class CharType>
 	inline bool IsBlank( CharType c )
 	{
 		return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 	}
-
-	// 简化路径
+	
+	///< Remove . and .. in file path
 	template<class CharType>
 	inline uint32 ShortPath( CharType* szPath )
 	{
@@ -189,7 +183,6 @@ namespace XS
 		return (int32)nCurPos;
 	}
 
-	// 从路径中提取文件名
 	template<class CharType>
 	CharType* GetFileNameFromPath( CharType* szPath )
 	{

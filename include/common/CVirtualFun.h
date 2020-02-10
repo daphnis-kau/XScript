@@ -44,12 +44,12 @@ namespace XS
 		SFunctionTable* m_pTable;
 	};
 
-	/// Find virtual function index in virtual table
+	///< Find virtual function index in virtual table
 	typedef void( *VirtualFunCallback )( void*, void* );
 	uint32 FindVirtualFunction( uint32 nSize,
 		VirtualFunCallback funCallback, void* pContext );
 
-	/// Find normal virtual function's index in virtual table
+	///< Find normal virtual function's index in virtual table
 	template< typename ClassType, typename RetType, typename... Param >
 	static uint32 GetVirtualFunIndex( RetType ( ClassType::*pFun )( Param... ) )
 	{
@@ -61,7 +61,7 @@ namespace XS
 		return FindVirtualFunction( sizeof( ClassType ), funCallback, &funCall );
 	}
 
-	/// Find destructor's index in virtual table
+	///< Find destructor's index in virtual table
 	template<typename ClassType>
 	uint32 GetDestructorFunIndex()
 	{

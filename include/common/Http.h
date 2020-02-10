@@ -1,7 +1,9 @@
-/*
-*	Http.h	http协议类
+/**@file  		Http.h
+* @brief		Implement simple http protocal(include websocket)
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
 */
-
 #ifndef _XS_HTTP_H_
 #define _XS_HTTP_H_
 
@@ -29,25 +31,28 @@ namespace XS
 		eWS_Pong = 0x0a,
 	};
 
-	//  RFC 6455
-	//  0                   1                   2                   3
-	//  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-	// +-+-+-+-+-------+-+-------------+-------------------------------+
-	// |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
-	// |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
-	// |N|V|V|V|       |S|             |   (if payload len==126/127)   |
-	// | |1|2|3|       |K|             |                               |
-	// +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
-	// |     Extended payload length continued, if payload len == 127  |
-	// + - - - - - - - - - - - - - - - +-------------------------------+
-	// |                               |Masking-key, if MASK set to 1  |
-	// +-------------------------------+-------------------------------+
-	// | Masking-key (continued)       |          Payload Data         |
-	// +-------------------------------- - - - - - - - - - - - - - - - +
-	// :                     Payload Data continued ...                :
-	// + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
-	// |                     Payload Data continued ...                |
-	// +---------------------------------------------------------------+
+	/**
+	 *	@struct WebSocket Protocal
+	 *  @brief RFC 6455
+	 *   0                   1                   2                   3
+	 *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+	 *  +-+-+-+-+-------+-+-------------+-------------------------------+
+	 *  |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+	 *  |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+	 *  |N|V|V|V|       |S|             |   (if payload len==126/127)   |
+	 *  | |1|2|3|       |K|             |                               |
+	 *  +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+	 *  |     Extended payload length continued, if payload len == 127  |
+	 *  + - - - - - - - - - - - - - - - +-------------------------------+
+	 *  |                               |Masking-key, if MASK set to 1  |
+	 *  +-------------------------------+-------------------------------+
+	 *  | Masking-key (continued)       |          Payload Data         |
+	 *  +-------------------------------- - - - - - - - - - - - - - - - +
+	 *  :                     Payload Data continued ...                :
+	 *  + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+	 *  |                     Payload Data continued ...                |
+	 *  +---------------------------------------------------------------+
+	 */
 
 #pragma pack(push,1)
 	struct SWebSocketProtocal
@@ -75,7 +80,6 @@ namespace XS
 		CHttpRecvState();
 		~CHttpRecvState();
 
-		// 检查http的数据是否完整
 		EHttpReadState	CheckHttpBuffer( char* szBuffer, uint32& nBufferSize );
 		uint32			GetDataSize() const;
 		void			Reset();
@@ -95,7 +99,6 @@ namespace XS
 		CHttpRequestState();
 		~CHttpRequestState();
 
-		// 检查http的数据是否完整
 		EHttpReadState	CheckHttpBuffer( const char* szBuffer, uint32 nBufferSize );
 		uint32			GetKeepAlive() const { return m_nKeepAlive; }
 		const char*		GetDataStart() const { return m_szDataStart; }
@@ -108,58 +111,94 @@ namespace XS
 		void			Reset();
 	}; 
 
-	//==============================================================================
-	// 从url获取szHost和端口
-	//==============================================================================
+	/**
+	* @brief Get host and port from url
+	* @return host and port
+	*/
 	SUrlInfo GetHostAndPortFromUrl( const char* szUrl );
 
-	//==============================================================================
-	// 组装httprequest
-	// nBufferSize必须大于HTTP_REQUEST_HEAD_SIZE + strlen( szUrl ) + nDataSize
-	//==============================================================================
+	/**
+	* @brief Make HTTP request buffer
+	* @param [out] szBuffer Request buffer
+	* @param [in] nBufferSize Request buffer size
+	* @param [in] bPost Whether use as POST method
+	* @param [in] szUrl Request URL
+	* @param [in] pData Data for POST
+	* @param [in] nDataSize Size of input POST data(pData)
+	* @note nBufferSize must greater than \n
+	*  HTTP_REQUEST_HEAD_SIZE + strlen( szUrl ) + nDataSize
+	* @return used size of szBuffer
+	*/
 	uint32 MakeHttpRequest( char* szBuffer, uint32 nBufferSize,
 		bool bPost, const char* szUrl, const void* pData, uint32 nDataSize);
 
-	//==============================================================================
-	// 组装WebSocket request
-	// nBufferSize必须大于HTTP_REQUEST_HEAD_SIZE + strlen( szUrl )
-	//==============================================================================
+	/**
+	* @brief Make WebSocket request buffer(client side)
+	* @param [out] szBuffer Request buffer
+	* @param [in] nBufferSize Request buffer size
+	* @param [in] aryBinKey Shake Hand Key
+	* @param [in] szUrl Request URL
+	* @note nBufferSize must greater than \n
+	*  HTTP_REQUEST_HEAD_SIZE + strlen( szUrl )
+	* @return used size of szBuffer
+	*/
 	uint32 MakeWebSocketShakeHand( char* szBuffer, 
 		uint32 nBufferSize, uint8 (&aryBinKey)[16], const char* szUrl );
-	
-	//==============================================================================
-	// WebSocket shakehandchec
-	// 返回值 0：buffer不够，-1：解析错误，szWebSocketKey包含错误信息 > 0:使用掉的大小
-	//==============================================================================
+
+	/**
+	* @brief Check WebSocket shake hand(server&client side)
+	* @param [in] szBuffer Request buffer
+	* @param [in] nBufferSize Request buffer size
+	* @param [in] bServer whether check on server side
+	* @param [out] szWebSocketKey Shake Hand Key
+	* @param [out] nWebSocketKeyLen Shake Hand Key size
+	* @note nBufferSize must greater than HTTP_REQUEST_HEAD_SIZE + strlen( szUrl )
+	* @return Check result\n
+	*	0:buffer not enough; 
+	*	INVALID_32BITID:error, szWebSocketKey output message; 
+	*	other:succeeded, used size of szBuffer
+	*/
 	uint32 WebSocketShakeHandCheck( const char* pBuffer, size_t nSize, 
 		bool bServer, const char*& szWebSocketKey, uint32& nWebSocketKeyLen );
 
-	//==============================================================================
-	// 组装WebSocket服务端回应消息
-	// nBufferSize必须大于HTTP_REQUEST_HEAD_SIZE
-	//==============================================================================
+	/**
+	* @brief Make shake hand response of websocket server(server side)
+	* @param [out] szBuffer Request buffer
+	* @param [in] nBufferSize Request buffer size
+	* @param [in] szWebSocketKey Shake Hand Key
+	* @param [in] nWebSocketKeyLen Shake Hand Key size
+	* @note nBufferSize must greater than HTTP_REQUEST_HEAD_SIZE
+	* @return used size of szBuffer
+	*/
 	uint32 MakeWebSocketServerShakeHandResponese( char* szBuffer,
 		uint32 nBufferSize, const char* szWebSocketKey, uint32 nWebSocketKeyLen);
 
-	//==============================================================================
-	// 获取WebSocket Protocol消息长度
-	//==============================================================================
+	/**
+	* @brief Get whole message size(server&client side)
+	* @param [in] pProtocol Message head
+	* @param [in] nSize Size of protocol buffer( may be followed by next protocol)
+	* @return if buffer is not enough, return INVALID_64BITID, otherwise return message size
+	*/
 	uint64 GetWebSocketProtocolLen( 
 		const SWebSocketProtocal* pProtocol, uint64 nSize );
 
-	//==============================================================================
-	// 解码WebSocket Protocol
-	// 返回值：使用掉的extra buffer大小
-	// char*& pExtraBuffer 返回解码后的数据
-	// uint64& nSize 返回解码后的数据大小
-	//==============================================================================
+	/**
+	* @brief Decode websocket protocol(server&client side)
+	* @param [in] pProtocol Message head
+	* @param [in/out] pExtraBuffer Protocol extra buffer 
+	* @param [in/out] nSize Size of protocol extra buffer
+	* @return if buffer is not enough, return INVALID_64BITID, otherwise return message size
+	*/
 	uint64 DecodeWebSocketProtocol( 
 		const SWebSocketProtocal* pProtocol, char*& pExtraBuffer, uint64& nSize );
 
-	//==============================================================================
-	// 编码WebSocket Protocol
-	// 返回值：返回编码的Mask，MsgHead.m_bMask = true有效
-	//==============================================================================
+	/**
+	* @brief Encode websocket protocol(server&client side)
+	* @param [in] pProtocol Message head
+	* @param [in] pExtraBuffer Protocol extra buffer
+	* @param [in] nSize Size of protocol extra buffer
+	* @return Encode mask when Protocol.m_bMask = true
+	*/
 	uint32 EncodeWebSocketProtocol( 
 		SWebSocketProtocal& Protocol, char* pExtraBuffer, uint64 nSize );
 
