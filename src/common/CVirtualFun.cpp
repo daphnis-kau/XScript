@@ -100,10 +100,8 @@ namespace XS
 #endif
 	};
 
-	//=====================================================================
-	// 函数表初始化
-	//=====================================================================
-	void NullFunCall(){ throw( "Can not call a invalid function!"); }
+	static void NullFunCall()
+	{ throw( "Can not call a invalid function!"); }
 
 	SFunctionTable::SFunctionTable()
 	{
@@ -120,14 +118,12 @@ namespace XS
 		return MAX_VTABLE_SIZE;
 	}
 
-	//=====================================================================
-	// 获取虚表索引
-	//=====================================================================
+	///< Virtual function table for getting function index
 	struct SFunctionContext : public SFunctionTable { jmp_buf JumpFlag; };
 
-	// 将得到索引的函数赋值到虚函数表
+	///< Build virtual table by template
 	template<uint32 nStart, uint32 nCount>
-	class TSetFuntion
+	class TBuildTable
 	{
 		enum
 		{ 
@@ -138,15 +134,15 @@ namespace XS
 		};
 
 	public:
-		TSetFuntion( void** pChechFun )
+		TBuildTable( void** pChechFun )
 		{ 
-			TSetFuntion<nLStart, nLCount> Left( pChechFun );
-			TSetFuntion<nRStart, nRCount> Right( pChechFun );
+			TBuildTable<nLStart, nLCount> Left( pChechFun );
+			TBuildTable<nRStart, nRCount> Right( pChechFun );
 		}
 	};
 
 	template<uint32 nStart>
-	class TSetFuntion<nStart, 1>
+	class TBuildTable<nStart, 1>
 	{	
 		void GetIndex() 
 		{
@@ -156,18 +152,19 @@ namespace XS
 		}
 
 	public:
-		TSetFuntion( void** pChechFun )
+		TBuildTable( void** pChechFun )
 		{ 
-			auto funPointer = &TSetFuntion<nStart, 1>::GetIndex;
+			auto funPointer = &TBuildTable<nStart, 1>::GetIndex;
 			pChechFun[nStart] = *(void**)&funPointer;
 		}
 	};
 
+	///< Find function index
 	uint32 FindVirtualFunction( uint32 nSize,
 		VirtualFunCallback funCallback, void* pContext )
 	{
 		static SFunctionTable FunctionTable;
-		static TSetFuntion<0, MAX_VTABLE_SIZE> s_FunIndex( FunctionTable.m_pFun );
+		static TBuildTable<0, MAX_VTABLE_SIZE> s_FunIndex( FunctionTable.m_pFun );
 
 		SFunctionContext FunContext;
 		uint32 nAllocSize, i, nIndex;

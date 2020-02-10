@@ -7,9 +7,7 @@ namespace XS
 {
 #define INVALID_DATA_SIZE ( (uint32)( INVALID_32BITID - 1 ) )
 
-	//==============================================================================
-	// Base64 Encode
-	//==============================================================================
+	///< Base64 Encode
 	static int32 Base64Encode(
 		char* pBase64Buffer, uint32 nOutLen, const void* pSrcBuffer, uint32 nSrcLen )
 	{
@@ -34,7 +32,6 @@ namespace XS
 		uint32 nDes = 0;
 		while( nSrc < nSrcLen )
 		{
-			// 剩余的位在下一个编码的高位
 			uint32 c = pSrc[nSrc++];
 			pBase64Buffer[nDes++] = aryTable64[c>>2];
 			c = c & 0x3;
@@ -70,12 +67,10 @@ namespace XS
 		return nDes;
 	}
 
-	//==============================================================================
-	// 读取整数值
-	//==============================================================================
+	///< Read integer value from buffer
 	uint32 GetUnsignedInt( const char* szBuffer, size_t& nLinePos, size_t nSize )
 	{
-		//跳过非数据
+		// skip invalid character
 		while( nLinePos < nSize && 
 			!IsNumber( szBuffer[nLinePos] ) && 
 			!( szBuffer[nLinePos] >= 'A' && szBuffer[nLinePos] <= 'F' ) && 
@@ -97,9 +92,7 @@ namespace XS
 		return nValue;
 	}
 
-	//==============================================================================
-	// CHttpRecvState::CHttpRecvState
-	//==============================================================================
+	///< CHttpRecvState::CHttpRecvState
 	CHttpRecvState::CHttpRecvState(void)
 		: m_nHttpLength( INVALID_32BITID )
 	{
@@ -134,24 +127,24 @@ namespace XS
 			return eHRS_NeedMore;
 		}
 
-		// 跳过版本号
+		///< skip version
 		size_t nLinePos = 4;
 		while( nLinePos < nSize && szMsg[nLinePos] != ' ' )
 			nLinePos++;
 
-		// 数据不够
+		///< need more data
 		if( nLinePos == nSize )
 			return eHRS_NeedMore;
 
-		//跳过空格
+		///< skip space
 		while( nLinePos < nSize && szMsg[nLinePos] == ' ')
 			nLinePos++;
 
-		// 数据不够
+		///< need more data
 		if( nLinePos == nSize )
 			return eHRS_NeedMore;
 
-		// 状态代码
+		///< check http status
 		if( szMsg[nLinePos] != '2' )
 			return eHRS_Error;
 
@@ -159,7 +152,7 @@ namespace XS
 		uint32 nContentLength = INVALID_32BITID;
 		while( true )
 		{
-			// 数据不够
+			///< need more data
 			if( nLinePos >= nSize )
 				return eHRS_NeedMore;
 
@@ -183,7 +176,7 @@ namespace XS
 			{
 				nLinePos += (uint32)nContentLengthTagLen;
 
-				//跳过非数据
+				// skip invalid character
 				while( nLinePos < nSize && !IsNumber( szMsg[nLinePos] ) )
 					nLinePos++;
 
@@ -191,7 +184,7 @@ namespace XS
 				while( nLinePos < nSize && IsNumber( szMsg[nLinePos] ) )
 					nContentLength = nContentLength*10 + szMsg[nLinePos++] - '0';
 
-				// 数据不够
+				///< need more data
 				if( nLinePos >= nSize )
 					return eHRS_NeedMore;
 
@@ -216,7 +209,7 @@ namespace XS
 			}
 		}
 
-		// 数据不够
+		///< need more data
 		if( nLinePos >= nSize )
 			return eHRS_NeedMore;
 
@@ -226,7 +219,7 @@ namespace XS
 			return eHRS_NeedMore;
 		}
 
-		// Content-Length存在
+		///< Content-Length exist
 		if( nContentLength < INVALID_DATA_SIZE )
 		{
 			m_nHttpLength = nContentLength;
@@ -244,20 +237,20 @@ namespace XS
 
 		size_t nStart = nLinePos;
 
-		// 检查数据是否完整
+		///< data's integrity check
 		while( true )
 		{
 			nContentLength = GetUnsignedInt( szMsg, nLinePos, nSize );
-			// 数据不够
+			///< need more data
 			if( szMsg[nLinePos] != '\r' )
 				return eHRS_NeedMore;
 
-			// 跳过回车
+			///< skip newline character
 			while( nLinePos < nSize && szMsg[nLinePos] != '\n' )
 				nLinePos++;
 			nLinePos++;
 
-			// 数据不够
+			///< need more data
 			if( nLinePos + nContentLength >= nSize )
 				return eHRS_NeedMore;
 
@@ -266,19 +259,19 @@ namespace XS
 
 			nLinePos += nContentLength;
 
-			// 跳过回车
+			///< skip newline character
 			while( nLinePos < nSize && szMsg[nLinePos] != '\n' )
 				nLinePos++;
 			nLinePos++;
 		}
 
-		// 读取
+		///< Read extra data
 		nLinePos = nStart;
 		nBufferSize = 0;
 		while( true )
 		{
 			nContentLength = GetUnsignedInt( szMsg, nLinePos, nSize );
-			// 跳过回车
+			///< skip newline character
 			while( nLinePos < nSize && szMsg[nLinePos] != '\n' )
 				nLinePos++;
 			nLinePos++;
@@ -289,7 +282,7 @@ namespace XS
 			nBufferSize += nContentLength;
 			nLinePos += nContentLength;
 
-			// 跳过回车
+			///< skip newline character
 			while( nLinePos < nSize && szMsg[nLinePos] != '\n' )
 				nLinePos++;
 			nLinePos++;
@@ -310,9 +303,7 @@ namespace XS
 		m_nHttpLength = INVALID_32BITID;
 	}
 
-	//==============================================================================
-	// CHttpRequestState::CHttpRequestState
-	//==============================================================================
+	///< CHttpRequestState::CHttpRequestState
 	CHttpRequestState::CHttpRequestState()
 		: m_nKeepAlive( INVALID_32BITID )
 		, m_szDataStart( NULL )
@@ -344,7 +335,7 @@ namespace XS
 		uint32 nCurPos = m_bGetMethod ? 5 : 6;
 		uint32 nNameStart = nCurPos;
 
-		// 得页面路径  
+		///< get page path  
 		while( szBuffer[nCurPos] != ' ' && nCurPos < nBufferSize )
 		{
 			if( szBuffer[nCurPos] == '?' )
@@ -368,7 +359,7 @@ namespace XS
 		m_nDataLength = 0;
 		m_szDataStart = NULL;
 
-		// 获取数据长度  
+		///< get data length  
 		while( true )
 		{ 
 			while( szBuffer[nCurPos] != '\n' )
@@ -380,7 +371,7 @@ namespace XS
 
 			if( szBuffer[++nCurPos] == '\r' )
 			{
-				// 数据是否足够  
+				///< need more data
 				if( nBufferSize < nCurPos + 2 + m_nDataLength )
 					return eHRS_NeedMore;
 				m_szDataStart = szBuffer + nCurPos + 2;
@@ -389,13 +380,13 @@ namespace XS
 			else if( nCurPos + 15 < nBufferSize &&
 				!memcmp( "Content-Length:", szBuffer + nCurPos, 15 ) )
 			{
-				// 获取数据长度  
+				///< get data length   
 				nCurPos += 15;
 				const char* szSizeStart = NULL;
 				while( nCurPos < nBufferSize && szBuffer[nCurPos] != '\r' )
 					if( IsNumber( szBuffer[nCurPos++] ) && szSizeStart == NULL )
 						szSizeStart = szBuffer + nCurPos - 1;
-				// 数据是否足够  
+				///< need more data
 				if( nCurPos == nBufferSize )
 					return eHRS_NeedMore;
 				if( szBuffer[nCurPos] != '\r' )
@@ -405,7 +396,7 @@ namespace XS
 			else if( nCurPos + 11 < nBufferSize &&
 				!memcmp( "Connection:", szBuffer + nCurPos, 11 ) )
 			{
-				// 获取类型
+				///< get type 
 				nCurPos += 11;
 				while( nCurPos < nBufferSize && szBuffer[nCurPos] != '\r' )
 				{
@@ -413,7 +404,7 @@ namespace XS
 						m_nKeepAlive = 0;
 					nCurPos++;
 				}
-				// 数据是否足够  
+				///< need more data
 				if( nCurPos == nBufferSize )
 					return eHRS_NeedMore;
 				if( szBuffer[nCurPos] != '\r' )
@@ -422,13 +413,13 @@ namespace XS
 			else if( nCurPos + 11 < nBufferSize &&
 				!memcmp( "Keep-Alive:", szBuffer + nCurPos, 11 ) )
 			{
-				// 获取数据长度  
+				///< get data length  
 				nCurPos += 11;
 				const char* szTimeoutStart = NULL;
 				while( nCurPos < nBufferSize && szBuffer[nCurPos] != '\r' )
 					if( IsNumber( szBuffer[nCurPos++] ) && szTimeoutStart == NULL )
 						szTimeoutStart = szBuffer + nCurPos - 1;
-				// 数据是否足够  
+				///< need more data
 				if( nCurPos == nBufferSize )
 					return eHRS_NeedMore;
 				if( szBuffer[nCurPos] != '\r' )
@@ -451,9 +442,6 @@ namespace XS
 		m_nPageLength = 0;
 	}
 
-	//==============================================================================
-	// HTTP帮助函数
-	//==============================================================================
 	SUrlInfo GetHostAndPortFromUrl( const char* szUrl )
 	{
 		SUrlInfo Info = { 0, 0, 0 };
@@ -536,14 +524,14 @@ namespace XS
 				if( ++nReadCount >= nSize )
 					return 0;
 
-				// 不是"\r\n"协议不正确
+				///< must be "\r\n"
 				if (pBuffer[nReadCount] != '\n')
 				{
 					szWebSocketKey = "shakehand error( miss 0x0a )";
 					return INVALID_32BITID;
 				}
 
-				// 检查Key是否存在
+				///< check key of web socket
 				if( bServer )
 				{
 					static const char* szKey = "Sec-WebSocket-Key";
@@ -565,7 +553,7 @@ namespace XS
 					}				
 				}
 
-				// 空行结尾
+				///< empty line
 				if( nPreLineStart + 1 == nReadCount )
 				{
 					bFinished = true;
@@ -611,7 +599,7 @@ namespace XS
 	uint32 MakeWebSocketServerShakeHandResponese( char* szBuffer, 
 		uint32 nBufferSize, const char* szWebSocketKey, uint32 nWebSocketKeyLen )
 	{
-		// 填充http响应头信息  
+		// fill http response head
 		char szClientKey[64 + 40];
 		assert( nWebSocketKeyLen + 36 < ELEM_COUNT(szClientKey) );
 		memcpy(szClientKey, szWebSocketKey, nWebSocketKeyLen);

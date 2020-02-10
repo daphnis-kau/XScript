@@ -12,9 +12,6 @@ using namespace XS;
 
 namespace XS
 {
-	//--------------------------------------------------------------------------
-	// 操作系统相关
-	//--------------------------------------------------------------------------
 	uint32 GetVirtualPageSize()
 	{
 #ifdef _WIN32
@@ -38,7 +35,8 @@ namespace XS
 
 		if( pAddress && pAddress != pReserve ) 
 		{
-			// 如果地址不一样，释放掉，保证和windows行为一样
+			///< If the address is different, release it.
+			///< This action guarantee the same behavior as windows
             FreeMemoryPage( pReserve, nSize );
 			return NULL;
 		}

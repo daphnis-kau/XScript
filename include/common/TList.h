@@ -1,12 +1,10 @@
-﻿//=========================================================================================
-// TList.h 
-// 定义一个双向List类
-// 优点：插入和删除节点不需要进行内存的分配和释放，节点操作速度极快
-//		 节点可以自删除，不需要知道所处的链
-// 缺点：数据需要从指定的节点类继承
-// 柯达昭
-// 2008-02-27
-//=========================================================================================
+﻿/**@file  		TList.h
+* @brief		Double link list
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+* @note			Without any memory be alloc/free when insert/remove node 
+*/
 #ifndef __XS_LIST_H__
 #define __XS_LIST_H__
 
@@ -14,7 +12,6 @@
 
 namespace XS
 {
-
 	template<typename ImpClass>
 	class TList
 	{
