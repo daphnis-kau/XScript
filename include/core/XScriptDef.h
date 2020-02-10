@@ -1,11 +1,12 @@
-﻿#ifndef __XS_SCRIPT_DEF_H__
+﻿/**@file  		XScriptDef.h
+* @brief		Base interface of XScript
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+*/
+
+#ifndef __XS_SCRIPT_DEF_H__
 #define __XS_SCRIPT_DEF_H__
-//=====================================================================
-// XScriptDef.h 
-// 定义脚本和C++接口的基本数据类型
-// 柯达昭
-// 2007-10-16
-//=====================================================================
 #include "common/CppTypeParser.h"
 #include <string>
 

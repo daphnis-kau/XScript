@@ -1,18 +1,20 @@
-﻿#ifndef __XS_SCRIPT_MACRO_H__
+﻿/**@file  		XScriptMacro.h
+* @brief		Help macro of XScript
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+*/
+
+#ifndef __XS_SCRIPT_MACRO_H__
 #define __XS_SCRIPT_MACRO_H__
-#pragma warning(disable: 4624)
-#pragma warning(disable: 4510)
-#pragma warning(disable: 4610)
 
 #include "core/XScriptDef.h"
 #include "core/XScriptWrap.h"
 
-//=====================================================================
-// XScriptMacro.h 
-// 定义脚本和C++的注册宏
-// 柯达昭
-// 2007-10-21
-//=====================================================================
+#pragma warning(disable: 4624)
+#pragma warning(disable: 4510)
+#pragma warning(disable: 4610)
+
 #define DEFINE_CLASS_BEGIN_IMPLEMENT( _get_vtable_class, _type, _class, ... ) \
 	namespace _class##_namespace { \
 	static XS::SGlobalExe _class##_register( \

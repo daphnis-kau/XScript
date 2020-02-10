@@ -808,13 +808,9 @@ namespace XS
 
 	int32 CScriptLua::ToString( lua_State* pL )
 	{
-		int32 nTop = lua_gettop( pL );
 		luaL_checkany( pL, -1 );
 		if( luaL_callmeta( pL, -1, "__tostring" ) )
-		{
-			assert( nTop == lua_gettop( pL ) );
 			return 1;
-		}
 
 		int type = lua_type( pL, -1 );
 		const char* s = nullptr;
@@ -831,7 +827,6 @@ namespace XS
 		{
 			lua_pop( pL, 1 );
 			lua_pushstring( pL, s );
-			assert( nTop == lua_gettop( pL ) );
 			return 1;
 		}
 
@@ -841,7 +836,6 @@ namespace XS
 		{
 			lua_pop( pL, 1 );
 			lua_pushfstring( pL, "%s: %p", name, ptr );
-			assert( nTop == lua_gettop( pL ) );
 			return 1;
 		}
 
@@ -849,7 +843,6 @@ namespace XS
 		{
 			lua_pop( pL, 1 );
 			lua_pushfstring( pL, "table: %p", ptr );
-			assert( nTop == lua_gettop( pL ) );
 			return 1;
 		}
 
@@ -859,7 +852,6 @@ namespace XS
 		{
 			lua_pop( pL, 3 );
 			lua_pushfstring( pL, "table: %p", ptr );
-			assert( nTop == lua_gettop( pL ) );
 			return 1;
 		}
 
@@ -869,7 +861,6 @@ namespace XS
 		const void* pObject = lua_touserdata( pL, -1 );
 		lua_pop( pL, 4 );
 		lua_pushfstring( pL, "%s: %p->%p", pInfo->GetClassName().c_str(), ptr, pObject );
-		assert( nTop == lua_gettop( pL ) );
 		return 1;
 	}
 

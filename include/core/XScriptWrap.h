@@ -1,31 +1,28 @@
-﻿//=============================================================
-// XScriptWrap.h 
-// 生成函数调用以及回调的包装
-// 柯达昭
-// 2012-08-09
-//=====================================================================
+﻿/**@file  		XScriptWrap.h
+* @brief		Template wrapper of XScript
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+*/
+
 #pragma once
 #include <array>
 #include "core/CScriptBase.h"
 
 namespace XS
 {
-	//=======================================================================
-	// 捕获编译时错误
-	//=======================================================================
+	///< Capture compile error
 	template<bool bCompileSucceed> struct TCompileSucceed {};
 	template<> struct TCompileSucceed<true> { struct Succeeded {}; };
 
-	// 编译时检查类的大小是否相等
+	///< Check size of the giving class are equal
 	template<typename _T1, typename _T2> struct TClassSizeEqual
 	{ 
 		typedef TCompileSucceed<sizeof(_T1) == sizeof(_T2)> CCompileSucceed;
 		typedef typename CCompileSucceed::Succeeded Succeeded;
 	};
 
-	//=======================================================================
-	// 获取原始虚表
-	//=======================================================================
+	///< Get original virtual table
 	typedef SFunctionTable* ( *GetVirtualTableFun )( void* );
 	template<typename _T, bool bDuplicatable> struct TCopy 
 	{ TCopy( void* pDest, void* pSrc ) { *(_T*)pDest = *(_T*)pSrc; } };
@@ -65,9 +62,7 @@ namespace XS
 		}
 	};
 
-	//=======================================================================
-	// 构造对象
-	//=======================================================================
+	///< Construct the object
 	template<typename GetVTableType, typename ClassType, bool bDuplicatable>
 	struct TConstruct : public IObjectConstruct
 	{
@@ -100,9 +95,7 @@ namespace XS
 	struct TConstruct<TGetVTable<void>, ClassType, bDuplicatable>
 	{ static IObjectConstruct* Inst() { return nullptr; } };
 
-	//=======================================================================
-	// 函数注册链
-	//=======================================================================
+	///< Put all function register in a list and invoke them recursively
 	class CScriptRegisterNode : public TList<CScriptRegisterNode>::CListNode
 	{
 		void( *m_funRegister )( );
@@ -123,9 +116,7 @@ namespace XS
 		}
 	};
 
-	//=======================================================================
-	// 获取继承关系信息
-	//=======================================================================
+	///< Fetch inherit information
 	typedef TList<CScriptRegisterNode> CScriptRegisterList;
 	struct SGlobalExe { SGlobalExe( bool b = false ) {} };
 
@@ -160,9 +151,7 @@ namespace XS
 		}
 	};
 
-	//=======================================================================
-	// 获取函数类型
-	//=======================================================================
+	///< Fetch function type
 	template<typename RetType, typename... Param>
 	inline STypeInfoArray MakeFunArg()
 	{
@@ -172,9 +161,7 @@ namespace XS
 		return TypeInfo;
 	}
 
-	//=======================================================================
-	// 函数调用包装
-	//=======================================================================
+	///< Function calling wrapper
 	template< typename T > 
 	struct ArgFetcher
 	{ 
@@ -204,9 +191,6 @@ namespace XS
 	template<> struct ArgFetcher<const float	&> : public ArgFetcher<float	> {};
 	template<> struct ArgFetcher<const double	&> : public ArgFetcher<double	> {};
 
-	//=======================================================================
-	// 函数调用包装
-	//=======================================================================
 	template<typename RetType, typename... Param >
 	class TFunctionWrap : public IFunctionWrap
 	{
@@ -281,9 +265,7 @@ namespace XS
 		CScriptBase::RegistClassFunction( pWrap, (uintptr_t)pFun, InfoArray, szName );
 	}
 
-	//=======================================================================
-	// 类成员函数回调包装
-	//=======================================================================
+	///< Callback function access wrapper
 	template<typename ClassFunType>
 	class TCallBackBinder
 	{
@@ -362,8 +344,11 @@ namespace XS
 			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;		
 			typedef TFunctionWrap<RetType, ClassType*, Param...> FunctionWrap;
 
-			// 下面编译不过表示函数指针FunctionType的大小和uintptr_t不一致，
-			// 这和编译器有关，大部分编译器不会出现，本实现目前不支持这种情况
+			/**
+			* @note If compile error occur, it is mean the size of FunctionType 
+			* and uintptr_t are not equal. It is dependence to compiler, but 
+			* most compile will work well.
+			*/
 			typedef TClassSizeEqual<CallBackWrap::FunctionType, uintptr_t> SizeCheck;
 			typedef typename SizeCheck::Succeeded Succeeded;
 
@@ -384,9 +369,7 @@ namespace XS
 		}
 	};
 
-	//=======================================================================
-	// 析构函数调用包装
-	//=======================================================================
+	///< Virtual destructor wrapper
 	template< typename ClassType >
 	class TDestructorWrap : public IFunctionWrap
 	{
@@ -412,8 +395,11 @@ namespace XS
 	public:
 		static void Bind()
 		{
-			// 下面编译不过表示函数指针FunctionType的大小和uintptr_t不一致，
-			// 这和编译器有关，大部分编译器不会出现，本实现目前不支持这种情况
+			/**
+			* @note If compile error occur, it is mean the size of FunctionType
+			* and uintptr_t are not equal. It is dependence to compiler, but
+			* most compile will work well.
+			*/
 			typedef TClassSizeEqual<FunctionType, uintptr_t> SizeCheck;
 			typedef typename SizeCheck::Succeeded Succeeded;
 
@@ -427,9 +413,7 @@ namespace XS
 		}
 	};
 
-	//=======================================================================
-	// 成员读取包装
-	//=======================================================================
+	///< Data member access(read) wrapper
 	template<typename MemberType>
 	class TMemberGetWrap : public IFunctionWrap
 	{
@@ -463,9 +447,7 @@ namespace XS
 		return TMemberGetWrapObject<MemberType>::GetInst();
 	}
 
-	//=======================================================================
-	// 成员写入包装
-	//=======================================================================
+	///< Data member access(write) wrapper
 	template<typename MemberType>
 	class TMemberSetWrap : public IFunctionWrap
 	{
