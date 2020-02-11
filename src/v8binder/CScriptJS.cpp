@@ -1,9 +1,9 @@
 ﻿#include "common/TStrStream.h"
+#include "core/CCallBase.h"
 #include "core/CClassRegistInfo.h"
 #include "CScriptJS.h"
 #include "CTypeJS.h"
 #include "CDebugJS.h"
-#include "CCallJS.h"
 #include "V8Context.h"
 #include <functional>
 
@@ -284,15 +284,102 @@ namespace XS
 		void* pRetBuf, void** pArgArray )
 	{
 		SCallInfo* pInfo = GetCallInfo( pCallBase );
-		return CCallBackJS::CallVM( *pInfo->m_pScript, 
-			pInfo->m_strName, pCallBase, pRetBuf, pArgArray );
+		CScriptJS& Script = *pInfo->m_pScript;
+		SV8Context& Context = Script.GetV8Context();
+		Context.CallJSStatck( true );
+
+		void* pObject = *(void**)*pArgArray++;
+		v8::Isolate* isolate = Context.m_pIsolate;
+		v8::HandleScope handle_scope( isolate );
+		v8::TryCatch try_catch( isolate );
+
+		// Enter the context for compiling and running the hello world script.
+		v8::Local<v8::Context> context = Context.m_Context.Get( isolate );
+		v8::Context::Scope context_scope( context );
+
+		DataType nThisType = pCallBase->GetParamList()[0];
+		LocalValue pThis = CJSObject::GetInst().ToVMValue( nThisType, Script, (char*)&pObject );
+		v8::Local<v8::Object> object = pThis->ToObject( isolate );
+
+		int32 nParamCount = (int32)pCallBase->GetParamCount() - 1;
+		const DataType* aryParam = nParamCount ? &( pCallBase->GetParamList()[1] ) : nullptr;
+		size_t nTotalSize = sizeof( LocalValue )*nParamCount;
+		LocalValue* args = (LocalValue*)alloca( nTotalSize );
+		for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+		{
+			new ( args + nArgIndex ) LocalValue;
+			DataType nType = aryParam[nArgIndex];
+			CJSTypeBase* pParamType = GetTypeBase( nType );
+			args[nArgIndex] = pParamType->ToVMValue( nType, Script, (char*)pArgArray[nArgIndex] );
+		}
+
+		v8::MaybeLocal<v8::Value> fun = object->Get( context, pInfo->m_strName.Get( isolate ) );
+		if( fun.IsEmpty() )
+		{
+			for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+				args[nArgIndex].~LocalValue();
+			Context.CallJSStatck( false );
+			return false;
+		}
+
+		LocalValue funField = fun.ToLocalChecked();
+		if( !funField->IsFunction() )
+		{
+			for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+				args[nArgIndex].~LocalValue();
+			Context.CallJSStatck( false );
+			return false;
+		}
+
+		v8::Local<v8::Function> funCallback = v8::Local<v8::Function>::Cast( funField );
+		LocalValue result = funCallback->Call( object, nParamCount, args );
+		for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+			args[nArgIndex].~LocalValue();
+
+		Context.CallJSStatck( false );
+		if( result.IsEmpty() )
+		{
+			Context.ReportException( &try_catch, context );
+			return false;
+		}
+
+		DataType nResultType = pCallBase->GetResultType();
+		if( nResultType )
+			GetTypeBase( nResultType )->FromVMValue( nResultType, Script, (char*)pRetBuf, result );
+		return true;
 	}
 
 	void CScriptJS::DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
 		SCallInfo* pInfo = GetCallInfo( pCallBase );
-		return CCallBackJS::DestrucVM( *pInfo->m_pScript,
-			pInfo->m_pScript->GetV8Context().m_Deconstruction, pCallBase, pObject );
+		CScriptJS& Script = *pInfo->m_pScript;
+		SV8Context& Context = Script.GetV8Context();
+		v8::Persistent<v8::String>& strName = Script.GetV8Context().m_Deconstruction;
+		Context.CallJSStatck( true );
+
+		v8::Isolate* isolate = Context.m_pIsolate;
+		v8::HandleScope handle_scope( isolate );
+		v8::TryCatch try_catch( isolate );
+
+		// Enter the context for compiling and running the hello world script.
+		v8::Local<v8::Context> context = Context.m_Context.Get( isolate );
+		v8::Context::Scope context_scope( context );
+
+		DataType nThisType = pCallBase->GetParamList()[0];
+		LocalValue pThis = CJSObject::GetInst().ToVMValue( nThisType, Script, (char*)&pObject );
+		v8::Local<v8::Object> object = pThis->ToObject( isolate );
+		v8::MaybeLocal<v8::Value> fun = object->Get( context, strName.Get( isolate ) );
+		if( fun.IsEmpty() )
+			return Context.CallJSStatck( true );
+		LocalValue funField = fun.ToLocalChecked();
+		if( !funField->IsFunction() )
+			return Context.CallJSStatck( true );
+		v8::Local<v8::Function> funCallback = v8::Local<v8::Function>::Cast( funField );
+		LocalValue result = funCallback->Call( object, 0, &result );
+		Context.CallJSStatck( false );
+		if( !result.IsEmpty() )
+			return;
+		Context.ReportException( &try_catch, context );
 	}
 
 	SObjInfo* CScriptJS::FindExistObjInfo( void* pObj )

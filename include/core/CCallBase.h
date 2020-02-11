@@ -1,4 +1,11 @@
-﻿#ifndef __CALL_BASE_H__
+﻿/**@file  		CCallBase.h
+* @brief		memory interface
+* @author		Daphnis Kau
+* @date			2020-01-17
+* @version		V1.0
+*/
+
+#ifndef __CALL_BASE_H__
 #define __CALL_BASE_H__
 //=====================================================================
 // CCallBase.h 

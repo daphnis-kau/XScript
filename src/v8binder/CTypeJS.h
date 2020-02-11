@@ -15,7 +15,7 @@
 namespace XS
 {
 	#define MAX_UNKNOW_ARRAYBUFFER_SIZE	(100*1024*1024)
-
+	
 	//=====================================================================
     /// JS对C++数据的操作方法，调用JS库实现对数据在JS中的操作
     //=====================================================================
@@ -283,6 +283,19 @@ namespace XS
 		virtual LocalValue ToVMValue(DataType eType, 
 			CScriptJS& Script, char* pDataBuf);
 	};
+
+	//=====================================================================
+	/// 所有JS数据类型
+	//=====================================================================
+	extern CJSTypeBase* s_aryJSType[eDT_count];
+	inline CJSTypeBase* GetTypeBase( DataType eType )
+	{
+		if( eType < eDT_count )
+			return s_aryJSType[eType];
+		if( eType & 1 )
+			return &CJSObject::GetInst();
+		return &CJSValueObject::GetInst();
+	}
 }
 
 #endif

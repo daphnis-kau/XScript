@@ -332,7 +332,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\luabinder\CCallLua.h" />
     <ClInclude Include="..\..\src\luabinder\CDebugLua.h" />
     <ClInclude Include="..\..\src\luabinder\CScriptLua.h" />
     <ClInclude Include="..\..\src\luabinder\CTypeLua.h" />
@@ -372,7 +371,6 @@
     <ClInclude Include="..\..\third_party\zlib-1.2.11\zutil.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\luabinder\CCallLua.cpp" />
     <ClCompile Include="..\..\src\luabinder\CDebugLua.cpp" />
     <ClCompile Include="..\..\src\luabinder\CScriptLua.cpp" />
     <ClCompile Include="..\..\src\luabinder\CTypeLua.cpp" />

@@ -87,9 +87,6 @@
     <ClInclude Include="..\..\third_party\lua-5.1.5\src\lmem.h">
       <Filter>thridpart\lua</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\luabinder\CCallLua.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\luabinder\CDebugLua.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -226,9 +223,6 @@
     </ClCompile>
     <ClCompile Include="..\..\third_party\lua-5.1.5\src\lobject.c">
       <Filter>thridpart\lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\luabinder\CCallLua.cpp">
-      <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\luabinder\CDebugLua.cpp">
       <Filter>source</Filter>

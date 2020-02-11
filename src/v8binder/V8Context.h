@@ -118,7 +118,5 @@ namespace XS
 		static void					SetterCallback(v8::Local<v8::Name> property, LocalValue value,
 			 							const v8::PropertyCallbackInfo<void>& info);
 	};
-
-
 }
 #endif

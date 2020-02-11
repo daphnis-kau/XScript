@@ -316,7 +316,19 @@ namespace XS
 		void PushToVM( DataType eType, lua_State* pL, char* pDataBuf );
 		void GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId );
 	};
-
+	
+	//=====================================================================
+	/// 所有JS数据类型
+	//=====================================================================
+	extern CLuaTypeBase* s_aryLuaType[eDT_count];
+	inline CLuaTypeBase* GetTypeBase( DataType eType )
+	{
+		if( eType <= eDT_enum )
+			return s_aryLuaType[eType];
+		if( eType & 1 )
+			return &CLuaObject::GetInst();
+		return &CLuaValueObject::GetInst();
+	}
 }
 
 #endif

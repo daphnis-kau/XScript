@@ -70,10 +70,10 @@
 /**
 * @brief  Register data member
 */
-#define REGIST_CLASSMEMBER_GETSET( _member, get, set ) \
-	REGIST_CLASSMEMBER_GETSET_IMPLEMENT( _member, _member, get, set )
-#define REGIST_CLASSMEMBER_GETSET_WITHNAME( _member, _new_name, get, set ) \
-	REGIST_CLASSMEMBER_GETSET_IMPLEMENT( _member, _new_name, get, set )
+#define REGIST_CLASSMEMBER_GETSET( _member, enableGetter, enableSetter ) \
+	REGIST_CLASSMEMBER_GETSET_IMPLEMENT( _member, _member, enableGetter, enableSetter )
+#define REGIST_CLASSMEMBER_GETSET_WITHNAME( _member, _new_name, enableGetter, enableSetter ) \
+	REGIST_CLASSMEMBER_GETSET_IMPLEMENT( _member, _new_name, enableGetter, enableSetter )
 #define REGIST_CLASSMEMBER_SET( _member ) \
 	REGIST_CLASSMEMBER_GETSET_IMPLEMENT( _member, _member, false, true )
 #define REGIST_CLASSMEMBER_SET_WITHNAME( _member, _new_name ) \

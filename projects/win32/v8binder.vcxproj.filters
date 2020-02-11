@@ -9,9 +9,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\v8binder\CCallJS.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\v8binder\CDebugJS.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -26,9 +23,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\v8binder\CCallJS.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\v8binder\CDebugJS.h">
       <Filter>include</Filter>
     </ClInclude>

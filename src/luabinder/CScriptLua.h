@@ -34,22 +34,10 @@ namespace XS
         // 对Lua提供的功能性函数
         //==============================================================================
 		static int32			ClassCast( lua_State* pL );
+		static int32			CallByLua( lua_State* pL );
 		static int32			ErrorHandler( lua_State* pState );
 		static int32			DebugBreak( lua_State* pState );
 		static int32			BackTrace( lua_State* pState );
-        static int32			ToUint32( lua_State* pL );
-        static int32			ToInt32( lua_State* pL );
-        static int32			ToUint16( lua_State* pL );
-        static int32			ToInt16( lua_State* pL );
-        static int32			ToUint8( lua_State* pL );
-        static int32			ToInt8( lua_State* pL );
-        static int32			ToChar( lua_State* pL );
-        static int32			BitAnd( lua_State* pL );
-		static int32			BitOr( lua_State* pL );
-		static int32			BitNot( lua_State* pL );
-		static int32			BitXor( lua_State* pL );
-		static int32			LeftShift( lua_State* pL );
-		static int32			RightShift( lua_State* pL );
         static int32			Delete( lua_State* pL );
         static int32			Construct( lua_State* pL );
 		static int32			LoadFile( lua_State* pL );

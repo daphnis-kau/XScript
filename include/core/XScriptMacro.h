@@ -101,7 +101,7 @@
 	typedef _function_name##_namespace::ImplementClass 
 
 
-#define REGIST_CLASSMEMBER_GETSET_IMPLEMENT( _member, _new_name, get, set ) \
+#define REGIST_CLASSMEMBER_GETSET_IMPLEMENT( _member, _new_name, _enableGetter, _enableSetter ) \
 	_new_name##_Base_Class; \
 	namespace _new_name##_namespace \
 	{ \
@@ -109,8 +109,8 @@
 		{ \
 			org_class* c = (org_class*)0x4000000; \
 			IFunctionWrap* funGetSet[2];\
-			funGetSet[0] = get ? XS::CreateMemberGetWrap( &c->_member ) : NULL;\
-			funGetSet[1] = set ? XS::CreateMemberSetWrap( &c->_member ) : NULL;\
+			funGetSet[0] = _enableGetter ? XS::CreateMemberGetWrap( &c->_member ) : NULL;\
+			funGetSet[1] = _enableSetter ? XS::CreateMemberSetWrap( &c->_member ) : NULL;\
 			ptrdiff_t offset = ((ptrdiff_t)&c->_member) - (ptrdiff_t)c;\
 			XS::CScriptBase::RegistClassMember( funGetSet, offset,\
 				XS::MakeMemberArg( c, &c->_member ), #_new_name );\

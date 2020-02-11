@@ -1038,4 +1038,30 @@ namespace XS
 
         lua_pop( pL, 1 );
     }
+
+	//====================================================================================
+	// LuaType
+	//====================================================================================
+	CLuaTypeBase* s_aryLuaType[eDT_count] =
+	{
+		0,
+		&CLuaChar::GetInst(),
+		&CLuaInt8::GetInst(),
+		&CLuaInt16::GetInst(),
+		&CLuaInt32::GetInst(),
+		&CLuaInt64::GetInst(),
+		&CLuaLong::GetInst(),
+		&CLuaUint8::GetInst(),
+		&CLuaUint16::GetInst(),
+		&CLuaUint32::GetInst(),
+		&CLuaUint64::GetInst(),
+		&CLuaUlong::GetInst(),
+		&CLuaWChar::GetInst(),
+		&CLuaBool::GetInst(),
+		&CLuaFloat::GetInst(),
+		&CLuaDouble::GetInst(),
+		&CLuaString::GetInst(),
+		&CLuaWString::GetInst(),
+		&CLuaBuffer::GetInst()
+	};
 }

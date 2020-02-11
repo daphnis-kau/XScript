@@ -35,14 +35,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\v8binder\CCallJS.cpp" />
     <ClCompile Include="..\..\src\v8binder\CDebugJS.cpp" />
     <ClCompile Include="..\..\src\v8binder\CScriptJS.cpp" />
     <ClCompile Include="..\..\src\v8binder\CTypeJS.cpp" />
     <ClCompile Include="..\..\src\v8binder\V8Context.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\v8binder\CCallJS.h" />
     <ClInclude Include="..\..\src\v8binder\CDebugJS.h" />
     <ClInclude Include="..\..\src\v8binder\CScriptJS.h" />
     <ClInclude Include="..\..\src\v8binder\CTypeJS.h" />

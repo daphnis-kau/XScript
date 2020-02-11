@@ -21,7 +21,7 @@ extern "C"
 #include "CTypeLua.h"
 #include "CDebugLua.h"
 #include "CScriptLua.h"
-#include "CCallLua.h"
+#include "core/CCallBase.h"
 #include "core/CClassRegistInfo.h"
 
 namespace XS
@@ -276,20 +276,6 @@ namespace XS
         lua_register( pL, "gdb",		&CScriptLua::DebugBreak );
 		lua_register( pL, "BTrace",		&CScriptLua::BackTrace );
 
-        lua_register( pL, "uint32",		&CScriptLua::ToUint32 );
-        lua_register( pL, "int32",		&CScriptLua::ToInt32 );
-        lua_register( pL, "uint16",		&CScriptLua::ToUint16 );
-        lua_register( pL, "int16",		&CScriptLua::ToInt16 );
-        lua_register( pL, "uint8",		&CScriptLua::ToUint8 );
-        lua_register( pL, "int8",		&CScriptLua::ToInt8 );
-        lua_register( pL, "c2n",		&CScriptLua::ToChar );
-        lua_register( pL, "BitAnd",		&CScriptLua::BitAnd );
-		lua_register( pL, "BitOr",		&CScriptLua::BitOr );
-		lua_register( pL, "BitNot",		&CScriptLua::BitNot );
-		lua_register( pL, "BitXor",		&CScriptLua::BitXor );
-		lua_register( pL, "LeftShift",	&CScriptLua::LeftShift );
-		lua_register( pL, "RightShift",	&CScriptLua::RightShift );
-
 		AddLoader();
 		IO_Replace();
 
@@ -403,12 +389,103 @@ namespace XS
 
 	bool CScriptLua::CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray )
 	{
-		return CCallBackLua::CallVM( this, pCallBase, pRetBuf, pArgArray );
+		lua_State* pL = GetLuaState();
+
+		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
+		lua_rawget( pL, LUA_REGISTRYINDEX );
+		int32 nErrFunIndex = lua_gettop( pL );		// 1
+
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_rawget( pL, LUA_REGISTRYINDEX );		// 2	
+
+		lua_pushlightuserdata( pL, *(void**)pArgArray[0] );
+		lua_gettable( pL, -2 );						// 3
+
+		if( lua_isnil( pL, -1 ) )
+		{
+			lua_pop( pL, 3 );            //Error occur
+			return false;                //*******表不存在时，此代码有问题************
+		}
+
+		lua_getfield( pL, -1, pCallBase->GetFunctionName().c_str() ); // 4
+
+		if( lua_tocfunction( pL, -1 ) == &CScriptLua::CallByLua )
+		{
+			lua_getupvalue( pL, -1, 1 );
+			if( pCallBase == lua_touserdata( pL, -1 ) )
+			{
+				// call self
+				lua_pop( pL, 5 );
+				return false;
+			}
+		}
+		else if( lua_isnil( pL, -1 ) )
+		{
+			//Error occur
+			lua_pop( pL, 4 );
+			return false;
+		}
+
+		lua_insert( pL, -2 );
+		auto& listParam = pCallBase->GetParamList();
+		DataType nResultType = pCallBase->GetResultType();
+		for( size_t nArgIndex = 1; nArgIndex < listParam.size(); nArgIndex++ )
+		{
+			DataType nType = listParam[nArgIndex];
+			CLuaTypeBase* pParamType = GetTypeBase( nType );
+			pParamType->PushToVM( nType, pL, (char*)pArgArray[nArgIndex] );
+		}
+
+		int32 nArg = (int32)( listParam.size() );
+		lua_pcall( pL, nArg, nResultType ? 1 : 0, nErrFunIndex );
+		if( nResultType )
+			GetTypeBase( nResultType )->GetFromVM( nResultType, pL, (char*)pRetBuf, -1 );
+		lua_settop( pL, nErrFunIndex - 1 );
+		return true;
 	}
 
 	void CScriptLua::DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject )
 	{
-		return CCallBackLua::DestrucVM( this, pCallBase, pObject );
+		lua_State* pL = GetLuaState();
+
+		lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
+		lua_rawget( pL, LUA_REGISTRYINDEX );
+		int32 nErrFunIndex = lua_gettop( pL );		// 1
+
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_rawget( pL, LUA_REGISTRYINDEX );		// 2	
+
+		lua_pushlightuserdata( pL, pObject );
+		lua_gettable( pL, -2 );						// 3
+
+		if( lua_isnil( pL, -1 ) )
+		{
+			lua_pop( pL, 3 );            //Error occur
+			return;                //*******表不存在时，此代码有问题************
+		}
+
+		lua_getfield( pL, -1, "Deconstruction" ); // 4
+
+		if( lua_tocfunction( pL, -1 ) == &CScriptLua::CallByLua )
+		{
+			lua_getupvalue( pL, -1, 1 );
+			if( pCallBase == lua_touserdata( pL, -1 ) )
+			{
+				// call self
+				lua_pop( pL, 5 );
+				return;
+			}
+		}
+		else if( lua_isnil( pL, -1 ) )
+		{
+			//Error occur
+			lua_pop( pL, 4 );
+			return;
+		}
+
+		lua_insert( pL, -2 );
+		lua_pcall( pL, 1, 0, nErrFunIndex );
+		lua_settop( pL, nErrFunIndex - 1 );
 	}
 
     //-------------------------------------------------------------------------------
@@ -612,6 +689,78 @@ namespace XS
 		return 0;
 	}
 
+	//=====================================================================
+	// Lua脚本调用C++的接口
+	//=====================================================================
+	int32 CScriptLua::CallByLua( lua_State* pL )
+	{
+		CByScriptBase* pCallBase = (CByScriptBase*)lua_touserdata( pL, lua_upvalueindex( 1 ) );
+		uint32 nTop = lua_gettop( pL );
+
+		CScriptLua* pScript = CScriptLua::GetScript( pL );
+		pScript->PushLuaState( pL );
+
+		try
+		{
+			auto& listParam = pCallBase->GetParamList();
+			size_t nParamCount = listParam.size();
+			const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
+			size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
+			size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
+			DataType nResultType = pCallBase->GetResultType();
+			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
+			size_t nArgSize = pCallBase->GetParamCount()*sizeof( void* );
+			char* pDataBuf = (char*)alloca( nParamSize + nReturnSize + nArgSize );
+			char* pResultBuf = pDataBuf + nParamSize;
+			void** pArgArray = (void**)( pResultBuf + nReturnSize );
+
+			int32 nStkId = 1;
+			//Lua函数最右边的参数，在Lua stack的栈顶,         
+			//放在m_listParam的第一个成员中
+			for( size_t nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+			{
+				DataType nType = aryParam[nArgIndex];
+				CLuaTypeBase* pParamType = GetTypeBase( nType );
+				pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
+				pArgArray[nArgIndex] = pDataBuf;
+				pDataBuf += aryParamSize[nArgIndex];
+			}
+			lua_settop( pL, 0 );
+
+			if( pCallBase->GetFunctionIndex() == eCT_MemberFunction )
+			{
+				pCallBase->Call( nTop > 1 ? NULL : pResultBuf, pArgArray, *pScript );
+				if( nResultType && nTop <= 1 )
+					GetTypeBase( nResultType )->PushToVM( nResultType, pL, pResultBuf );
+			}
+			else
+			{
+				pCallBase->Call( pResultBuf, pArgArray, *pScript );
+				if( nResultType )
+					GetTypeBase( nResultType )->PushToVM( nResultType, pL, pResultBuf );
+			}
+			pScript->PopLuaState();
+			return 1;
+		}
+		catch( std::exception& exp )
+		{
+			char szBuf[256];
+			sprintf( szBuf, "An unknow exception occur on calling %s\n", pCallBase->GetFunctionName().c_str() );
+			pScript->Output( szBuf, -1 );
+			luaL_error( pL, exp.what() );
+		}
+		catch( ... )
+		{
+			char szBuf[256];
+			sprintf( szBuf, "An unknow exception occur on calling %s\n", pCallBase->GetFunctionName().c_str() );
+			pScript->Output( szBuf, -1 );
+			luaL_error( pL, szBuf );
+		}
+
+		pScript->PopLuaState();
+		return 0;
+	}
+
     //=========================================================================
     // 类型转换                                                
     //=========================================================================
@@ -673,58 +822,9 @@ namespace XS
         return 1;
     }
 
-    //=========================================================================
-    // 数值类型转换                                                
-    //=========================================================================
-    int32 CScriptLua::ToUint32( lua_State* L )
-    {
-        double n = GetNumFromLua( L, -1 );
-        lua_pushnumber( L, (double)( (uint32)n ) );
-        return 1;
-    }
-
-    int32 CScriptLua::ToInt32( lua_State* L )
-    {
-        double n = GetNumFromLua( L, -1 );
-        lua_pushnumber( L, (int32)(uint32)n );
-        return 1;
-    }
-
-    int32 CScriptLua::ToUint16( lua_State* L )
-    {
-        double n = GetNumFromLua( L, -1 );
-        lua_pushnumber( L, (double)( (uint16)(uint32)n ) );
-        return 1;
-    }
-
-    int32 CScriptLua::ToInt16( lua_State* L )
-    {
-        double n = GetNumFromLua( L, -1 );
-        lua_pushnumber( L, (int16)(uint32)n );
-        return 1;
-    }
-
-    int32 CScriptLua::ToUint8( lua_State* L )
-    {
-        double n = GetNumFromLua( L, -1 );
-        lua_pushnumber( L, (double)( (uint8)(uint32)n ) );
-        return 1;
-    }
-
-    int32 CScriptLua::ToInt8( lua_State* L )
-    {
-        double n = GetNumFromLua( L, -1 );
-        lua_pushnumber( L, (int8)(uint32)n );
-        return 1;
-    }
-
-    int32 CScriptLua::ToChar( lua_State* L )
-    {
-        const char* szBuf = lua_tostring( L, -1 );
-        lua_pushnumber( L, szBuf ? szBuf[0] : 0 );
-        return 1;
-	}
-
+	//=========================================================================
+	// IO替换                                                
+	//=========================================================================
 	void CScriptLua::IO_Replace() 
 	{
 #ifdef _WIN32
@@ -861,80 +961,6 @@ namespace XS
 		const void* pObject = lua_touserdata( pL, -1 );
 		lua_pop( pL, 4 );
 		lua_pushfstring( pL, "%s: %p->%p", pInfo->GetClassName().c_str(), ptr, pObject );
-		return 1;
-	}
-
-    //=========================================================================
-    // 位操作                                                
-    //=========================================================================
-    int32 CScriptLua::BitAnd( lua_State* L )
-    {
-        uint64 n = INVALID_64BITID;
-        int32 nTop = lua_gettop( L );
-        for( int32 i = 1; i <= nTop; i++ )
-		{
-			double d = GetNumFromLua( L, i );
-			n &= ( d < 0 ? (uint64)(int64)d : (uint64)d );
-		}
-        lua_pop( L, nTop );
-        lua_pushnumber( L, (double)n );
-        return 1;
-    }
-
-    int32 CScriptLua::BitOr( lua_State* L )
-    {
-        uint64 n = 0;
-        int32 nTop = lua_gettop( L );
-        for( int32 i = 1; i <= nTop; i++ )
-		{
-			double d = GetNumFromLua( L, i );
-            n |= ( d < 0 ? (uint64)(int64)d : (uint64)d );
-		}
-        lua_pop( L, nTop );
-        lua_pushnumber( L, (double)n );
-        return 1;
-    }
-
-    int32 CScriptLua::BitNot( lua_State* L )
-    {
-        double d = GetNumFromLua( L, -1 );
-        lua_pop( L, 1 );
-        uint64 n = ~( d < 0 ? (uint64)(int64)d : (uint64)d );
-        lua_pushnumber( L, (double)( n&0xfffffffffffffLL ) );
-        return 1;
-    }
-
-	int32 CScriptLua::BitXor( lua_State* L )
-	{
-		uint64 n = 0;
-		int32 nTop = lua_gettop( L );
-		for( int32 i = 1; i <= nTop; i++ )
-		{
-			double d = GetNumFromLua( L, i );
-			n ^= ( d < 0 ? (uint64)(int64)d : (uint64)d );
-		}
-		lua_pop( L, nTop );
-		lua_pushnumber( L, (double)n );
-		return 1;
-	}
-
-	int32 CScriptLua::LeftShift( lua_State* L )
-	{
-		double d = GetNumFromLua( L, 1 );
-		uint8  b = (int64)GetNumFromLua( L, 2 );
-		lua_pop( L, 1 );
-		uint64 n = ( d < 0 ? (uint64)(int64)d : (uint64)d ) << b;
-		lua_pushnumber( L, (double)n );
-		return 1;
-	}
-
-	int32 CScriptLua::RightShift( lua_State* L )
-	{
-		double d = GetNumFromLua( L, 1 );
-		uint8  b = (int64)GetNumFromLua( L, 2 );
-		lua_pop( L, 1 );
-		uint64 n = ( d < 0 ? (uint64)(int64)d : (uint64)d ) >> b;
-		lua_pushnumber( L, (double)n );
 		return 1;
 	}
 
@@ -1145,7 +1171,7 @@ namespace XS
 			 for( auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext() )
 			 {
 				 lua_pushlightuserdata( pL, pCall );
-				 lua_pushcclosure( pL, CByScriptLua::CallByLua, 1 );
+				 lua_pushcclosure( pL, CScriptLua::CallByLua, 1 );
 				 lua_setfield( pL, -2, pCall->GetFunctionName().c_str() );
 			 }
 			 lua_pop( pL, 1 );

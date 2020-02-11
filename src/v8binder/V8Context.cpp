@@ -1,7 +1,8 @@
 ﻿#include "V8Context.h"
 #include "CScriptJS.h"
-#include "CCallJS.h"
 #include "CDebugJS.h"
+#include "CTypeJS.h"
+#include "core/CCallBase.h"
 
 #define MAX_STRING_BUFFER_SIZE	65536
 
@@ -240,7 +241,53 @@ namespace XS
 			return;
 		v8::Isolate* isolate = args.GetIsolate();
 		v8::HandleScope scope( isolate );
-		CByScriptJS::CallByJS( *pCallInfo->m_pScript, pCallInfo->m_pCallBase, args );
+		CScriptJS& Script = *pCallInfo->m_pScript;
+		const CByScriptBase* pCallBase = pCallInfo->m_pCallBase;
+
+		try
+		{
+			auto& listParam = pCallBase->GetParamList();
+			size_t nParamCount = listParam.size();
+			const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
+			size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
+			size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
+			DataType nResultType = pCallBase->GetResultType();
+			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
+			size_t nArgSize = pCallBase->GetParamCount()*sizeof( void* );
+			char* pDataBuf = (char*)alloca( nParamSize + nReturnSize + nArgSize );
+			char* pResultBuf = pDataBuf + nParamSize;
+			void** pArgArray = (void**)( pResultBuf + nReturnSize );
+
+			int32 nFunctionIndex = pCallBase->GetFunctionIndex();
+			int32 nArgCount = args.Length();
+			SV8Context& Context = Script.GetV8Context();
+			v8::Isolate* isolate = Context.m_pIsolate;
+			LocalValue undefined = Undefined( isolate );
+			int32 nArgIndex = nFunctionIndex >= eCT_ClassFunction ? -1 : 0;
+			for( uint32 nParamIndex = 0; nParamIndex < nParamCount; nParamIndex++, nArgIndex++ )
+			{
+				DataType nType = aryParam[nParamIndex];
+				CJSTypeBase* pParamType = GetTypeBase( nType );
+				LocalValue arg = undefined;
+				if( nArgIndex < 0 )
+					pParamType->FromVMValue( nType, Script, pDataBuf, args.This() );
+				else if( nArgIndex < nArgCount )
+					pParamType->FromVMValue( nType, Script, pDataBuf, args[nArgIndex] );
+				else
+					pParamType->FromVMValue( nType, Script, pDataBuf, undefined );
+				pArgArray[nParamIndex] = pDataBuf;
+				pDataBuf += aryParamSize[nParamIndex];
+			}
+
+			pCallBase->Call( pResultBuf, pArgArray, Script );
+			if( !nResultType )
+				return;
+			CJSTypeBase* pReturnType = GetTypeBase( nResultType );
+			args.GetReturnValue().Set( pReturnType->ToVMValue( nResultType, Script, pResultBuf ) );
+		}
+		catch( ... )
+		{
+		}
 	}
 
 	void SV8Context::NewObject( const v8::FunctionCallbackInfo<v8::Value>& args )
@@ -313,8 +360,30 @@ namespace XS
 			return;
 		v8::Isolate* isolate = info.GetIsolate();
 		v8::HandleScope scope( isolate );
-		CByScriptJS::GetByJS( *pCallInfo->m_pScript,
-			pCallInfo->m_pCallBase, info.This(), info.GetReturnValue() );
+		CScriptJS& Script = *pCallInfo->m_pScript;
+		const CByScriptBase* pCallBase = pCallInfo->m_pCallBase;
+
+		try
+		{
+			void* pObject = NULL;
+			DataType nThisType = pCallBase->GetParamList()[0];
+			CJSObject::GetInst().FromVMValue( nThisType, Script, (char*)&pObject, info.This() );
+			if( pObject == NULL )
+				return;
+
+			DataType nResultType = pCallBase->GetResultType();
+			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
+			char* pResultBuf = (char*)alloca( nReturnSize );
+			void* aryArg[] = { &pObject, nullptr };
+			pCallBase->Call( pResultBuf, aryArg, Script );
+			if( !nResultType )
+				return;
+			CJSTypeBase* pReturnType = GetTypeBase( nResultType );
+			info.GetReturnValue().Set( pReturnType->ToVMValue( nResultType, Script, pResultBuf ) );
+		}
+		catch( ... )
+		{
+		}
 	}
 
 	void SV8Context::SetterCallback( v8::Local<v8::Name> property, 
@@ -326,8 +395,30 @@ namespace XS
 			return;
 		v8::Isolate* isolate = info.GetIsolate();
 		v8::HandleScope scope( isolate );
-		CByScriptJS::SetByJS( *pCallInfo->m_pScript,
-			pCallInfo->m_pCallBase, info.This(), value );
+		CScriptJS& Script = *pCallInfo->m_pScript;
+		const CByScriptBase* pCallBase = pCallInfo->m_pCallBase;
+		try
+		{
+			void* pObject = NULL;
+			DataType nThisType = pCallBase->GetParamList()[0];
+			CJSObject::GetInst().FromVMValue( nThisType, Script, (char*)&pObject, info.This() );
+			if (pObject == NULL)
+				return;
+
+			DataType nType = pCallBase->GetParamList()[1];
+			size_t nParamSize = GetAligenSizeOfType( nType );
+			char* pDataBuf = (char*)alloca( nParamSize );
+			SV8Context& Context = Script.GetV8Context();
+			v8::Isolate* isolate = Context.m_pIsolate;
+			LocalValue undefined = Undefined(isolate);
+			CJSTypeBase* pParamType = GetTypeBase( nType );
+			pParamType->FromVMValue( nType, Script, pDataBuf, value );
+			void* aryArg[] = { &pObject, pDataBuf, nullptr };
+			pCallBase->Call( NULL, aryArg, Script );
+		}
+		catch (...)
+		{
+		}
 	}
 
 	void SV8Context::BindObj( void* pObject, v8::Local<v8::Object> ScriptObj, 
