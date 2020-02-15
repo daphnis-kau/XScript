@@ -14,7 +14,7 @@ extern "C"
 
 #include "common/Help.h"
 #include "common/TStrStream.h"
-#include "core/CClassRegistInfo.h"
+#include "core/CClassInfo.h"
 #include "CTypeLua.h"
 #include "CScriptLua.h"
 
@@ -85,7 +85,7 @@ namespace XS
 				return;
 			}
 			
-			auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+			auto pClassInfo = (const CClassInfo*)( ( eType >> 1 ) << 1 );
 			lua_getfield( pL, nStkId, pClassInfo->GetObjectIndex().c_str() );
 			if( lua_isnil( pL, -1 ) )
 			{
@@ -130,7 +130,7 @@ namespace XS
         lua_pushlightuserdata( pL, pObj );
         lua_gettable( pL, -2 );
 
-		auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+		auto pClassInfo = (const CClassInfo*)( ( eType >> 1 ) << 1 );
         if( !lua_isnil( pL, -1 ) )
 		{
             const const_string& sObjectIndex = pClassInfo->GetObjectIndex();
@@ -186,7 +186,7 @@ namespace XS
 	void CLuaValueObject::GetFromVM(DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId)
 	{
 		void* pObject = NULL;
-		auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+		auto pClassInfo = (const CClassInfo*)( ( eType >> 1 ) << 1 );
 		CLuaObject::GetFromVM( eType, pL, (char*)&pObject, nStkId );
 		pClassInfo->Assign( CScriptLua::GetScript( pL ), pDataBuf, pObject );
 	}
@@ -197,7 +197,7 @@ namespace XS
 		lua_newtable( pL );// Obj
 		int32 nStkId = AbsStackIdx( pL, -1 );
 
-		auto pClassInfo = (const CClassRegistInfo*)( ( eType >> 1 ) << 1 );
+		auto pClassInfo = (const CClassInfo*)( ( eType >> 1 ) << 1 );
 		lua_getglobal( pL, pClassInfo->GetClassName().c_str() );
 		lua_setmetatable( pL, nStkId );
 

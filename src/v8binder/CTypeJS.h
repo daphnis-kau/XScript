@@ -243,7 +243,7 @@ namespace XS
 	class CJSObject : public TJSValue<void*>
 	{
 	protected:
-		const CClassRegistInfo* _FromVMValue(DataType eType, 
+		const CClassInfo* _FromVMValue(DataType eType, 
 			CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj);
 		LocalValue _ToVMValue(DataType eType, 
 			CScriptJS& Script, void* pObj, bool bCopy);

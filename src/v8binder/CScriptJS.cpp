@@ -1,6 +1,6 @@
 ﻿#include "common/TStrStream.h"
 #include "core/CCallInfo.h"
-#include "core/CClassRegistInfo.h"
+#include "core/CClassInfo.h"
 #include "CScriptJS.h"
 #include "CTypeJS.h"
 #include "CDebugJS.h"
@@ -511,10 +511,10 @@ namespace XS
 	{
 		SV8Context& Context = GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
-		std::function<void( const CClassRegistInfo*,
+		std::function<void( const CClassInfo*,
 			v8::Local<v8::Function>, v8::Local<v8::Object>, bool )> MakeMeberFunction;
 
-		MakeMeberFunction = [&]( const CClassRegistInfo* pInfo,
+		MakeMeberFunction = [&]( const CClassInfo* pInfo,
 			v8::Local<v8::Function> NewClass, v8::Local<v8::Object> Prototype, bool bBase )->void
 		{
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -551,14 +551,14 @@ namespace XS
 				MakeMeberFunction( pInfo->BaseRegist()[i].m_pBaseInfo, NewClass, Prototype, true );
 		};
 
-		auto CheckClassInfo = [this]( const CClassRegistInfo* pInfo, 
-			v8::Isolate* isolate, v8::Local<v8::Context> context )->SClassInfo*
+		auto CheckClassInfo = [this]( const CClassInfo* pInfo, 
+			v8::Isolate* isolate, v8::Local<v8::Context> context )->SJSClassInfo*
 		{
-			SClassInfo* classInfo = m_mapClassInfo.Find( (const void*)pInfo );
+			SJSClassInfo* classInfo = m_mapClassInfo.Find( (const void*)pInfo );
 			if( classInfo != nullptr )
 				return classInfo;
 
-			classInfo = new SClassInfo;
+			classInfo = new SJSClassInfo;
 			classInfo->m_pScript = this;
 			classInfo->m_pClassInfo = pInfo;
 			const char* szClass = pInfo->GetClassName().c_str();
@@ -573,7 +573,7 @@ namespace XS
 			return classInfo;
 		};
 
-		const CTypeIDNameMap& mapRegisterInfo = CClassRegistInfo::GetAllRegisterInfo();
+		const CTypeIDNameMap& mapRegisterInfo = CClassInfo::GetAllRegisterInfo();
 		for( auto pInfo = mapRegisterInfo.GetFirst(); pInfo; pInfo = pInfo->GetNext() )
 		{
 			if( pInfo->IsEnum() )
@@ -604,7 +604,7 @@ namespace XS
 			v8::Local<v8::Context> context = Context.m_Context.Get( isolate );
 			v8::Context::Scope context_scope( context );
 			v8::Local<v8::Object> globalObj = context->Global();
-			SClassInfo* classInfo = CheckClassInfo( pInfo, isolate, context );
+			SJSClassInfo* classInfo = CheckClassInfo( pInfo, isolate, context );
 			assert( classInfo != nullptr );
 
 			const char* szClass = pInfo->GetClassName().c_str();
@@ -615,8 +615,8 @@ namespace XS
 			LocalValue Base = Undefined( isolate );
 			if( pInfo->BaseRegist().size() )
 			{
-				const CClassRegistInfo* pBaseInfo = pInfo->BaseRegist()[0].m_pBaseInfo;
-				SClassInfo* classInfo = CheckClassInfo( pBaseInfo, isolate, context );
+				const CClassInfo* pBaseInfo = pInfo->BaseRegist()[0].m_pBaseInfo;
+				SJSClassInfo* classInfo = CheckClassInfo( pBaseInfo, isolate, context );
 				assert( classInfo != nullptr );
 				PersistentFunTmplt& persistentTemplate = classInfo->m_FunctionTemplate;
 				v8::Local<v8::FunctionTemplate> BaseTemplate = persistentTemplate.Get( isolate );

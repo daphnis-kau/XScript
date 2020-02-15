@@ -1,6 +1,6 @@
 ﻿#include "CTypeJS.h"
 #include "CScriptJS.h"
-#include "core/CClassRegistInfo.h"
+#include "core/CClassInfo.h"
 #include "common/Help.h"
 #include <string>
 
@@ -19,12 +19,12 @@ namespace XS
 		return s_Instance;
 	}
 
-	inline const CClassRegistInfo* CJSObject::_FromVMValue(DataType eType,
+	inline const CClassInfo* CJSObject::_FromVMValue(DataType eType,
 		CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj )
 	{
 		SV8Context& Context = Script.GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
-		auto pClassInfo = (const CClassRegistInfo*)((eType >> 1) << 1);
+		auto pClassInfo = (const CClassInfo*)((eType >> 1) << 1);
 		if( obj == v8::Null(isolate) ||	!obj->IsObject() )
 		{
 			*(void**)( pDataBuf ) = NULL;
@@ -55,7 +55,7 @@ namespace XS
 			return NULL;
 		}
 
-		const CClassRegistInfo* pObjInfo = pInfo->m_pClassInfo->m_pClassInfo;
+		const CClassInfo* pObjInfo = pInfo->m_pClassInfo->m_pClassInfo;
 		if( pObjInfo == pClassInfo)
 		{
 			*(void**)( pDataBuf ) = pInfo->m_pObject;
@@ -75,7 +75,7 @@ namespace XS
 	inline XS::LocalValue CJSObject::_ToVMValue(DataType eType, 
 		CScriptJS& Script, void* pObj, bool bCopy )
 	{
-		auto pClassInfo = (const CClassRegistInfo*)((eType >> 1) << 1);
+		auto pClassInfo = (const CClassInfo*)((eType >> 1) << 1);
 		SV8Context& Context = Script.GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
 		if( pObj == NULL )
@@ -86,7 +86,7 @@ namespace XS
 			return pObjInfo->m_Object.Get(isolate);
 
 		static PersistentFunTmplt s_Instance;
-		SClassInfo* classInfo = Script.m_mapClassInfo.Find((const void*)pClassInfo);
+		SJSClassInfo* classInfo = Script.m_mapClassInfo.Find((const void*)pClassInfo);
 		PersistentFunTmplt& persistentTemplate = classInfo ? classInfo->m_FunctionTemplate : s_Instance;
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 		v8::Local<v8::FunctionTemplate> funTemplate = persistentTemplate.Get(isolate);
@@ -139,11 +139,11 @@ namespace XS
 		CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj)
 	{
 		void* pObject = NULL;
-		const CClassRegistInfo* pClassInfo = 
+		const CClassInfo* pClassInfo = 
 			_FromVMValue(eType, Script, (char*)&pObject, obj);
 		CJSObject::FromVMValue(eType, Script, (char*)&pObject, obj);
 		assert(pClassInfo);
-		auto pCurClassInfo = (const CClassRegistInfo*)((eType >> 1) << 1);
+		auto pCurClassInfo = (const CClassInfo*)((eType >> 1) << 1);
 		int32 nOffset = pClassInfo->GetBaseOffset(pCurClassInfo);
 		assert(nOffset >= 0);
 

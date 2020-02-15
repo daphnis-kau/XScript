@@ -8,7 +8,7 @@
 //=====================================================================
 
 #include "common/TList.h"
-#include "CClassRegistInfo.h"
+#include "CClassInfo.h"
 #include <stdarg.h>
 #include <vector>
 #include <list>
@@ -20,7 +20,7 @@ namespace XS
 	class CDebugBase;
 	class CCallInfo;
 	typedef std::pair<SFunctionTable*, uint32> CVMObjVTableInfo;
-	typedef std::map<const CClassRegistInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
+	typedef std::map<const CClassInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
 	typedef std::map<SFunctionTable*, SFunctionTable*> CFunctionTableMap;
 
     class CScriptBase
@@ -44,19 +44,19 @@ namespace XS
         CScriptBase(void);
 		virtual ~CScriptBase( void );
 
-		static bool        		RegistGlobalFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
+		static bool        		RegisterGlobalFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 									const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName );
-		static bool				RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
+		static bool				RegisterClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 									const STypeInfoArray& aryTypeInfo, const char* szFunctionName );
-		static bool				RegistClassCallback( IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex, 
+		static bool				RegisterClassCallback( IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex, 
 									bool bPureVirtual, const STypeInfoArray& aryTypeInfo, const char* szFunctionName );
-		static bool				RegistClassMember( IFunctionWrap* funGetSet[2], uintptr_t nOffset,
+		static bool				RegisterClassMember( IFunctionWrap* funGetSet[2], uintptr_t nOffset,
 									const STypeInfoArray& aryTypeInfo, const char* szMemberName );
-		static bool				RegistDestructor( IFunctionWrap* funWrap, uintptr_t funBoot, 
+		static bool				RegisterDestructor( IFunctionWrap* funWrap, uintptr_t funBoot, 
 									uint32 nFunIndex, const STypeInfoArray& aryTypeInfo );
-		static bool				RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
-		static bool				RegistClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue);
-		static bool				RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize );
+		static bool				RegisterConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName );
+		static bool				RegisterClass( const char* szClass, uint32 nCount, const char** aryType, const ptrdiff_t* aryValue);
+		static bool				RegisterEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize );
 
 		static void				CallBack( int32 nIndex, void* pRetBuf, void** pArgArray );
 
@@ -64,7 +64,7 @@ namespace XS
 		void					CheckDebugCmd();
 		bool					IsVirtualTableValid( SVirtualObj* pVObj );
         SFunctionTable*			GetOrgVirtualTable( void* pObj );
-		SFunctionTable*     	CheckNewVirtualTable( SFunctionTable* pOldFunTable, const CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth );
+		SFunctionTable*     	CheckNewVirtualTable( SFunctionTable* pOldFunTable, const CClassInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth );
         void                	AddSearchPath( const char* szPath );
 
 		virtual int32			Input( char* szBuffer, int nCount );

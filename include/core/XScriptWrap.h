@@ -254,7 +254,7 @@ namespace XS
 	{
 		IFunctionWrap* pWrap = TFunctionWrap<RetType, Param...>::GetInst();
 		STypeInfoArray InfoArray = MakeFunArg<RetType, Param...>();
-		CScriptBase::RegistGlobalFunction(pWrap, (uintptr_t)pFun, InfoArray, szType, szName);
+		CScriptBase::RegisterGlobalFunction(pWrap, (uintptr_t)pFun, InfoArray, szType, szName);
 	}
 	
 	template< typename RetType, typename ClassType, typename... Param >
@@ -262,7 +262,7 @@ namespace XS
 	{
 		IFunctionWrap* pWrap = TFunctionWrap<RetType, ClassType*, Param...>::GetInst();
 		STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
-		CScriptBase::RegistClassFunction( pWrap, (uintptr_t)pFun, InfoArray, szName );
+		CScriptBase::RegisterClassFunction( pWrap, (uintptr_t)pFun, InfoArray, szName );
 	}
 
 	///< Callback function access wrapper
@@ -356,7 +356,7 @@ namespace XS
 			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
 			CallBackWrap::FunctionType funBoot = &CallBackWrap::BootFunction;
 			CallBackWrap::GetCallBackIndex() = GetVirtualFunIndex(pFun);
-			CScriptBase::RegistClassCallback( pWrap, *(uintptr_t*)&funBoot,
+			CScriptBase::RegisterClassCallback( pWrap, *(uintptr_t*)&funBoot,
 				CallBackWrap::GetCallBackIndex(), bPureVirtual, InfoArray, szFunName );
 		}
 
@@ -408,7 +408,7 @@ namespace XS
 			FunctionType funBoot = &TDestructorWrap::Wrap;
 			STypeInfo aryInfo[2] = { GetTypeInfo<ClassType*>(), GetTypeInfo<void>() };
 			STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
-			XS::CScriptBase::RegistDestructor(&s_instance, 
+			XS::CScriptBase::RegisterDestructor(&s_instance, 
 				*(uintptr_t*)&funBoot, GetCallBackIndex(), TypeInfo );
 		}
 	};

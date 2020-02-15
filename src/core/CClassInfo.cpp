@@ -1,6 +1,6 @@
 ﻿#include "core/CCallInfo.h"
 #include "core/CScriptBase.h"
-#include "core/CClassRegistInfo.h"
+#include "core/CClassInfo.h"
 
 namespace XS
 {
@@ -18,7 +18,7 @@ namespace XS
 
 	CGlobalClassRegist::CGlobalClassRegist()
 	{
-		m_mapTypeID2ClassInfo.Insert( *new CClassRegistInfo( "" ) );
+		m_mapTypeID2ClassInfo.Insert( *new CClassInfo( "" ) );
 	}
 
 	CGlobalClassRegist::~CGlobalClassRegist()
@@ -26,7 +26,7 @@ namespace XS
 		while( m_mapTypeID2ClassInfo.GetFirst() )
 		{
 			auto* pClassInfo = m_mapTypeID2ClassInfo.GetFirst();
-			delete static_cast<CClassRegistInfo*>( pClassInfo );
+			delete static_cast<CClassInfo*>( pClassInfo );
 		}
 	}
 
@@ -36,15 +36,15 @@ namespace XS
 		return s_Instance;
 	}
 
-	const CClassRegistInfo* CClassRegistInfo::RegisterClass(
+	const CClassInfo* CClassInfo::RegisterClass(
 		const char* szClassName, const char* szTypeIDName, uint32 nSize, bool bEnum )
 	{
 		const_string strKey( szTypeIDName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
-		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		CClassInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
 		if( !pInfo )
 		{
-			pInfo = new CClassRegistInfo( szTypeIDName );
+			pInfo = new CClassInfo( szTypeIDName );
 			Inst.m_mapTypeID2ClassInfo.Insert( *pInfo );
 		}
 
@@ -57,32 +57,32 @@ namespace XS
 		return pInfo;
 	}
 
-	const CClassRegistInfo* CClassRegistInfo::GetRegistInfo( const char* szTypeInfoName )
+	const CClassInfo* CClassInfo::GetClassInfo( const char* szTypeInfoName )
 	{
 		const_string strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		return Inst.m_mapTypeID2ClassInfo.Find( strKey );
 	}
 
-	const CClassRegistInfo* CClassRegistInfo::SetObjectConstruct( 
+	const CClassInfo* CClassInfo::SetObjectConstruct( 
 		const char* szTypeInfoName, IObjectConstruct* pObjectConstruct )
 	{
 		const_string strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		assert( Inst.m_mapTypeID2ClassInfo.Find( strKey ) );
-		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		CClassInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
 		pInfo->m_pObjectConstruct = pObjectConstruct;
 		return pInfo;
 	}
 
-	const CClassRegistInfo* CClassRegistInfo::AddBaseRegist( 
+	const CClassInfo* CClassInfo::AddBaseInfo( 
 		const char* szTypeInfoName, const char* szBaseTypeInfoName, ptrdiff_t nOffset )
 	{
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		const_string strDeriveKey( szTypeInfoName, true );
-		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strDeriveKey );
+		CClassInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strDeriveKey );
 		const_string strBaseKey( szBaseTypeInfoName, true );
-		CClassRegistInfo* pBaseInfo = Inst.m_mapTypeID2ClassInfo.Find( strBaseKey );
+		CClassInfo* pBaseInfo = Inst.m_mapTypeID2ClassInfo.Find( strBaseKey );
 		assert( pInfo && pBaseInfo && nOffset >= 0 );
 		SBaseInfo BaseInfo = { pBaseInfo, (int32)nOffset };
 		if( pBaseInfo->m_nInheritDepth + 1 > pInfo->m_nInheritDepth )
@@ -108,12 +108,12 @@ namespace XS
 		return pInfo;
 	}
 
-	const XS::CCallInfo* CClassRegistInfo::RegisterFunction(
+	const XS::CCallInfo* CClassInfo::RegisterFunction(
 		const char* szTypeInfoName, CCallInfo* pCallBase )
 	{
 		const_string strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
-		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		CClassInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
 		if( !pInfo )
 			return nullptr;
 		assert( pInfo->m_mapRegistFunction.find( 
@@ -122,12 +122,12 @@ namespace XS
 		return pCallBase;
 	}
 
-	const CCallInfo* CClassRegistInfo::RegisterCallBack(
+	const CCallInfo* CClassInfo::RegisterCallBack(
 		const char* szTypeInfoName, uint32 nIndex, CCallbackInfo* pCallScriptBase )
 	{
 		const_string strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
-		CClassRegistInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		CClassInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
 		if( !pInfo )
 			return nullptr;
 		// 不能重复注册
@@ -146,7 +146,7 @@ namespace XS
 		return pCallScriptBase;
 	}
 
-	const XS::CTypeIDNameMap& CClassRegistInfo::GetAllRegisterInfo()
+	const XS::CTypeIDNameMap& CClassInfo::GetAllRegisterInfo()
 	{
 		return CGlobalClassRegist::GetInst().m_mapTypeID2ClassInfo;
 	}
@@ -154,7 +154,7 @@ namespace XS
 	//=====================================================================
     // 类型的继承关系
     //=====================================================================
-	CClassRegistInfo::CClassRegistInfo( const char* szTypeIDName )
+	CClassInfo::CClassInfo( const char* szTypeIDName )
 		: m_szTypeIDName( szTypeIDName )
         , m_nSizeOfClass( 0 )
 		, m_nAligenSizeOfClass( 0 )
@@ -164,13 +164,13 @@ namespace XS
 	{
     }
 
-    CClassRegistInfo::~CClassRegistInfo()
+    CClassInfo::~CClassInfo()
 	{
 		while( m_mapRegistFunction.GetFirst() )
 			delete m_mapRegistFunction.GetFirst();
     }
 
-    void CClassRegistInfo::InitVirtualTable( SFunctionTable* pNewTable ) const
+    void CClassInfo::InitVirtualTable( SFunctionTable* pNewTable ) const
 	{
 		for( int32 i = 0; i < (int32)m_vecOverridableFun.size(); i++ )
 		{
@@ -182,12 +182,12 @@ namespace XS
 		}
     }
 
-    int32 CClassRegistInfo::GetMaxRegisterFunctionIndex() const
+    int32 CClassInfo::GetMaxRegisterFunctionIndex() const
     {        
 		return (int32)m_vecOverridableFun.size();
     }
 
-    void CClassRegistInfo::Create( CScriptBase* pScript, void* pObject ) const
+    void CClassInfo::Create( CScriptBase* pScript, void* pObject ) const
 	{
 		pScript->CheckDebugCmd();
 		//声明性质的类不可创建
@@ -198,7 +198,7 @@ namespace XS
 		m_pObjectConstruct->Construct( pObject );
 	}
 
-	void CClassRegistInfo::Assign( CScriptBase* pScript, void* pDest, void* pSrc ) const
+	void CClassInfo::Assign( CScriptBase* pScript, void* pDest, void* pSrc ) const
 	{
 		pScript->CheckDebugCmd();
 		assert( m_pObjectConstruct );
@@ -207,7 +207,7 @@ namespace XS
 		m_pObjectConstruct->Assign( pDest, pSrc );
 	}
 
-    void CClassRegistInfo::Release( CScriptBase* pScript, void* pObject ) const
+    void CClassInfo::Release( CScriptBase* pScript, void* pObject ) const
 	{
 		pScript->CheckDebugCmd();
 		//声明性质的类不可销毁
@@ -217,17 +217,17 @@ namespace XS
 		m_pObjectConstruct->Destruct( pObject );
 	}
 
-	const CCallInfo* CClassRegistInfo::GetCallBase( const const_string& strFunName ) const
+	const CCallInfo* CClassInfo::GetCallBase( const const_string& strFunName ) const
 	{
 		return m_mapRegistFunction.Find( strFunName );
 	}
 
-    bool CClassRegistInfo::IsCallBack() const
+    bool CClassInfo::IsCallBack() const
     {
 		return !m_vecOverridableFun.empty();
     }
 
-    int32 CClassRegistInfo::GetBaseOffset( const CClassRegistInfo* pRegist ) const
+    int32 CClassInfo::GetBaseOffset( const CClassInfo* pRegist ) const
     {
         if( pRegist == this )
             return 0;
@@ -242,7 +242,7 @@ namespace XS
         return -1;
 	}
 
-    void CClassRegistInfo::ReplaceVirtualTable( CScriptBase* pScript,
+    void CClassInfo::ReplaceVirtualTable( CScriptBase* pScript,
 		void* pObj, bool bNewByVM, uint32 nInheritDepth ) const
     {
         SVirtualObj* pVObj        = (SVirtualObj*)pObj;
@@ -274,7 +274,7 @@ namespace XS
 		}
     }
 
-    void CClassRegistInfo::RecoverVirtualTable( CScriptBase* pScript, void* pObj ) const
+    void CClassInfo::RecoverVirtualTable( CScriptBase* pScript, void* pObj ) const
     {
         SFunctionTable* pOrgTable = NULL;
         if( !m_vecOverridableFun.empty() )
@@ -288,7 +288,7 @@ namespace XS
             ( (SVirtualObj*)pObj )->m_pTable = pOrgTable;
     }
 
-    bool CClassRegistInfo::FindBase( const CClassRegistInfo* pRegistBase ) const
+    bool CClassInfo::FindBase( const CClassInfo* pRegistBase ) const
     {
         if( pRegistBase == this )
             return true;
@@ -298,7 +298,7 @@ namespace XS
         return false;
     }
 
-	bool CClassRegistInfo::IsBaseObject( ptrdiff_t nDiff ) const
+	bool CClassInfo::IsBaseObject( ptrdiff_t nDiff ) const
 	{
 		// 命中基类
 		if( nDiff == 0 )

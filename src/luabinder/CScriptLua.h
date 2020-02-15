@@ -55,8 +55,8 @@ namespace XS
         void					AddLoader();
 		void					IO_Replace();
 
-        static void             RegistToLua( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
-        static void             RemoveFromLua( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
+        static void             RegistToLua( lua_State* pL, const CClassInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
+        static void             RemoveFromLua( lua_State* pL, const CClassInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
 
 		virtual bool			CallVM( const CCallbackInfo* pCallBase, void* pRetBuf, void** pArgArray );
 		virtual void			DestrucVM( const CCallbackInfo* pCallBase, SVirtualObj* pObject );
@@ -77,8 +77,8 @@ namespace XS
         //==============================================================================
         // 通用函数
         //==============================================================================
-        static void				NewLuaObj( lua_State* pL, const CClassRegistInfo* pInfo, void* pSrc );
-		static void				RegisterObject( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, bool bGC );
+        static void				NewLuaObj( lua_State* pL, const CClassInfo* pInfo, void* pSrc );
+		static void				RegisterObject( lua_State* pL, const CClassInfo* pInfo, void* pObj, bool bGC );
 		static void				NewUnicodeString( lua_State* pL, const wchar_t* szStr );
 		static const wchar_t*	ConvertUtf8ToUcs2( lua_State* pL, int32 nStkId );
 

@@ -292,7 +292,7 @@ namespace XS
 
 	void SV8Context::NewObject( const v8::FunctionCallbackInfo<v8::Value>& args )
 	{
-		SClassInfo* pInfo = (SClassInfo*)v8::External::Cast( *args.Data() )->Value();
+		SJSClassInfo* pInfo = (SJSClassInfo*)v8::External::Cast( *args.Data() )->Value();
 		if( pInfo == NULL )
 			return;
 
@@ -322,7 +322,7 @@ namespace XS
 	void SV8Context::Destruction( const v8::FunctionCallbackInfo<v8::Value>& args )
 	{
 		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast( args.Data() );
-		SClassInfo* pClassInfo = (SClassInfo*)wrap->Value();
+		SJSClassInfo* pClassInfo = (SJSClassInfo*)wrap->Value();
 		CScriptJS& Script = *(CScriptJS*)pClassInfo->m_pScript;
 		SV8Context& Context = Script.GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
@@ -347,7 +347,7 @@ namespace XS
 	void SV8Context::GCCallback( const v8::WeakCallbackInfo<SObjInfo>& data )
 	{
 		SObjInfo* pObjectInfo = data.GetParameter();
-		SClassInfo* pInfo = pObjectInfo->m_pClassInfo;
+		SJSClassInfo* pInfo = pObjectInfo->m_pClassInfo;
 		pInfo->m_pScript->GetV8Context().UnbindObj( pObjectInfo, true );
 	}
 
@@ -422,7 +422,7 @@ namespace XS
 	}
 
 	void SV8Context::BindObj( void* pObject, v8::Local<v8::Object> ScriptObj, 
-		const CClassRegistInfo* pInfo, void* pSrc )
+		const CClassInfo* pInfo, void* pSrc )
 	{
 		SObjInfo& ObjectInfo = *m_pScript->AllocObjectInfo();
 		ObjectInfo.m_bRecycle = false;
@@ -457,7 +457,7 @@ namespace XS
 	{
 		void* pObject = pObjectInfo->m_pObject;
 		bool bRecycle = pObjectInfo->m_bRecycle;
-		const CClassRegistInfo* pInfo = pObjectInfo->m_pClassInfo->m_pClassInfo;
+		const CClassInfo* pInfo = pObjectInfo->m_pClassInfo->m_pClassInfo;
 		v8::HandleScope handle_scope( m_pIsolate );
 		v8::TryCatch try_catch( m_pIsolate );
 

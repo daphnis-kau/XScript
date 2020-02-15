@@ -20,9 +20,9 @@ namespace XS
 		, m_nFunIndex( nFunIndex )
 		, m_sFunName( szFunName )
 	{
-		if( CClassRegistInfo::GetRegistInfo(szTypeInfoName) == NULL )
+		if( CClassInfo::GetClassInfo(szTypeInfoName) == NULL )
 			throw( "register function on a unregister class." );
-		CClassRegistInfo::RegisterFunction( szTypeInfoName, this );
+		CClassInfo::RegisterFunction( szTypeInfoName, this );
 
 		for( uint32 i = 0; i < aryTypeInfo.nSize - 1; i++ )
 			m_listParam.push_back( ToDataType( aryTypeInfo.aryInfo[i] ) );
@@ -69,7 +69,7 @@ namespace XS
 		, m_bPureVirtual(bPureVirtual)
 	{
 		m_nFunIndex = nFunIndex;
-		CClassRegistInfo::RegisterCallBack( szTypeInfoName, m_nFunIndex, this );
+		CClassInfo::RegisterCallBack( szTypeInfoName, m_nFunIndex, this );
 	}
 
     CCallbackInfo::~CCallbackInfo()

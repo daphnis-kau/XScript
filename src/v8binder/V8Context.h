@@ -15,7 +15,7 @@ namespace XS
 {
 	class CScriptJS;
 	class CCallInfo;
-	class CClassRegistInfo;
+	class CClassInfo;
 
 	typedef v8::Persistent<v8::Context>						PersistentContext;
 	typedef v8::Persistent<v8::ObjectTemplate>				PersistentObjTmplt;
@@ -27,9 +27,9 @@ namespace XS
 	typedef v8::ReturnValue<v8::Value>						ReturnValue;
 	typedef std::map<void*, PersistentString>				StringCacheMap;
 
-	struct SClassInfo : public TRBTree<SClassInfo>::CRBTreeNode
+	struct SJSClassInfo : public TRBTree<SJSClassInfo>::CRBTreeNode
 	{
-		const CClassRegistInfo*	m_pClassInfo;
+		const CClassInfo*		m_pClassInfo;
 		CScriptJS*				m_pScript;
 		PersistentFunTmplt		m_FunctionTemplate;
 		operator const void*() { return m_pClassInfo; }
@@ -40,7 +40,7 @@ namespace XS
 	{
 		void*					m_pObject;
 		PersistentObject		m_Object;
-		SClassInfo*				m_pClassInfo;
+		SJSClassInfo*			m_pClassInfo;
 		bool					m_bRecycle;
 		bool					m_bFirstAddress;
 		operator void*() { return m_pObject; }
@@ -49,7 +49,7 @@ namespace XS
 
 	struct SCallInfo : public TRBTree<SCallInfo>::CRBTreeNode
 	{
-		const CCallInfo*	m_pCallBase;
+		const CCallInfo*		m_pCallBase;
 		CScriptJS*				m_pScript;
 		PersistentString		m_strName;
 		operator const void*() { return m_pCallBase; }
@@ -90,11 +90,11 @@ namespace XS
 		PersistentString			m_Deconstruction;
 		PersistentString			m___proto__;
 
-		void						MakeMeberFunction(const CClassRegistInfo* pInfo, 
+		void						MakeMeberFunction(const CClassInfo* pInfo, 
 										v8::Local<v8::Function> NewClass, 
 										v8::Local<v8::Object> Prototype, bool bBase);
 		void						BindObj(void* pObject, v8::Local<v8::Object> ScriptObj, 
-										const CClassRegistInfo* pInfo, void* pSrc = NULL );
+										const CClassInfo* pInfo, void* pSrc = NULL );
 		void						UnbindObj( SObjInfo* pObjectInfo, bool bFromGC );
 
 		v8::Local<v8::Value>		StringFromUtf8(const char* szUtf8);

@@ -66,7 +66,7 @@ namespace XS
 			if( nType < eDT_enum )
 				return nType;
 			const char* szTypeName = argTypeInfo.m_szTypeName;
-			auto pClassInfo = CClassRegistInfo::RegisterClass( 
+			auto pClassInfo = CClassInfo::RegisterClass( 
 				"", szTypeName, argTypeInfo.m_nSize, nType == eDT_enum );
 			if( !pClassInfo->IsEnum() )
 				return (DataType)pClassInfo;
@@ -81,7 +81,7 @@ namespace XS
 			if( nPointCount > 1 || nType != eDT_class )
 				return eDT_enum;
 			const char* szTypeName = argTypeInfo.m_szTypeName;
-			auto pClassInfo = CClassRegistInfo::RegisterClass(
+			auto pClassInfo = CClassInfo::RegisterClass(
 				"", szTypeName, argTypeInfo.m_nSize, nType == eDT_enum );
 			if( !pClassInfo->IsEnum() )
 				return ( (DataType)pClassInfo ) | 1;
@@ -95,7 +95,7 @@ namespace XS
 			return s_aryOrgSize[nType];
 		if( nType&1 )
 			return sizeof( void* );
-		return ( (const CClassRegistInfo*)nType )->GetClassSize();
+		return ( (const CClassInfo*)nType )->GetClassSize();
 	}
 
 	size_t GetAligenSizeOfType(DataType nType)
@@ -104,7 +104,7 @@ namespace XS
 			return s_aryAligenSize[nType];
 		if (nType & 1)
 			return sizeof(void*);
-		return ((const CClassRegistInfo*)nType)->GetClassAligenSize();
+		return ((const CClassInfo*)nType)->GetClassAligenSize();
 	}
 
 	size_t CalBufferSize(const DataType* aryParam, size_t nParamCount, size_t arySize[])

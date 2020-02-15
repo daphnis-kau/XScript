@@ -12,7 +12,7 @@
 namespace XS
 {
 	struct SV8Context;
-	struct SClassInfo;
+	struct SJSClassInfo;
 	struct SObjInfo;
 	struct SCallInfo;
 
@@ -21,7 +21,7 @@ namespace XS
 		SV8Context*					m_pV8Context;
 		SObjInfo*					m_pFreeObjectInfo;
 		TRBTree<SObjInfo>			m_mapObjInfo;
-		TRBTree<SClassInfo>			m_mapClassInfo;
+		TRBTree<SJSClassInfo>		m_mapClassInfo;
 		TRBTree<SCallInfo>			m_mapCallBase;
 		
 		void						BuildRegisterInfo();

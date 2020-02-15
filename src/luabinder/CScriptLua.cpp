@@ -22,7 +22,7 @@ extern "C"
 #include "CDebugLua.h"
 #include "CScriptLua.h"
 #include "core/CCallInfo.h"
-#include "core/CClassRegistInfo.h"
+#include "core/CClassInfo.h"
 
 namespace XS
 {
@@ -492,7 +492,7 @@ namespace XS
     // 通用函数
     //--------------------------------------------------------------------------------
     // Lua stack 堆栈必须只有一个值，类（表,在栈底）.调用后， stack top = 1, 对象对应的表在栈顶
-    void CScriptLua::NewLuaObj( lua_State* pL, const CClassRegistInfo* pInfo, void* pSrc )
+    void CScriptLua::NewLuaObj( lua_State* pL, const CClassInfo* pInfo, void* pSrc )
     {
 		lua_pushstring( pL, pInfo->GetObjectIndex().c_str() );
         void* pObj = lua_newuserdata( pL, pInfo->GetClassSize() );
@@ -520,7 +520,7 @@ namespace XS
 		RegisterObject( pL, pInfo, pObj, true ); 
     }
 
-    void CScriptLua::RegistToLua( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj )
+    void CScriptLua::RegistToLua( lua_State* pL, const CClassInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj )
     {                                            //__addTableOfUserdata, 把对象表，挂在 CScriptLua::ms_szGlobObjectTable
         lua_pushlightuserdata( pL, pObj );
         lua_pushvalue( pL, nObj );        //返回Obj在堆栈的栈底
@@ -529,7 +529,7 @@ namespace XS
         for( size_t i = 0; i < pInfo->BaseRegist().size(); i++ )
         {
 			void* pChild = ( (char*)pObj ) + pInfo->BaseRegist()[i].m_nBaseOff;
-			const CClassRegistInfo* pChildInfo = pInfo->BaseRegist()[i].m_pBaseInfo;
+			const CClassInfo* pChildInfo = pInfo->BaseRegist()[i].m_pBaseInfo;
 			RegistToLua( pL, pChildInfo, pChild, nObjTable, nObj );
 
 			// 只能处理基类的ObjectIndex，因为最终实例有可能是userdata，
@@ -540,7 +540,7 @@ namespace XS
         }
 	}
 
-	void CScriptLua::RemoveFromLua( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj )
+	void CScriptLua::RemoveFromLua( lua_State* pL, const CClassInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj )
 	{
 		lua_pushlightuserdata( pL, pObj );
 		lua_pushnil( pL );
@@ -549,7 +549,7 @@ namespace XS
 		for( size_t i = 0; i < pInfo->BaseRegist().size(); i++ )
 		{
 			void* pChild = ( (char*)pObj ) + pInfo->BaseRegist()[i].m_nBaseOff;
-			const CClassRegistInfo* pChildInfo = pInfo->BaseRegist()[i].m_pBaseInfo;
+			const CClassInfo* pChildInfo = pInfo->BaseRegist()[i].m_pBaseInfo;
 
 			RemoveFromLua( pL, pChildInfo, pChild, nObjTable, nObj );
 
@@ -561,7 +561,7 @@ namespace XS
 		}
 	}
 
-	void CScriptLua::RegisterObject( lua_State* L, const CClassRegistInfo* pInfo, void* pObj, bool bGC )
+	void CScriptLua::RegisterObject( lua_State* L, const CClassInfo* pInfo, void* pObj, bool bGC )
     {                                        
 		//In C++, stack top = 1, 返回Obj, 留在堆栈里
 		if( pInfo->IsCallBack() )
@@ -627,7 +627,7 @@ namespace XS
 		lua_getmetatable( pL, -1 );
 		lua_pushlightuserdata( pL, ms_pClassInfoKey );
         lua_rawget( pL, -2 );
-		const CClassRegistInfo* pInfo = (const CClassRegistInfo*)lua_touserdata( pL, -1 );
+		const CClassInfo* pInfo = (const CClassInfo*)lua_touserdata( pL, -1 );
 		void* pObject = (void*)lua_touserdata( pL, -3 );
 		// 不需要调用UnRegisterObject，仅仅恢复虚表即可，
 		// 因为已经被回收，所以不存在还有任何地方会引用到此对象
@@ -642,7 +642,7 @@ namespace XS
     int32 CScriptLua::Construct( lua_State* pL )
     {
         lua_getfield( pL, -2, "_info" );        //得到c++类属性
-		const CClassRegistInfo* pInfo = (const CClassRegistInfo*)lua_touserdata( pL, -1 );
+		const CClassInfo* pInfo = (const CClassInfo*)lua_touserdata( pL, -1 );
 		lua_pop( pL, 1 );
 		lua_remove( pL, -2 );
 		NewLuaObj( pL, pInfo, NULL );                //stack top = 1, 返回Obj
@@ -767,7 +767,7 @@ namespace XS
     int32 CScriptLua::ClassCast( lua_State* pL )
     {
         lua_getfield( pL, -1, "_info" );
-		const CClassRegistInfo* pNewInfo = (const CClassRegistInfo*)lua_touserdata( pL, -1 );
+		const CClassInfo* pNewInfo = (const CClassInfo*)lua_touserdata( pL, -1 );
         lua_pop( pL, 1 );
 
         const char* szNewName = pNewInfo->GetObjectIndex().c_str();
@@ -781,7 +781,7 @@ namespace XS
 
 		lua_getfield( pL, -2, "class" );
         lua_getfield( pL, -1, "_info" );
-		const CClassRegistInfo* pOrgInfo = (const CClassRegistInfo*)lua_touserdata( pL, -1 );
+		const CClassInfo* pOrgInfo = (const CClassInfo*)lua_touserdata( pL, -1 );
         lua_pop( pL, 2 );
 
         int32 nOffset = pNewInfo->GetBaseOffset( pOrgInfo );
@@ -955,7 +955,7 @@ namespace XS
 			return 1;
 		}
 
-		auto pInfo = (const CClassRegistInfo*)lua_touserdata( pL, -1 );
+		auto pInfo = (const CClassInfo*)lua_touserdata( pL, -1 );
 		lua_pushstring( pL, pInfo->GetObjectIndex().c_str() );
 		lua_rawget( pL, -4 );
 		const void* pObject = lua_touserdata( pL, -1 );
@@ -1114,7 +1114,7 @@ namespace XS
 	 void CScriptLua::BuildRegisterInfo()
 	 {
 		lua_State* pL = GetLuaState();
-		 const CTypeIDNameMap& mapRegisterInfo = CClassRegistInfo::GetAllRegisterInfo();
+		 const CTypeIDNameMap& mapRegisterInfo = CClassInfo::GetAllRegisterInfo();
 		 for( auto pInfo = mapRegisterInfo.GetFirst(); pInfo; pInfo = pInfo->GetNext() )
 		 {
 			 if( pInfo->IsEnum() )
@@ -1330,7 +1330,7 @@ namespace XS
 					void* pData = lua_touserdata( pL, -1 );		// nStk = 4
 					if( pData )
 					{
-						const CClassRegistInfo* pInfo = (const CClassRegistInfo*)pData;
+						const CClassInfo* pInfo = (const CClassInfo*)pData;
 						lua_pushstring( pL, pInfo->GetObjectIndex().c_str() );	// nStk = 5
 						lua_rawget( pL, nObj );			
 						void* pObj = lua_touserdata( pL, -1 );

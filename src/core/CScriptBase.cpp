@@ -11,7 +11,7 @@ namespace XS
 	{
 		CScriptBase*			m_pScript;
 		SFunctionTable*			m_pOldFunTable;
-		const CClassRegistInfo*	m_pClassInfo;
+		const CClassInfo*	m_pClassInfo;
 	};
 
 	struct SFileContext
@@ -104,7 +104,7 @@ namespace XS
 		}
 	}
 
-	bool CScriptBase::RegistGlobalFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
+	bool CScriptBase::RegisterGlobalFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 		const STypeInfoArray& aryTypeInfo, const char* szTypeInfoName, const char* szFunctionName )
 	{
 		ECallingType eCallingType = szTypeInfoName && szTypeInfoName[0] ?
@@ -113,14 +113,14 @@ namespace XS
 			szTypeInfoName, eCallingType, szFunctionName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
+	bool CScriptBase::RegisterClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 		const STypeInfoArray& aryTypeInfo, const char* szFunctionName )
 	{
 		return new CCallInfo( funWrap, aryTypeInfo, funOrg,
 			aryTypeInfo.aryInfo[0].m_szTypeName, eCT_ClassFunction, szFunctionName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClassCallback( 
+	bool CScriptBase::RegisterClassCallback( 
 		IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex, bool bPureVirtual,
 		const STypeInfoArray& aryTypeInfo, const char* szFunctionName )
 	{
@@ -128,48 +128,48 @@ namespace XS
 			bPureVirtual, aryTypeInfo.aryInfo[0].m_szTypeName, szFunctionName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClassMember( IFunctionWrap* funGetSet[2], uintptr_t nOffset,
+	bool CScriptBase::RegisterClassMember( IFunctionWrap* funGetSet[2], uintptr_t nOffset,
 		const STypeInfoArray& aryTypeInfo, const char* szMemberName )
 	{
 		assert( funGetSet && ( funGetSet[0] || funGetSet[1] ) );
 		const_string keyName( szMemberName, true );
 		const char* szTypeInfoName = aryTypeInfo.aryInfo[0].m_szTypeName;
-		assert( CClassRegistInfo::GetRegistInfo( szTypeInfoName )->
+		assert( CClassInfo::GetClassInfo( szTypeInfoName )->
 			GetRegistFunction().Find( keyName ) == nullptr );
 		return new CMemberInfo( funGetSet, aryTypeInfo, nOffset,
 			szTypeInfoName, szMemberName ) != nullptr;
 	}
 
-	bool CScriptBase::RegistClass( const char* szClass, uint32 nCount, 
+	bool CScriptBase::RegisterClass( const char* szClass, uint32 nCount, 
 		const char** aryType, const ptrdiff_t* aryValue )
 	{
-		auto pClassInfo = CClassRegistInfo::RegisterClass( 
+		auto pClassInfo = CClassInfo::RegisterClass( 
 			szClass, aryType[0], (uint32)aryValue[0], false );
 		for( uint32 i = 1; i < nCount; i++ )
 		{
-			assert( CClassRegistInfo::GetRegistInfo( aryType[i] ) != NULL );
-			pClassInfo->AddBaseRegist( aryType[0], aryType[i], aryValue[i] );
+			assert( CClassInfo::GetClassInfo( aryType[i] ) != NULL );
+			pClassInfo->AddBaseInfo( aryType[0], aryType[i], aryValue[i] );
 		}
 		return pClassInfo != nullptr;
 	}
 
-	bool CScriptBase::RegistConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName )
+	bool CScriptBase::RegisterConstruct( IObjectConstruct* pObjectConstruct, const char* szTypeIDName )
 	{
-		assert( CClassRegistInfo::GetRegistInfo( szTypeIDName ) );
-		CClassRegistInfo::SetObjectConstruct( szTypeIDName, pObjectConstruct );
+		assert( CClassInfo::GetClassInfo( szTypeIDName ) );
+		CClassInfo::SetObjectConstruct( szTypeIDName, pObjectConstruct );
 		return true;
 	}
 
-	bool CScriptBase::RegistDestructor( IFunctionWrap* funWrap,
+	bool CScriptBase::RegisterDestructor( IFunctionWrap* funWrap,
 		uintptr_t funBoot, uint32 nFunIndex, const STypeInfoArray& aryTypeInfo )
 	{
 		return new CCallbackInfo( funWrap, aryTypeInfo,funBoot, nFunIndex, 
 			false, aryTypeInfo.aryInfo[0].m_szTypeName, "" ) != nullptr;
 	}
 
-	bool CScriptBase::RegistEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize )
+	bool CScriptBase::RegisterEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize )
 	{
-		return CClassRegistInfo::RegisterClass( szEnumName, szTypeIDName, nTypeSize, true ) != nullptr;
+		return CClassInfo::RegisterClass( szEnumName, szTypeIDName, nTypeSize, true ) != nullptr;
 	}
 
 	void CScriptBase::CheckDebugCmd()
@@ -200,7 +200,7 @@ namespace XS
     }
 
     SFunctionTable* CScriptBase::CheckNewVirtualTable( SFunctionTable* pOldFunTable, 
-		const CClassRegistInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth )
+		const CClassInfo* pClassInfo, bool bNewByVM, uint32 nInheritDepth )
 	{
 		assert( !IsAllocVirtualTable( pOldFunTable ) );
 
@@ -255,7 +255,7 @@ namespace XS
 			pClassInfo->InitVirtualTable( pNewFunTable );
 			return pNewFunTable;
 		}
-		else if( static_cast<const CClassRegistInfo*>( it->second->m_pFun[-1] )
+		else if( static_cast<const CClassInfo*>( it->second->m_pFun[-1] )
 			->GetInheritDepth() < pClassInfo->GetInheritDepth() )
 		{
 			pClassInfo->InitVirtualTable( it->second );
@@ -412,7 +412,7 @@ namespace XS
 		assert( IsAllocVirtualTable( pVirtualObj->m_pTable ) );
 		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVirtualObj->m_pTable ) - 1;
 		assert( pFunTableHead->m_pClassInfo && pFunTableHead->m_pOldFunTable );
-		const CClassRegistInfo* pClassInfo = pFunTableHead->m_pClassInfo;
+		const CClassInfo* pClassInfo = pFunTableHead->m_pClassInfo;
 		const CCallbackInfo* pCallScript = pClassInfo->GetOverridableFunction( nIndex );
 		CScriptBase* pScriptBase = pFunTableHead->m_pScript;
 		pScriptBase->CheckDebugCmd();

@@ -1,7 +1,7 @@
 ﻿#ifndef __CLASS_REGIST_INFO_H__
 #define __CLASS_REGIST_INFO_H__
 //=====================================================================
-/** CClassRegistInfo.h
+/** CClassInfo.h
 // 定义注册的类型的继承关系
 // 柯达昭
 // 2007-10-16
@@ -22,16 +22,16 @@ namespace XS
 	class CScriptBase;
 	class CCallInfo;
 	class CCallbackInfo;
-	class CClassRegistInfo; 
+	class CClassInfo;
 	class CGlobalClassRegist;
 	typedef TRBTree<CCallInfo> CCallBaseMap;
-	typedef TRBTree<CClassRegistInfo> CTypeIDNameMap;
+	typedef TRBTree<CClassInfo> CTypeIDNameMap;
 
-    class CClassRegistInfo : public CTypeIDNameMap::CRBTreeNode
+    class CClassInfo : public CTypeIDNameMap::CRBTreeNode
 	{
 		struct SBaseInfo
 		{
-			const CClassRegistInfo*		m_pBaseInfo;        // 包含的基类
+			const CClassInfo*			m_pBaseInfo;        // 包含的基类
 			int32						m_nBaseOff;         // 包含的基类相对于子类的偏移
 		};
 
@@ -49,17 +49,17 @@ namespace XS
 		CCallBaseMap					m_mapRegistFunction;
 		
 		friend class CGlobalClassRegist;
-		CClassRegistInfo(const char* szClassName);
-		~CClassRegistInfo( void );
+		CClassInfo(const char* szClassName);
+		~CClassInfo( void );
     public:
 
 		operator const const_string&( ) const { return m_szTypeIDName; }
 		bool operator < ( const const_string& strKey ) { return (const const_string&)*this < strKey; }
 
-		static const CClassRegistInfo*	RegisterClass( const char* szClassName, const char* szTypeIDName, uint32 nSize, bool bEnum );
-		static const CClassRegistInfo*	GetRegistInfo( const char* szTypeInfoName );
-		static const CClassRegistInfo*	SetObjectConstruct( const char* szTypeInfoName, IObjectConstruct* pObjectConstruct );
-		static const CClassRegistInfo*	AddBaseRegist( const char* szTypeInfoName, const char* szBaseTypeInfoName, ptrdiff_t nOffset );
+		static const CClassInfo*		RegisterClass( const char* szClassName, const char* szTypeIDName, uint32 nSize, bool bEnum );
+		static const CClassInfo*		GetClassInfo( const char* szTypeInfoName );
+		static const CClassInfo*		SetObjectConstruct( const char* szTypeInfoName, IObjectConstruct* pObjectConstruct );
+		static const CClassInfo*		AddBaseInfo( const char* szTypeInfoName, const char* szBaseTypeInfoName, ptrdiff_t nOffset );
 		static const CCallInfo*			RegisterFunction( const char* szTypeInfoName, CCallInfo* pCallBase );
 		static const CCallInfo*			RegisterCallBack( const char* szTypeInfoName, uint32 nIndex, CCallbackInfo* pCallScriptBase );
 		static const CTypeIDNameMap&	GetAllRegisterInfo();
@@ -72,9 +72,9 @@ namespace XS
         void                            ReplaceVirtualTable( CScriptBase* pScript, void* pObj, bool bNewByVM, uint32 nInheritDepth ) const;
 		void                            RecoverVirtualTable( CScriptBase* pScript, void* pObj ) const;
 		bool                            IsCallBack() const;
-		int32                       	GetBaseOffset( const CClassRegistInfo* pRegist ) const;
+		int32                       	GetBaseOffset( const CClassInfo* pRegist ) const;
 		const CCallInfo*				GetCallBase( const const_string& strFunName ) const;
-        bool                            FindBase( const CClassRegistInfo* pRegistBase ) const;
+        bool                            FindBase( const CClassInfo* pRegistBase ) const;
 		bool							IsBaseObject(ptrdiff_t nDiff) const;
 		bool							IsEnum() const { return m_bIsEnum; }
 		const std::vector<SBaseInfo>&  	BaseRegist() const { return m_vecBaseRegist; }

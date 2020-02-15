@@ -18,7 +18,7 @@
 #define DEFINE_CLASS_BEGIN_IMPLEMENT( _get_vtable_class, _type, _class, ... ) \
 	namespace _class##_namespace { \
 	static XS::SGlobalExe _class##_register( \
-		XS::CScriptBase::RegistClass( #_class, \
+		XS::CScriptBase::RegisterClass( #_class, \
 		XS::TInheritInfo<_class, ##__VA_ARGS__>::size, \
 		XS::TInheritInfo<_class, ##__VA_ARGS__>::Types().data(), \
 		XS::TInheritInfo<_class, ##__VA_ARGS__>::Values().data() ) ); \
@@ -34,7 +34,7 @@
 	static XS::SGlobalExe _class_fun_register( listRegister.GetFirst()->Register() ); \
 	typedef TConstruct<_get_vtable_class, _class, _type> ConstructType; \
 	static XS::SGlobalExe _class_construct_register( \
-	XS::CScriptBase::RegistConstruct( ConstructType::Inst(), typeid( org_##_type ).name() ) ); }
+	XS::CScriptBase::RegisterConstruct( ConstructType::Inst(), typeid( org_##_type ).name() ) ); }
 
 
 #define REGIST_CLASSFUNCTION_IMPLEMENT( _function_type, _function, _function_name ) \
@@ -112,7 +112,7 @@
 			funGetSet[0] = _enableGetter ? XS::CreateMemberGetWrap( &c->_member ) : NULL;\
 			funGetSet[1] = _enableSetter ? XS::CreateMemberSetWrap( &c->_member ) : NULL;\
 			ptrdiff_t offset = ((ptrdiff_t)&c->_member) - (ptrdiff_t)c;\
-			XS::CScriptBase::RegistClassMember( funGetSet, offset,\
+			XS::CScriptBase::RegisterClassMember( funGetSet, offset,\
 				XS::MakeMemberArg( c, &c->_member ), #_new_name );\
 		} \
 		static XS::CScriptRegisterNode RegisterNode( listRegister, &Register ); \
@@ -152,7 +152,7 @@
 
 #define REGIST_ENUMTYPE_IMPLEMENT( EnumType ) \
     static XS::SGlobalExe EnumType##_register( \
-    XS::CScriptBase::RegistEnum( typeid( EnumType ).name(), #EnumType, (int32)sizeof(EnumType) ) );
+    XS::CScriptBase::RegisterEnum( typeid( EnumType ).name(), #EnumType, (int32)sizeof(EnumType) ) );
 
 
 #endif
