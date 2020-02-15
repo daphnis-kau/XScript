@@ -20,7 +20,31 @@ extern "C"
 
 namespace XS
 {
-    //=====================================================================
+	//=====================================================================
+	// 帮助函数及结构
+	//=====================================================================
+	static const char* s_szLuaBufferClass = "CBufferStream";
+	static const char* s_szLuaBufferInfo = "CBufferStream_hObject";
+
+	struct SBufferInfo
+	{
+		tbyte*			pBuffer;
+		uint32			nPosition;
+		uint32			nDataSize;
+		uint32			nCapacity;
+	};
+
+	//=====================================================================
+	/// lua对C++数据的操作方法封装
+	//=====================================================================
+	inline int32 AbsStackIdx( lua_State* pL, int32 nStkId )
+	{
+		int r = nStkId > 0 ? nStkId : ( lua_gettop( pL ) + nStkId + 1 );
+		assert( r >=0 );
+		return r;
+	}
+
+	//=====================================================================
     // lua数据类型之C++对象类型
 	//=====================================================================
 	static void ConstructLua( lua_State* pL )
@@ -184,115 +208,67 @@ namespace XS
 
 	//=====================================================================
     // lua数据类型之C++指针类型
-    //=====================================================================
-    CLuaBuffer::CLuaBuffer()
-    {
-    }
-
-	CLuaBuffer& CLuaBuffer::GetInst()
+	//=====================================================================
+	class CLuaBuffer
 	{
-		static CLuaBuffer s_Instance;
-		return s_Instance;
-	}
+	public:
+		static bool			IsLightData( SBufferInfo* pInfo );
+		static SBufferInfo*	GetBufferInfo( lua_State* pL, int32 nStkID );
+		static SBufferInfo* CheckBufferSpace( SBufferInfo* pInfo,
+			uint32 nSize, lua_State* pL, int32 nStkID );
 
-	void CLuaBuffer::PushToVM(DataType eType, lua_State* pL, char* pDataBuf)
-	{
-		void* pBuffer = *(void**)( pDataBuf );
-		if( pBuffer == NULL )
-		{
-			lua_pushnil( pL );
-			return;
-		}
+		template<class Type>
+		static Type			ReadData( lua_State* pL );
 
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
-		lua_rawget( pL, LUA_REGISTRYINDEX );
-		if( lua_isnil( pL, -1 ) )
-		{
-			luaL_error( pL, "PushToVM error" );
-			return;
-		}
+		template<class Type>
+		static void			WriteData( lua_State* pL, Type v );
 
-		lua_pushlightuserdata( pL, pBuffer );
-		lua_gettable( pL, -2 );
+		static int32		GetBit( lua_State* pL );
+		static int32		ReadBoolean( lua_State* pL );
+		static int32		ReadInt8( lua_State* pL );
+		static int32		ReadDouble( lua_State* pL );
+		static int32		ReadFloat( lua_State* pL );
+		static int32		ReadInt64( lua_State* pL );
+		static int32		ReadInt32( lua_State* pL );
+		static int32		ReadInt16( lua_State* pL );
+		static int32		ReadUint8( lua_State* pL );
+		static int32		ReadUint64( lua_State* pL );
+		static int32		ReadUint32( lua_State* pL );
+		static int32		ReadUint16( lua_State* pL );
+		static int32		ReadUTF( lua_State* pL );
+		static int32		ReadUTFBytes( lua_State* pL );
+		static int32		ReadUCS( lua_State* pL );
+		static int32		ReadUCSCounts( lua_State* pL );
+		static int32		ReadBytes( lua_State* pL );
 
-		if( !lua_isnil( pL, -1 ) )
-		{
-			SBufferInfo* pInfo = GetBufferInfo( pL, -1 );
-			if( pInfo && pInfo->pBuffer == pBuffer )
-			{
-				lua_remove( pL, -2 );
-				pInfo->nDataSize = (uint32)INVALID_32BITID;
-				pInfo->nCapacity = (uint32)INVALID_32BITID;
-				pInfo->nPosition = 0;
-				return;
-			}
+		static int32		SetBit( lua_State* pL );
+		static int32		WriteBoolean( lua_State* pL );
+		static int32		WriteInt8( lua_State* pL );
+		static int32		WriteDouble( lua_State* pL );
+		static int32		WriteFloat( lua_State* pL );
+		static int32		WriteInt32( lua_State* pL );
+		static int32		WriteInt64( lua_State* pL );
+		static int32		WriteUint64( lua_State* pL );
+		static int32		WriteInt16( lua_State* pL );
+		static int32		WriteUTF( lua_State* pL );
+		static int32		WriteUTFBytes( lua_State* pL );
+		static int32		WriteBytes( lua_State* pL );
 
-			CScriptLua::GetScript( pL )->UnlinkCppObjFromScript( pBuffer );
-		}
+		static int32		Uncompress( lua_State* pL );
+		static int32		Compress( lua_State* pL );
 
-		lua_pop( pL, 2 );
+		static int32		SetPosition( lua_State* pL );
+		static int32		GetPosition( lua_State* pL );
 
-		lua_newtable( pL );// Obj
-		int32 nStkId = AbsStackIdx( pL, -1 );
+		static int32		SetDataSize( lua_State* pL );
+		static int32		GetDataSize( lua_State* pL );
 
-		lua_getglobal( pL, s_szLuaBufferClass );
-		if( lua_isnil( pL, -1 ) )//szClass必须被注册
-		{
-			luaL_error( pL, "PushToVM Class:%s", s_szLuaBufferClass );
-			return;
-		}
+		static int32		Reset( lua_State* pL );
+		static int32		Clear( lua_State* pL );
 
-		lua_setmetatable( pL, nStkId );
-
-		// 设置数据到table上
-		lua_pushstring( pL, s_szLuaBufferInfo );
-		SBufferInfo* pInfo = (SBufferInfo*)lua_newuserdata( pL, sizeof(SBufferInfo) );
-		pInfo->nDataSize = (uint32)INVALID_32BITID;
-		pInfo->nCapacity = (uint32)INVALID_32BITID;
-		pInfo->nPosition = 0;
-		pInfo->pBuffer = (tbyte*)pBuffer;
-		lua_rawset( pL, nStkId );
-
-		// 挂到全局表上
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
-		lua_rawget( pL, LUA_REGISTRYINDEX );
-		lua_pushlightuserdata( pL, pBuffer );
-		lua_pushvalue( pL, nStkId );
-		lua_settable( pL, -3 );
-		lua_pop( pL, 1 );
-    }
-
-    void CLuaBuffer::GetFromVM( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId )
-    {
-		nStkId = AbsStackIdx( pL, nStkId );
-		int32 nType = lua_type( pL, nStkId );
-		if( nType == LUA_TNIL || nType == LUA_TNONE )
-			*(void**)( pDataBuf ) = NULL;    
-		else if( nType == LUA_TTABLE )
-		{
-			lua_pushstring( pL, s_szLuaBufferInfo );
-			lua_rawget( pL, nStkId );
-			if( lua_islightuserdata( pL, -1 ) || lua_type( pL, -1 ) == LUA_TUSERDATA )
-			{
-				SBufferInfo* pInfo = (SBufferInfo*)lua_touserdata( pL, -1 );
-				*(void**)( pDataBuf ) = pInfo ? pInfo->pBuffer : NULL;
-				lua_pop( pL, 1 );
-			}
-			else
-			{
-				*(void**)( pDataBuf ) = NULL;
-				lua_pop( pL, 1 );
-			}
-		}   
-		else if( nType == LUA_TSTRING )
-		{
-			*(const char**)( pDataBuf ) = GetStrFromLua( pL, nStkId );
-		}  
-		else
-		{
-			*(void**)( pDataBuf ) = NULL;
-		}
-	}
+		friend void*		GetPointerFromLua( lua_State* pL, int32 nStkId );
+		friend void			PushPointerToLua( lua_State* pL, void* pBuffer );
+	};
 
 	inline bool CLuaBuffer::IsLightData( SBufferInfo* pInfo )
 	{
@@ -983,7 +959,7 @@ namespace XS
 		return 0;
 	}
 
-    void CLuaBuffer::RegistClass( CScriptLua* pScript )
+	void RegisterPointerClass( CScriptLua* pScript )
 	{
 		char szSrc[256];
 		char_stream( szSrc ) << s_szLuaBufferClass << " = class();";
@@ -993,7 +969,8 @@ namespace XS
 		lua_getglobal( pL, s_szLuaBufferClass );
 
 		#define REGISTER( f ) \
-		lua_pushcfunction( pL, f ); lua_setfield( pL, -2, #f )
+		lua_pushcfunction( pL, CLuaBuffer::f ); \
+		lua_setfield( pL, -2, #f )
 
 		REGISTER( GetBit );
 		REGISTER( ReadBoolean );
@@ -1037,31 +1014,145 @@ namespace XS
 		REGISTER( Clear );
 
         lua_pop( pL, 1 );
-    }
+	}
 
-	//====================================================================================
-	// LuaType
-	//====================================================================================
-	CLuaTypeBase* s_aryLuaType[eDT_count] =
+	//=====================================================================
+	/// lua对C++数据的操作方法封装
+	//=====================================================================
+	double GetNumFromLua( lua_State* pL, int32 nStkId )
 	{
-		0,
-		&CLuaChar::GetInst(),
-		&CLuaInt8::GetInst(),
-		&CLuaInt16::GetInst(),
-		&CLuaInt32::GetInst(),
-		&CLuaInt64::GetInst(),
-		&CLuaLong::GetInst(),
-		&CLuaUint8::GetInst(),
-		&CLuaUint16::GetInst(),
-		&CLuaUint32::GetInst(),
-		&CLuaUint64::GetInst(),
-		&CLuaUlong::GetInst(),
-		&CLuaWChar::GetInst(),
-		&CLuaBool::GetInst(),
-		&CLuaFloat::GetInst(),
-		&CLuaDouble::GetInst(),
-		&CLuaString::GetInst(),
-		&CLuaWString::GetInst(),
-		&CLuaBuffer::GetInst()
-	};
+		nStkId = AbsStackIdx( pL, nStkId );
+		if( lua_isboolean( pL, nStkId ) )
+			return (double)(int32)lua_toboolean( pL, nStkId );
+		if( LUA_TSTRING == lua_type( pL, nStkId ) )
+		{
+			char *endptr;
+			const char* s = lua_tostring( pL, nStkId );
+			double result = strtod( s, &endptr );
+			if( endptr == s )
+				return 0;  /* conversion failed */
+
+			/* maybe an hexadecimal constant? */
+			if( *endptr == 'x' || *endptr == 'X' )
+			{
+				uint64 nValue = 0;
+				int n = ValueFromHexNumber( *++endptr );
+				while( n >= 0 )
+				{
+					nValue = ( nValue << 4 )|n;
+					n = ValueFromHexNumber( *++endptr );
+				}
+				result = (double)nValue;
+			}
+
+			return result;
+		}
+		return lua_tonumber( pL, nStkId );
+	}
+
+	void* GetPointerFromLua( lua_State* pL, int32 nStkId )
+	{
+		nStkId = AbsStackIdx( pL, nStkId );
+		int32 nType = lua_type( pL, nStkId );
+		if( nType == LUA_TNIL || nType == LUA_TNONE )
+			return nullptr;
+
+		if( nType == LUA_TTABLE )
+		{
+			lua_pushstring( pL, s_szLuaBufferInfo );
+			lua_rawget( pL, nStkId );
+			if( lua_islightuserdata( pL, -1 ) || lua_type( pL, -1 ) == LUA_TUSERDATA )
+			{
+				SBufferInfo* pInfo = (SBufferInfo*)lua_touserdata( pL, -1 );
+				lua_pop( pL, 1 );
+				return pInfo ? pInfo->pBuffer : NULL;
+			}
+			else
+			{
+				lua_pop( pL, 1 );
+				return nullptr;
+			}
+		}
+
+		if( nType == LUA_TSTRING )
+			return (void*)lua_tostring( pL, nStkId );
+		return nullptr;
+	}
+
+	void PushPointerToLua( lua_State* pL, void* pBuffer )
+	{
+		if( pBuffer == NULL )
+		{
+			lua_pushnil( pL );
+			return;
+		}
+
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_rawget( pL, LUA_REGISTRYINDEX );
+		if( lua_isnil( pL, -1 ) )
+		{
+			luaL_error( pL, "PushToVM error" );
+			return;
+		}
+
+		lua_pushlightuserdata( pL, pBuffer );
+		lua_gettable( pL, -2 );
+
+		if( !lua_isnil( pL, -1 ) )
+		{
+			SBufferInfo* pInfo = CLuaBuffer::GetBufferInfo( pL, -1 );
+			if( pInfo && pInfo->pBuffer == pBuffer )
+			{
+				lua_remove( pL, -2 );
+				pInfo->nDataSize = (uint32)INVALID_32BITID;
+				pInfo->nCapacity = (uint32)INVALID_32BITID;
+				pInfo->nPosition = 0;
+				return;
+			}
+
+			CScriptLua::GetScript( pL )->UnlinkCppObjFromScript( pBuffer );
+		}
+
+		lua_pop( pL, 2 );
+
+		lua_newtable( pL );// Obj
+		int32 nStkId = AbsStackIdx( pL, -1 );
+
+		lua_getglobal( pL, s_szLuaBufferClass );
+		if( lua_isnil( pL, -1 ) )//szClass必须被注册
+		{
+			luaL_error( pL, "PushToVM Class:%s", s_szLuaBufferClass );
+			return;
+		}
+
+		lua_setmetatable( pL, nStkId );
+
+		// 设置数据到table上
+		lua_pushstring( pL, s_szLuaBufferInfo );
+		SBufferInfo* pInfo = (SBufferInfo*)lua_newuserdata( pL, sizeof( SBufferInfo ) );
+		pInfo->nDataSize = (uint32)INVALID_32BITID;
+		pInfo->nCapacity = (uint32)INVALID_32BITID;
+		pInfo->nPosition = 0;
+		pInfo->pBuffer = (tbyte*)pBuffer;
+		lua_rawset( pL, nStkId );
+
+		// 挂到全局表上
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_rawget( pL, LUA_REGISTRYINDEX );
+		lua_pushlightuserdata( pL, pBuffer );
+		lua_pushvalue( pL, nStkId );
+		lua_settable( pL, -3 );
+		lua_pop( pL, 1 );
+	}
+
+	//=====================================================================
+	/// 所有Lua数据类型
+	//=====================================================================
+	static CGlobalTypes s_listTypes( 
+		GlobalTypeTemplateArgs( TLuaValue, CLuaObject, CLuaValueObject ) );
+
+	XS::CLuaTypeBase* GetLuaTypeBase( DataType eType )
+	{
+		return s_listTypes.GetTypeImp<CLuaTypeBase>( eType );
+	}
 }

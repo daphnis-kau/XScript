@@ -332,14 +332,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\core\CCallBase.cpp" />
+    <ClCompile Include="..\..\src\core\CCallRegistration.cpp" />
     <ClCompile Include="..\..\src\core\CClassRegistInfo.cpp" />
     <ClCompile Include="..\..\src\core\CDebugBase.cpp" />
     <ClCompile Include="..\..\src\core\CScriptBase.cpp" />
     <ClCompile Include="..\..\src\core\CTypeBase.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\core\CCallBase.h" />
+    <ClInclude Include="..\..\include\core\CCallRegistration.h" />
     <ClInclude Include="..\..\include\core\CClassRegistInfo.h" />
     <ClInclude Include="..\..\include\core\CDebugBase.h" />
     <ClInclude Include="..\..\include\core\CScriptBase.h" />

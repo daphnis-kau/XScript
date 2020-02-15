@@ -1,4 +1,4 @@
-﻿#include "core/CCallBase.h"
+﻿#include "core/CCallRegistration.h"
 #include "core/CScriptBase.h"
 #include "core/CClassRegistInfo.h"
 

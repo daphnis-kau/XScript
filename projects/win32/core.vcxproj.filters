@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\..\src\core\CCallBase.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\core\CClassRegistInfo.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -16,11 +13,11 @@
     <ClCompile Include="..\..\src\core\CTypeBase.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\core\CCallRegistration.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\core\CCallBase.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\core\CClassRegistInfo.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -44,6 +41,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\core\XScriptWrap.h">
       <Filter>export</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\core\CCallRegistration.h">
+      <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

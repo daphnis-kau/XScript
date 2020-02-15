@@ -2,7 +2,7 @@
 #include "CScriptJS.h"
 #include "CDebugJS.h"
 #include "CTypeJS.h"
-#include "core/CCallBase.h"
+#include "core/CCallRegistration.h"
 
 #define MAX_STRING_BUFFER_SIZE	65536
 
@@ -267,7 +267,7 @@ namespace XS
 			for( uint32 nParamIndex = 0; nParamIndex < nParamCount; nParamIndex++, nArgIndex++ )
 			{
 				DataType nType = aryParam[nParamIndex];
-				CJSTypeBase* pParamType = GetTypeBase( nType );
+				CJSTypeBase* pParamType = GetJSTypeBase( nType );
 				LocalValue arg = undefined;
 				if( nArgIndex < 0 )
 					pParamType->FromVMValue( nType, Script, pDataBuf, args.This() );
@@ -282,7 +282,7 @@ namespace XS
 			pCallBase->Call( pResultBuf, pArgArray, Script );
 			if( !nResultType )
 				return;
-			CJSTypeBase* pReturnType = GetTypeBase( nResultType );
+			CJSTypeBase* pReturnType = GetJSTypeBase( nResultType );
 			args.GetReturnValue().Set( pReturnType->ToVMValue( nResultType, Script, pResultBuf ) );
 		}
 		catch( ... )
@@ -378,7 +378,7 @@ namespace XS
 			pCallBase->Call( pResultBuf, aryArg, Script );
 			if( !nResultType )
 				return;
-			CJSTypeBase* pReturnType = GetTypeBase( nResultType );
+			CJSTypeBase* pReturnType = GetJSTypeBase( nResultType );
 			info.GetReturnValue().Set( pReturnType->ToVMValue( nResultType, Script, pResultBuf ) );
 		}
 		catch( ... )
@@ -411,7 +411,7 @@ namespace XS
 			SV8Context& Context = Script.GetV8Context();
 			v8::Isolate* isolate = Context.m_pIsolate;
 			LocalValue undefined = Undefined(isolate);
-			CJSTypeBase* pParamType = GetTypeBase( nType );
+			CJSTypeBase* pParamType = GetJSTypeBase( nType );
 			pParamType->FromVMValue( nType, Script, pDataBuf, value );
 			void* aryArg[] = { &pObject, pDataBuf, nullptr };
 			pCallBase->Call( NULL, aryArg, Script );

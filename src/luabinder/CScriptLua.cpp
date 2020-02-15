@@ -21,7 +21,7 @@ extern "C"
 #include "CTypeLua.h"
 #include "CDebugLua.h"
 #include "CScriptLua.h"
-#include "core/CCallBase.h"
+#include "core/CCallRegistration.h"
 #include "core/CClassRegistInfo.h"
 
 namespace XS
@@ -279,7 +279,7 @@ namespace XS
 		AddLoader();
 		IO_Replace();
 
-		CLuaBuffer::RegistClass( this );
+		RegisterPointerClass( this );
 		lua_register( pL, "print",		&CScriptLua::Print );
 		lua_register( pL, "tostring",	&CScriptLua::ToString );
 
@@ -432,14 +432,14 @@ namespace XS
 		for( size_t nArgIndex = 1; nArgIndex < listParam.size(); nArgIndex++ )
 		{
 			DataType nType = listParam[nArgIndex];
-			CLuaTypeBase* pParamType = GetTypeBase( nType );
+			CLuaTypeBase* pParamType = GetLuaTypeBase( nType );
 			pParamType->PushToVM( nType, pL, (char*)pArgArray[nArgIndex] );
 		}
 
 		int32 nArg = (int32)( listParam.size() );
 		lua_pcall( pL, nArg, nResultType ? 1 : 0, nErrFunIndex );
 		if( nResultType )
-			GetTypeBase( nResultType )->GetFromVM( nResultType, pL, (char*)pRetBuf, -1 );
+			GetLuaTypeBase( nResultType )->GetFromVM( nResultType, pL, (char*)pRetBuf, -1 );
 		lua_settop( pL, nErrFunIndex - 1 );
 		return true;
 	}
@@ -720,7 +720,7 @@ namespace XS
 			for( size_t nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 			{
 				DataType nType = aryParam[nArgIndex];
-				CLuaTypeBase* pParamType = GetTypeBase( nType );
+				CLuaTypeBase* pParamType = GetLuaTypeBase( nType );
 				pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
 				pArgArray[nArgIndex] = pDataBuf;
 				pDataBuf += aryParamSize[nArgIndex];
@@ -731,13 +731,13 @@ namespace XS
 			{
 				pCallBase->Call( nTop > 1 ? NULL : pResultBuf, pArgArray, *pScript );
 				if( nResultType && nTop <= 1 )
-					GetTypeBase( nResultType )->PushToVM( nResultType, pL, pResultBuf );
+					GetLuaTypeBase( nResultType )->PushToVM( nResultType, pL, pResultBuf );
 			}
 			else
 			{
 				pCallBase->Call( pResultBuf, pArgArray, *pScript );
 				if( nResultType )
-					GetTypeBase( nResultType )->PushToVM( nResultType, pL, pResultBuf );
+					GetLuaTypeBase( nResultType )->PushToVM( nResultType, pL, pResultBuf );
 			}
 			pScript->PopLuaState();
 			return 1;
@@ -1284,7 +1284,7 @@ namespace XS
 		for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 		{
 			DataType nType = ToDataType( aryTypeInfo.aryInfo[nArgIndex] );
-			CLuaTypeBase* pParamType = GetTypeBase( nType );
+			CLuaTypeBase* pParamType = GetLuaTypeBase( nType );
 			pParamType->PushToVM(nType, pL, (char*)aryArg[nArgIndex]);
 		}
 
@@ -1293,7 +1293,7 @@ namespace XS
 
 		if( nResultType && pResultBuf )
 		{
-			GetTypeBase(nResultType)->GetFromVM( nResultType, pL, (char*)pResultBuf, -1 );
+			GetLuaTypeBase(nResultType)->GetFromVM( nResultType, pL, (char*)pResultBuf, -1 );
 			lua_pop( pL, 1 );
 		}
 

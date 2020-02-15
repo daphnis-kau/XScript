@@ -1,4 +1,4 @@
-﻿/**@file  		CCallBase.h
+﻿/**@file  		CCallRegistration.h
 * @brief		memory interface
 * @author		Daphnis Kau
 * @date			2020-01-17
@@ -8,7 +8,7 @@
 #ifndef __CALL_BASE_H__
 #define __CALL_BASE_H__
 //=====================================================================
-// CCallBase.h 
+// CCallRegistration.h 
 // 定义基本的脚本和C++互相调用接口
 // 柯达昭
 // 2007-10-16

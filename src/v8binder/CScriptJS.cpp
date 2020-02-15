@@ -1,5 +1,5 @@
 ﻿#include "common/TStrStream.h"
-#include "core/CCallBase.h"
+#include "core/CCallRegistration.h"
 #include "core/CClassRegistInfo.h"
 #include "CScriptJS.h"
 #include "CTypeJS.h"
@@ -309,7 +309,7 @@ namespace XS
 		{
 			new ( args + nArgIndex ) LocalValue;
 			DataType nType = aryParam[nArgIndex];
-			CJSTypeBase* pParamType = GetTypeBase( nType );
+			CJSTypeBase* pParamType = GetJSTypeBase( nType );
 			args[nArgIndex] = pParamType->ToVMValue( nType, Script, (char*)pArgArray[nArgIndex] );
 		}
 
@@ -345,7 +345,7 @@ namespace XS
 
 		DataType nResultType = pCallBase->GetResultType();
 		if( nResultType )
-			GetTypeBase( nResultType )->FromVMValue( nResultType, Script, (char*)pRetBuf, result );
+			GetJSTypeBase( nResultType )->FromVMValue( nResultType, Script, (char*)pRetBuf, result );
 		return true;
 	}
 
@@ -466,7 +466,7 @@ namespace XS
 		for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 		{
 			DataType nType = ToDataType( aryTypeInfo.aryInfo[nArgIndex] );
-			CJSTypeBase* pParamType = GetTypeBase( nType );
+			CJSTypeBase* pParamType = GetJSTypeBase( nType );
 			args[nArgIndex] = pParamType->ToVMValue( nType, *this, (char*)aryArg[nArgIndex] );
 		}
 
@@ -502,7 +502,7 @@ namespace XS
 			return false;
 		DataType nResultType = ToDataType( aryTypeInfo.aryInfo[nParamCount] );
 		if( nResultType && pResultBuf )
-			GetTypeBase( nResultType )->FromVMValue( nResultType, 
+			GetJSTypeBase( nResultType )->FromVMValue( nResultType, 
 				*this, (char*)pResultBuf, result.ToLocalChecked() );
 		return true;
 	}

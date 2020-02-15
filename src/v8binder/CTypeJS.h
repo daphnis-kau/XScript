@@ -15,11 +15,17 @@
 namespace XS
 {
 	#define MAX_UNKNOW_ARRAYBUFFER_SIZE	(100*1024*1024)
+
+	class CJSTypeBase;
+	//=====================================================================
+	/// 所有JS数据类型
+	//=====================================================================
+	CJSTypeBase* GetJSTypeBase( DataType eType );
 	
 	//=====================================================================
     /// JS对C++数据的操作方法，调用JS库实现对数据在JS中的操作
     //=====================================================================
-    class CJSTypeBase
+    class CJSTypeBase : public CTypeBase
     {
 	public:
 		CJSTypeBase() {}
@@ -231,29 +237,10 @@ namespace XS
 		return Script.GetV8Context().StringFromUcs(*(const wchar_t**)(pDataBuf));
 	}
 
-	typedef TJSValue<int64>				CJSInt64;
-	typedef TJSValue<int32>				CJSInt32;
-	typedef TJSValue<int16>				CJSInt16;
-	typedef TJSValue<int8>				CJSInt8;
-	typedef TJSValue<char>				CJSChar;
-	typedef TJSValue<long>				CJSLong;
-	typedef TJSValue<ulong>				CJSUlong;
-	typedef TJSValue<uint64>			CJSUint64;
-	typedef TJSValue<uint32>			CJSUint32;
-	typedef TJSValue<uint16>			CJSUint16;
-	typedef TJSValue<uint8>				CJSUint8;
-	typedef TJSValue<wchar_t>			CJSWChar;
-	typedef TJSValue<float>				CJSFloat;
-	typedef TJSValue<double>			CJSDouble;
-	typedef TJSValue<bool>				CJSBool;
-	typedef TJSValue<void*>				CJSPointer;
-	typedef TJSValue<const char*>		CJSString;
-	typedef TJSValue<const wchar_t*>	CJSWString;
-
 	//=====================================================================
 	/// C++对象以JS形式的表示及其操作，必须以CClassRegistInfo* 构造
 	//=====================================================================
-	class CJSObject : public CJSPointer
+	class CJSObject : public TJSValue<void*>
 	{
 	protected:
 		const CClassRegistInfo* _FromVMValue(DataType eType, 
@@ -283,19 +270,6 @@ namespace XS
 		virtual LocalValue ToVMValue(DataType eType, 
 			CScriptJS& Script, char* pDataBuf);
 	};
-
-	//=====================================================================
-	/// 所有JS数据类型
-	//=====================================================================
-	extern CJSTypeBase* s_aryJSType[eDT_count];
-	inline CJSTypeBase* GetTypeBase( DataType eType )
-	{
-		if( eType < eDT_count )
-			return s_aryJSType[eType];
-		if( eType & 1 )
-			return &CJSObject::GetInst();
-		return &CJSValueObject::GetInst();
-	}
 }
 
 #endif

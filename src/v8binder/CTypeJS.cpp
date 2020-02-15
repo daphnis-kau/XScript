@@ -163,27 +163,12 @@ namespace XS
 	//=====================================================================
 	/// 所有JS数据类型
 	//=====================================================================
-	CJSTypeBase* s_aryJSType[eDT_count] =
+	static CGlobalTypes s_listTypes( 
+		GlobalTypeTemplateArgs( TJSValue, CJSObject, CJSValueObject ) );
+
+	XS::CJSTypeBase* GetJSTypeBase( DataType eType )
 	{
-		0,
-		&CJSChar::GetInst(),
-		&CJSInt8::GetInst(),
-		&CJSInt16::GetInst(),
-		&CJSInt32::GetInst(),
-		&CJSInt64::GetInst(),
-		&CJSLong::GetInst(),
-		&CJSUint8::GetInst(),
-		&CJSUint16::GetInst(),
-		&CJSUint32::GetInst(),
-		&CJSUint64::GetInst(),
-		&CJSUlong::GetInst(),
-		&CJSWChar::GetInst(),
-		&CJSBool::GetInst(),
-		&CJSFloat::GetInst(),
-		&CJSDouble::GetInst(),
-		&CJSString::GetInst(),
-		&CJSWString::GetInst(),
-		&CJSPointer::GetInst()
-	};
+		return s_listTypes.GetTypeImp<CJSTypeBase>( eType );
+	}
 }
 

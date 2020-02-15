@@ -2,7 +2,7 @@
 #include "common/Help.h"
 #include "common/Memory.h"
 #include "core/CScriptBase.h"
-#include "core/CCallBase.h"
+#include "core/CCallRegistration.h"
 #include "core/CDebugBase.h"
 
 namespace XS

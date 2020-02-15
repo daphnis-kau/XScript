@@ -3,7 +3,7 @@
 
 namespace XS
 {
-	const size_t s_aryOrgSize[] =
+	static const size_t s_aryOrgSize[] =
 	{
 		0,
 		sizeof( char ),
@@ -26,7 +26,7 @@ namespace XS
 		sizeof( void* )
 	};
 
-	const size_t s_aryAligenSize[] =
+	static const size_t s_aryAligenSize[] =
 	{
 		0,
 		AligenUp(sizeof(char), sizeof(void*)),
@@ -114,5 +114,62 @@ namespace XS
 			nTotalSize += (arySize[i] = GetAligenSizeOfType(aryParam[i]));
 		return nTotalSize;
 	}
+	
+	CGlobalTypes::CGlobalTypes(
+		CTypeBase* pCharType,
+		CTypeBase* pInt8Type,
+		CTypeBase* pInt16Type,
+		CTypeBase* pInt32Type,
+		CTypeBase* pInt64Type,
+		CTypeBase* pLongType,
+		CTypeBase* pUint8Type,
+		CTypeBase* pUint16Type,
+		CTypeBase* pUint32Type,
+		CTypeBase* pUint64Type,
+		CTypeBase* pUlongType,
+		CTypeBase* pWCharType,
+		CTypeBase* pBoolType,
+		CTypeBase* pFloatType,
+		CTypeBase* pDoubleType,
+		CTypeBase* pStringType,
+		CTypeBase* pWStringType,
+		CTypeBase* pPointerType,
+		CTypeBase* pClassPointType,
+		CTypeBase* pClassValueType )
+		: m_aryTypes
+		{
+			pCharType,
+			pInt8Type,
+			pInt16Type,
+			pInt32Type,
+			pInt64Type,
+			pLongType,
+			pUint8Type,
+			pUint16Type,
+			pUint32Type,
+			pUint64Type,
+			pUlongType,
+			pWCharType,
+			pBoolType,
+			pFloatType,
+			pDoubleType,
+			pStringType,
+			pWStringType,
+			pPointerType,
+			pClassPointType,
+			pClassValueType
+		}
+	{
+	}
 
+	XS::CTypeBase* CGlobalTypes::GetTypeBase( DataType eType )
+	{
+		if( eType == eDT_void )
+			return nullptr;
+		if( eType < eDT_count )
+			return m_aryTypes[eType - 1];
+		if( eType & 1 )
+			return m_aryTypes[eDT_count - 2];
+		return m_aryTypes[eDT_count - 1];
+	}
 }

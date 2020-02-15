@@ -17,7 +17,6 @@
 
 namespace XS
 {
-	class CTypeBase;
 	class CDebugBase;
 	class CByScriptBase;
 	typedef std::pair<SFunctionTable*, uint32> CVMObjVTableInfo;
