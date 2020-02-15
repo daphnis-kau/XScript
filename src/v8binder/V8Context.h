@@ -14,7 +14,7 @@
 namespace XS
 {
 	class CScriptJS;
-	class CByScriptBase;
+	class CCallInfo;
 	class CClassRegistInfo;
 
 	typedef v8::Persistent<v8::Context>						PersistentContext;
@@ -49,7 +49,7 @@ namespace XS
 
 	struct SCallInfo : public TRBTree<SCallInfo>::CRBTreeNode
 	{
-		const CByScriptBase*	m_pCallBase;
+		const CCallInfo*	m_pCallBase;
 		CScriptJS*				m_pScript;
 		PersistentString		m_strName;
 		operator const void*() { return m_pCallBase; }

@@ -58,8 +58,8 @@ namespace XS
         static void             RegistToLua( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
         static void             RemoveFromLua( lua_State* pL, const CClassRegistInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
 
-		virtual bool			CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray );
-		virtual void			DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject );
+		virtual bool			CallVM( const CCallbackInfo* pCallBase, void* pRetBuf, void** pArgArray );
+		virtual void			DestrucVM( const CCallbackInfo* pCallBase, SVirtualObj* pObject );
 
 		friend class CDebugLua;
 		friend class CLuaBuffer;

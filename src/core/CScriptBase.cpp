@@ -2,7 +2,7 @@
 #include "common/Help.h"
 #include "common/Memory.h"
 #include "core/CScriptBase.h"
-#include "core/CCallRegistration.h"
+#include "core/CCallInfo.h"
 #include "core/CDebugBase.h"
 
 namespace XS
@@ -109,14 +109,14 @@ namespace XS
 	{
 		ECallingType eCallingType = szTypeInfoName && szTypeInfoName[0] ?
 			eCT_ClassStaticFunction : eCT_GlobalFunction;
-		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
+		return new CCallInfo( funWrap, aryTypeInfo, funOrg,
 			szTypeInfoName, eCallingType, szFunctionName ) != nullptr;
 	}
 
 	bool CScriptBase::RegistClassFunction( IFunctionWrap* funWrap, uintptr_t funOrg,
 		const STypeInfoArray& aryTypeInfo, const char* szFunctionName )
 	{
-		return new CByScriptBase( funWrap, aryTypeInfo, funOrg,
+		return new CCallInfo( funWrap, aryTypeInfo, funOrg,
 			aryTypeInfo.aryInfo[0].m_szTypeName, eCT_ClassFunction, szFunctionName ) != nullptr;
 	}
 
@@ -124,7 +124,7 @@ namespace XS
 		IFunctionWrap* funWrap, uintptr_t funBoot, uint32 nFunIndex, bool bPureVirtual,
 		const STypeInfoArray& aryTypeInfo, const char* szFunctionName )
 	{
-		return new CCallScriptBase( funWrap, aryTypeInfo, funBoot, nFunIndex, 
+		return new CCallbackInfo( funWrap, aryTypeInfo, funBoot, nFunIndex, 
 			bPureVirtual, aryTypeInfo.aryInfo[0].m_szTypeName, szFunctionName ) != nullptr;
 	}
 
@@ -136,7 +136,7 @@ namespace XS
 		const char* szTypeInfoName = aryTypeInfo.aryInfo[0].m_szTypeName;
 		assert( CClassRegistInfo::GetRegistInfo( szTypeInfoName )->
 			GetRegistFunction().Find( keyName ) == nullptr );
-		return new CByScriptMember( funGetSet, aryTypeInfo, nOffset,
+		return new CMemberInfo( funGetSet, aryTypeInfo, nOffset,
 			szTypeInfoName, szMemberName ) != nullptr;
 	}
 
@@ -163,7 +163,7 @@ namespace XS
 	bool CScriptBase::RegistDestructor( IFunctionWrap* funWrap,
 		uintptr_t funBoot, uint32 nFunIndex, const STypeInfoArray& aryTypeInfo )
 	{
-		return new CCallScriptBase( funWrap, aryTypeInfo,funBoot, nFunIndex, 
+		return new CCallbackInfo( funWrap, aryTypeInfo,funBoot, nFunIndex, 
 			false, aryTypeInfo.aryInfo[0].m_szTypeName, "" ) != nullptr;
 	}
 
@@ -413,7 +413,7 @@ namespace XS
 		SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pVirtualObj->m_pTable ) - 1;
 		assert( pFunTableHead->m_pClassInfo && pFunTableHead->m_pOldFunTable );
 		const CClassRegistInfo* pClassInfo = pFunTableHead->m_pClassInfo;
-		const CCallScriptBase* pCallScript = pClassInfo->GetOverridableFunction( nIndex );
+		const CCallbackInfo* pCallScript = pClassInfo->GetOverridableFunction( nIndex );
 		CScriptBase* pScriptBase = pFunTableHead->m_pScript;
 		pScriptBase->CheckDebugCmd();
 		auto& strFunctionName = pCallScript->GetFunctionName();

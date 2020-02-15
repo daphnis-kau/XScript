@@ -1,4 +1,4 @@
-﻿#include "core/CCallRegistration.h"
+﻿#include "core/CCallInfo.h"
 #include "core/CScriptBase.h"
 #include "common/Help.h"
 #include <iostream>
@@ -12,7 +12,7 @@ namespace XS
 	//=====================================================================
 	// 脚本调用C++的基本接口
 	//=====================================================================
-	CByScriptBase::CByScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo,
+	CCallInfo::CCallInfo( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo,
 		uintptr_t funOrg, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName )
 		: m_funWrap( funWrap )
 		, m_funOrg(funOrg)
@@ -30,7 +30,7 @@ namespace XS
 		m_nParamCount = (uint32)m_listParam.size();
 	}
 	
-	void CByScriptBase::Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const
+	void CCallInfo::Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const
 	{
 		m_funWrap->Call( pRetBuf, pArgArray, m_funOrg );
 		Script.CheckDebugCmd();
@@ -39,10 +39,10 @@ namespace XS
 	//=====================================================================
 	// 脚本访问C++的成员接口
 	//=====================================================================
-	CByScriptMember::CByScriptMember( IFunctionWrap* funGetSet[2], 
+	CMemberInfo::CMemberInfo( IFunctionWrap* funGetSet[2], 
 		const STypeInfoArray& aryTypeInfo, uintptr_t nOffset,
 		const char* szTypeInfoName, const char* szMemberName )
-		: CByScriptBase( funGetSet[0], aryTypeInfo, nOffset,
+		: CCallInfo( funGetSet[0], aryTypeInfo, nOffset,
 			szTypeInfoName, eCT_MemberFunction, szMemberName )
 		, m_funSet( funGetSet[1] )
 	{
@@ -51,7 +51,7 @@ namespace XS
 		m_nParamCount = 1;
 	}
 
-	void CByScriptMember::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script) const
+	void CMemberInfo::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script) const
 	{
 		if (!pRetBuf && m_funSet)
 			m_funSet->Call(&pRetBuf, pArgArray, GetOffset());
@@ -62,21 +62,21 @@ namespace XS
 	//=====================================================================
 	// C++调用脚本的基本接口
 	//=====================================================================
-	CCallScriptBase::CCallScriptBase( 
+	CCallbackInfo::CCallbackInfo( 
 		IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, uintptr_t funBoot,
 		int32 nFunIndex, bool bPureVirtual, const char* szTypeInfoName, const char* szFunName )
-		: CByScriptBase( funWrap, aryTypeInfo, funBoot, szTypeInfoName, 0, szFunName )
+		: CCallInfo( funWrap, aryTypeInfo, funBoot, szTypeInfoName, 0, szFunName )
 		, m_bPureVirtual(bPureVirtual)
 	{
 		m_nFunIndex = nFunIndex;
 		CClassRegistInfo::RegisterCallBack( szTypeInfoName, m_nFunIndex, this );
 	}
 
-    CCallScriptBase::~CCallScriptBase()
+    CCallbackInfo::~CCallbackInfo()
     {
 	}
 
-	void CCallScriptBase::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script ) const
+	void CCallbackInfo::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script ) const
 	{
 		if( m_bPureVirtual )
 			return;
@@ -87,7 +87,7 @@ namespace XS
 		m_funWrap->Call( pRetBuf, pArgArray, (uintptr_t)pTable->m_pFun[m_nFunIndex] );
 	}
 
-	int32 CCallScriptBase::Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script ) const
+	int32 CCallbackInfo::Destruc( SVirtualObj* pObject, void* pParam, CScriptBase& Script ) const
 	{
 		if( !pObject->m_pTable || !pObject->m_pTable->m_pFun[m_nFunIndex] )
 			return 0;

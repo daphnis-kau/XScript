@@ -26,12 +26,12 @@ namespace XS
 		
 		void						BuildRegisterInfo();
 		
-		SCallInfo*					GetCallInfo( const CByScriptBase* pCallBase );
+		SCallInfo*					GetCallInfo( const CCallInfo* pCallBase );
 		SObjInfo*					AllocObjectInfo();
 		void						FreeObjectInfo(SObjInfo* pObjectInfo);
 
-		virtual bool				CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray );
-		virtual void				DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject );
+		virtual bool				CallVM( const CCallbackInfo* pCallBase, void* pRetBuf, void** pArgArray );
+		virtual void				DestrucVM( const CCallbackInfo* pCallBase, SVirtualObj* pObject );
 
 		friend class CJSObject;
 		friend struct SV8Context;

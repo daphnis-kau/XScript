@@ -1,4 +1,4 @@
-﻿/**@file  		CCallRegistration.h
+﻿/**@file  		CCallInfo.h
 * @brief		memory interface
 * @author		Daphnis Kau
 * @date			2020-01-17
@@ -8,7 +8,7 @@
 #ifndef __CALL_BASE_H__
 #define __CALL_BASE_H__
 //=====================================================================
-// CCallRegistration.h 
+// CCallInfo.h 
 // 定义基本的脚本和C++互相调用接口
 // 柯达昭
 // 2007-10-16
@@ -30,20 +30,20 @@ namespace XS
 		eCT_ClassCallBack		= 0,
 	};
 
-	class CByScriptBase;
+	class CCallInfo;
 	class CScriptBase;
-	typedef TRBTree<CByScriptBase> CCallBaseMap;
+	typedef TRBTree<CCallInfo> CCallBaseMap;
 
     //=====================================================================
     // 脚本调用C++的基本接口
     //=====================================================================
-    class CByScriptBase 
+    class CCallInfo 
 		: public CCallBaseMap::CRBTreeNode
     {
 		typedef std::vector<DataType> DataTypeArray;
-		const CByScriptBase& operator= ( const CByScriptBase& );
+		const CCallInfo& operator= ( const CCallInfo& );
     public:
-		CByScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, 
+		CCallInfo( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, 
 			uintptr_t funOrg, const char* szTypeInfoName, int32 nFunIndex, const char* szFunName );
 		operator const const_string&( ) const { return m_sFunName; }
 		bool operator < ( const const_string& strKey ) { return (const const_string&)*this < strKey; }
@@ -69,11 +69,11 @@ namespace XS
 	//=====================================================================
 	// Lua脚本访问C++的成员接口
 	//=====================================================================
-	class CByScriptMember : public CByScriptBase
+	class CMemberInfo : public CCallInfo
 	{
 		IFunctionWrap*	m_funSet;
 	public:
-		CByScriptMember( IFunctionWrap* funGetSet[2], const STypeInfoArray& aryTypeInfo, 
+		CMemberInfo( IFunctionWrap* funGetSet[2], const STypeInfoArray& aryTypeInfo, 
 			uintptr_t nOffset, const char* szTypeInfoName, const char* szMemberName );
 		virtual void	Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const;
 		uintptr_t		GetOffset() const { return m_funOrg; }
@@ -83,14 +83,14 @@ namespace XS
     //=====================================================================
     // C++调用脚本的基本接口
     //=====================================================================
-    class CCallScriptBase : public CByScriptBase
+    class CCallbackInfo : public CCallInfo
 	{
 		bool			m_bPureVirtual;
-		const CCallScriptBase& operator= ( const CCallScriptBase& );
+		const CCallbackInfo& operator= ( const CCallbackInfo& );
     public:
-		CCallScriptBase( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, uintptr_t funBoot, 
+		CCallbackInfo( IFunctionWrap* funWrap, const STypeInfoArray& aryTypeInfo, uintptr_t funBoot, 
 			int32 nFunIndex, bool bPureVirtual, const char* szTypeInfoName, const char* szFunName );
-        ~CCallScriptBase();
+        ~CCallbackInfo();
 
 		virtual void	Call( void* pRetBuf, void** pArgArray, CScriptBase& Script ) const;
 		void*			GetBootFun() const { return (void*)m_funOrg; }

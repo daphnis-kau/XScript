@@ -29,6 +29,8 @@ DEFINE_ABSTRACT_CLASS_BEGIN( CApplication )
 	REGIST_STATICFUNCTION( GetInst )
 DEFINE_ABSTRACT_CLASS_END();
 
+REGIST_GLOBALFUNCTION( AligenUp )
+
 template<typename ScriptType>
 CScriptBase* CreateScript(const char* szFilePath)
 {

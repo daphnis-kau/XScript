@@ -20,11 +20,11 @@ namespace XS
 {
 	class CTypeBase;
 	class CScriptBase;
-	class CByScriptBase;
-	class CCallScriptBase;
+	class CCallInfo;
+	class CCallbackInfo;
 	class CClassRegistInfo; 
 	class CGlobalClassRegist;
-	typedef TRBTree<CByScriptBase> CCallBaseMap;
+	typedef TRBTree<CCallInfo> CCallBaseMap;
 	typedef TRBTree<CClassRegistInfo> CTypeIDNameMap;
 
     class CClassRegistInfo : public CTypeIDNameMap::CRBTreeNode
@@ -38,7 +38,7 @@ namespace XS
 		const_string					m_szClassName;		// 类的名字
 		const_string					m_szTypeIDName;		// 编译器生成的类型信息
 
-		std::vector<CCallScriptBase*>	m_vecOverridableFun;// 可重写的函数
+		std::vector<CCallbackInfo*>		m_vecOverridableFun;// 可重写的函数
 		std::vector<SBaseInfo>			m_vecBaseRegist;    // 包含的基类信息
 		std::vector<SBaseInfo>			m_vecChildRegist;   // 包含的子类信息
         IObjectConstruct*				m_pObjectConstruct;
@@ -60,8 +60,8 @@ namespace XS
 		static const CClassRegistInfo*	GetRegistInfo( const char* szTypeInfoName );
 		static const CClassRegistInfo*	SetObjectConstruct( const char* szTypeInfoName, IObjectConstruct* pObjectConstruct );
 		static const CClassRegistInfo*	AddBaseRegist( const char* szTypeInfoName, const char* szBaseTypeInfoName, ptrdiff_t nOffset );
-		static const CByScriptBase*		RegisterFunction( const char* szTypeInfoName, CByScriptBase* pCallBase );
-		static const CByScriptBase*		RegisterCallBack( const char* szTypeInfoName, uint32 nIndex, CCallScriptBase* pCallScriptBase );
+		static const CCallInfo*			RegisterFunction( const char* szTypeInfoName, CCallInfo* pCallBase );
+		static const CCallInfo*			RegisterCallBack( const char* szTypeInfoName, uint32 nIndex, CCallbackInfo* pCallScriptBase );
 		static const CTypeIDNameMap&	GetAllRegisterInfo();
 
 		void							Create( CScriptBase* pScript, void * pObject ) const;
@@ -73,7 +73,7 @@ namespace XS
 		void                            RecoverVirtualTable( CScriptBase* pScript, void* pObj ) const;
 		bool                            IsCallBack() const;
 		int32                       	GetBaseOffset( const CClassRegistInfo* pRegist ) const;
-		const CByScriptBase*			GetCallBase( const const_string& strFunName ) const;
+		const CCallInfo*				GetCallBase( const const_string& strFunName ) const;
         bool                            FindBase( const CClassRegistInfo* pRegistBase ) const;
 		bool							IsBaseObject(ptrdiff_t nDiff) const;
 		bool							IsEnum() const { return m_bIsEnum; }
@@ -85,7 +85,7 @@ namespace XS
 		uint32                          GetClassAligenSize() const { return m_nAligenSizeOfClass; }
 		uint8							GetInheritDepth() const { return m_nInheritDepth; }
 		const CCallBaseMap&				GetRegistFunction() const { return m_mapRegistFunction; }
-		const CCallScriptBase*			GetOverridableFunction( int32 nIndex ) const { return m_vecOverridableFun[nIndex]; }
+		const CCallbackInfo*			GetOverridableFunction( int32 nIndex ) const { return m_vecOverridableFun[nIndex]; }
     }; 
 }                                            
                                             

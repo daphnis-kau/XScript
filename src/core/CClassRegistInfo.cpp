@@ -1,4 +1,4 @@
-﻿#include "core/CCallRegistration.h"
+﻿#include "core/CCallInfo.h"
 #include "core/CScriptBase.h"
 #include "core/CClassRegistInfo.h"
 
@@ -108,8 +108,8 @@ namespace XS
 		return pInfo;
 	}
 
-	const XS::CByScriptBase* CClassRegistInfo::RegisterFunction(
-		const char* szTypeInfoName, CByScriptBase* pCallBase )
+	const XS::CCallInfo* CClassRegistInfo::RegisterFunction(
+		const char* szTypeInfoName, CCallInfo* pCallBase )
 	{
 		const_string strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
@@ -122,8 +122,8 @@ namespace XS
 		return pCallBase;
 	}
 
-	const CByScriptBase* CClassRegistInfo::RegisterCallBack(
-		const char* szTypeInfoName, uint32 nIndex, CCallScriptBase* pCallScriptBase )
+	const CCallInfo* CClassRegistInfo::RegisterCallBack(
+		const char* szTypeInfoName, uint32 nIndex, CCallbackInfo* pCallScriptBase )
 	{
 		const_string strKey( szTypeInfoName, true );
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
@@ -176,7 +176,7 @@ namespace XS
 		{
 			if( !m_vecOverridableFun[i] )
 				continue;
-			CCallScriptBase* pCallInfo = m_vecOverridableFun[i];
+			CCallbackInfo* pCallInfo = m_vecOverridableFun[i];
 			assert( pCallInfo->GetFunctionIndex() == i );
 			pNewTable->m_pFun[i] = pCallInfo->GetBootFun();
 		}
@@ -217,7 +217,7 @@ namespace XS
 		m_pObjectConstruct->Destruct( pObject );
 	}
 
-	const CByScriptBase* CClassRegistInfo::GetCallBase( const const_string& strFunName ) const
+	const CCallInfo* CClassRegistInfo::GetCallBase( const const_string& strFunName ) const
 	{
 		return m_mapRegistFunction.Find( strFunName );
 	}

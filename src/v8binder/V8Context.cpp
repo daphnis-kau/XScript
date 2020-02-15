@@ -2,7 +2,7 @@
 #include "CScriptJS.h"
 #include "CDebugJS.h"
 #include "CTypeJS.h"
-#include "core/CCallRegistration.h"
+#include "core/CCallInfo.h"
 
 #define MAX_STRING_BUFFER_SIZE	65536
 
@@ -242,7 +242,7 @@ namespace XS
 		v8::Isolate* isolate = args.GetIsolate();
 		v8::HandleScope scope( isolate );
 		CScriptJS& Script = *pCallInfo->m_pScript;
-		const CByScriptBase* pCallBase = pCallInfo->m_pCallBase;
+		const CCallInfo* pCallBase = pCallInfo->m_pCallBase;
 
 		try
 		{
@@ -361,7 +361,7 @@ namespace XS
 		v8::Isolate* isolate = info.GetIsolate();
 		v8::HandleScope scope( isolate );
 		CScriptJS& Script = *pCallInfo->m_pScript;
-		const CByScriptBase* pCallBase = pCallInfo->m_pCallBase;
+		const CCallInfo* pCallBase = pCallInfo->m_pCallBase;
 
 		try
 		{
@@ -396,7 +396,7 @@ namespace XS
 		v8::Isolate* isolate = info.GetIsolate();
 		v8::HandleScope scope( isolate );
 		CScriptJS& Script = *pCallInfo->m_pScript;
-		const CByScriptBase* pCallBase = pCallInfo->m_pCallBase;
+		const CCallInfo* pCallBase = pCallInfo->m_pCallBase;
 		try
 		{
 			void* pObject = NULL;

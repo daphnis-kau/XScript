@@ -258,7 +258,7 @@ namespace XS
 	}
 	
 	template< typename RetType, typename ClassType, typename... Param >
-	inline void CreateClassFunWrap(RetType(pFun)(ClassType*, Param...), const char* szName)
+	inline void CreateClassFunWrap( RetType (pFun)(ClassType*, Param...), const char* szName)
 	{
 		IFunctionWrap* pWrap = TFunctionWrap<RetType, ClassType*, Param...>::GetInst();
 		STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();

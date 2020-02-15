@@ -21,7 +21,7 @@ extern "C"
 #include "CTypeLua.h"
 #include "CDebugLua.h"
 #include "CScriptLua.h"
-#include "core/CCallRegistration.h"
+#include "core/CCallInfo.h"
 #include "core/CClassRegistInfo.h"
 
 namespace XS
@@ -387,7 +387,7 @@ namespace XS
         return pScriptLua;
 	}
 
-	bool CScriptLua::CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray )
+	bool CScriptLua::CallVM( const CCallbackInfo* pCallBase, void* pRetBuf, void** pArgArray )
 	{
 		lua_State* pL = GetLuaState();
 
@@ -444,7 +444,7 @@ namespace XS
 		return true;
 	}
 
-	void CScriptLua::DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject )
+	void CScriptLua::DestrucVM( const CCallbackInfo* pCallBase, SVirtualObj* pObject )
 	{
 		lua_State* pL = GetLuaState();
 
@@ -694,7 +694,7 @@ namespace XS
 	//=====================================================================
 	int32 CScriptLua::CallByLua( lua_State* pL )
 	{
-		CByScriptBase* pCallBase = (CByScriptBase*)lua_touserdata( pL, lua_upvalueindex( 1 ) );
+		CCallInfo* pCallBase = (CCallInfo*)lua_touserdata( pL, lua_upvalueindex( 1 ) );
 		uint32 nTop = lua_gettop( pL );
 
 		CScriptLua* pScript = CScriptLua::GetScript( pL );

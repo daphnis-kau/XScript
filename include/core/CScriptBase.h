@@ -18,14 +18,14 @@
 namespace XS
 {
 	class CDebugBase;
-	class CByScriptBase;
+	class CCallInfo;
 	typedef std::pair<SFunctionTable*, uint32> CVMObjVTableInfo;
 	typedef std::map<const CClassRegistInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
 	typedef std::map<SFunctionTable*, SFunctionTable*> CFunctionTableMap;
 
     class CScriptBase
 	{
-		friend class CCallScriptBase;
+		friend class CCallbackInfo;
 	protected:
 		static std::string		s_CacheTruckPrefix;
 
@@ -35,8 +35,8 @@ namespace XS
 		std::list<std::string>	m_listSearchPath;
 		std::set<const_string>	m_setRuningString;
 
-		virtual bool			CallVM( const CCallScriptBase* pCallBase, void* pRetBuf, void** pArgArray ) = 0;
-		virtual void			DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject ) = 0;
+		virtual bool			CallVM( const CCallbackInfo* pCallBase, void* pRetBuf, void** pArgArray ) = 0;
+		virtual void			DestrucVM( const CCallbackInfo* pCallBase, SVirtualObj* pObject ) = 0;
 
 		virtual bool        	RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg ) = 0;
 		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName ) = 0;

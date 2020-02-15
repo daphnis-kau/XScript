@@ -1,5 +1,5 @@
 ﻿#include "common/TStrStream.h"
-#include "core/CCallRegistration.h"
+#include "core/CCallInfo.h"
 #include "core/CClassRegistInfo.h"
 #include "CScriptJS.h"
 #include "CTypeJS.h"
@@ -235,7 +235,7 @@ namespace XS
 		delete m_pV8Context;
 	}
 
-	SCallInfo* CScriptJS::GetCallInfo( const CByScriptBase* pCallBase )
+	SCallInfo* CScriptJS::GetCallInfo( const CCallInfo* pCallBase )
 	{
 		v8::Isolate* isolate = GetV8Context().m_pIsolate;
 		SCallInfo* pCallInfo = m_mapCallBase.Find( (const void*)pCallBase );
@@ -280,7 +280,7 @@ namespace XS
 	//===================================================================================
 	//
 	//===================================================================================	
-	bool CScriptJS::CallVM( const CCallScriptBase* pCallBase,
+	bool CScriptJS::CallVM( const CCallbackInfo* pCallBase,
 		void* pRetBuf, void** pArgArray )
 	{
 		SCallInfo* pInfo = GetCallInfo( pCallBase );
@@ -349,7 +349,7 @@ namespace XS
 		return true;
 	}
 
-	void CScriptJS::DestrucVM( const CCallScriptBase* pCallBase, SVirtualObj* pObject )
+	void CScriptJS::DestrucVM( const CCallbackInfo* pCallBase, SVirtualObj* pObject )
 	{
 		SCallInfo* pInfo = GetCallInfo( pCallBase );
 		CScriptJS& Script = *pInfo->m_pScript;
