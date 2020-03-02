@@ -1,12 +1,12 @@
-﻿#ifndef __SCRIPT_LUA_H__
-#define __SCRIPT_LUA_H__
-//=====================================================================
-// CScriptLua.h 
-// 为lua定义的C++到虚拟机的接口
-// 柯达昭
-// 2007-10-16
-//=====================================================================
+﻿/**@file  		CScriptLua.h
+* @brief		LUA VM base wrapper
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
+*/
 
+#ifndef __SCRIPT_LUA_H__
+#define __SCRIPT_LUA_H__
 #include "core/CScriptBase.h"
 
 struct lua_State;
@@ -14,8 +14,6 @@ struct lua_Debug;
 
 namespace XS
 {
-    //========================================定义的全局table==========================================
-
     class CDebugLua;
 	class CScriptLua : public CScriptBase
 	{
@@ -31,7 +29,7 @@ namespace XS
 		bool					m_bPreventExeInRunBuffer;
 
         //==============================================================================
-        // 对Lua提供的功能性函数
+        // aux function
         //==============================================================================
 		static int32			ClassCast( lua_State* pL );
 		static int32			CallByLua( lua_State* pL );
@@ -68,14 +66,16 @@ namespace XS
         CScriptLua( uint16 nDebugPort = 0 );
 		~CScriptLua(void);
 
-        // 预定义字符串
+		//==============================================================================
+		// built keys
+		//==============================================================================
 		static void*			ms_pGlobObjectTableKey;
 		static void*			ms_pRegistScriptLuaKey;
 		static void*			ms_pErrorHandlerKey;
 		static void*			ms_pClassInfoKey;
 
         //==============================================================================
-        // 通用函数
+        // common function
         //==============================================================================
         static void				NewLuaObj( lua_State* pL, const CClassInfo* pInfo, void* pSrc );
 		static void				RegisterObject( lua_State* pL, const CClassInfo* pInfo, void* pObj, bool bGC );

@@ -1,10 +1,14 @@
 ﻿/**@file  		TList.h
-* @brief		Double link list
-* @author		Daphnis Kau
+* @brief		Single link list
+* @author		Daphnis Kaw
 * @date			2020-01-17
 * @version		V1.0
-* @note			Very small memory occupy and without any memory 
-*				be alloc/free when insert/remove node
+* @note			The sizeof TTinyList is very small, it's size is equal to \n
+*				the sizeof void*. No memory need to be allocated/freed \n
+*				when insert a node to or remove node from a TTinyList. \n
+*				Nodes can be removed directly without knowing the parent \n
+*				TTinyList. An object can exist in multiple lists by \n
+*				inheritance from multiple subclasses of CTinyListNode.
 */
 #ifndef __TTINY_LIST_H__
 #define __TTINY_LIST_H__

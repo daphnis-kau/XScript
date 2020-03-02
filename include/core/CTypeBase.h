@@ -1,19 +1,18 @@
-﻿#ifndef __TYPE_BASE_H__
-#define __TYPE_BASE_H__
-//=====================================================================
-/** CTypeBase.h
-  定义基本的数据类型
-  柯达昭
-  2007-10-16
+﻿/**@file  		CTypeBase.h
+* @brief		Information of c++ type
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
 */
-//=====================================================================
+
+#ifndef __TYPE_BASE_H__
+#define __TYPE_BASE_H__
 
 #include "core/XScriptDef.h"
 #include <vector>
 
 namespace XS
 {
-	// 特别注意，为了处理方便，将eDT_enum类型定义为buffer
 	typedef ptrdiff_t DataType;
 	class CTypeBase { protected: virtual ~CTypeBase() {} };
 

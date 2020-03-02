@@ -78,6 +78,7 @@ namespace XS
 		}
 		else
 		{
+			// 特别注意，为了处理方便，将eDT_enum类型定义为buffer
 			if( nPointCount > 1 || nType != eDT_class )
 				return eDT_enum;
 			const char* szTypeName = argTypeInfo.m_szTypeName;

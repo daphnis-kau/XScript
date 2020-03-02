@@ -1,12 +1,12 @@
-﻿#ifndef __CLASS_REGIST_INFO_H__
-#define __CLASS_REGIST_INFO_H__
-//=====================================================================
-/** CClassInfo.h
-// 定义注册的类型的继承关系
-// 柯达昭
-// 2007-10-16
+﻿/**@file  		CClassInfo.h
+* @brief		Register information of class 
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
 */
-//=====================================================================
+
+#ifndef __CLASS_REGIST_INFO_H__
+#define __CLASS_REGIST_INFO_H__
 
 #include "common/TRBTree.h"
 #include "common/CVirtualFun.h"
@@ -31,16 +31,16 @@ namespace XS
 	{
 		struct SBaseInfo
 		{
-			const CClassInfo*			m_pBaseInfo;        // 包含的基类
-			int32						m_nBaseOff;         // 包含的基类相对于子类的偏移
+			const CClassInfo*			m_pBaseInfo;        // Base class information
+			int32						m_nBaseOff;         // Base class offset
 		};
 
-		const_string					m_szClassName;		// 类的名字
-		const_string					m_szTypeIDName;		// 编译器生成的类型信息
+		const_string					m_szClassName;		// Name of class
+		const_string					m_szTypeIDName;		// typeid of the class
 
-		std::vector<CCallbackInfo*>		m_vecOverridableFun;// 可重写的函数
-		std::vector<SBaseInfo>			m_vecBaseRegist;    // 包含的基类信息
-		std::vector<SBaseInfo>			m_vecChildRegist;   // 包含的子类信息
+		std::vector<CCallbackInfo*>		m_vecOverridableFun;// Overridable function information
+		std::vector<SBaseInfo>			m_vecBaseRegist;    // All base classes' information
+		std::vector<SBaseInfo>			m_vecChildRegist;   // All subclass information
         IObjectConstruct*				m_pObjectConstruct;
 		uint32							m_nSizeOfClass;
 		uint32							m_nAligenSizeOfClass;

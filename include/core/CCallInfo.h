@@ -1,18 +1,12 @@
 ﻿/**@file  		CCallInfo.h
-* @brief		memory interface
-* @author		Daphnis Kau
+* @brief		Call each other between C++&Script
+* @author		Daphnis Kaw
 * @date			2020-01-17
 * @version		V1.0
 */
 
-#ifndef __CALL_BASE_H__
-#define __CALL_BASE_H__
-//=====================================================================
-// CCallInfo.h 
-// 定义基本的脚本和C++互相调用接口
-// 柯达昭
-// 2007-10-16
-//=====================================================================
+#ifndef __CALL_INFO_H__
+#define __CALL_INFO_H__
 #include "common/TRBTree.h"
 #include "common/CVirtualFun.h"
 #include "common/TConstString.h"
@@ -35,7 +29,7 @@ namespace XS
 	typedef TRBTree<CCallInfo> CCallBaseMap;
 
     //=====================================================================
-    // 脚本调用C++的基本接口
+    // Information of c++ function
     //=====================================================================
     class CCallInfo 
 		: public CCallBaseMap::CRBTreeNode
@@ -67,7 +61,7 @@ namespace XS
 	};
 
 	//=====================================================================
-	// Lua脚本访问C++的成员接口
+	// Information of class's data member
 	//=====================================================================
 	class CMemberInfo : public CCallInfo
 	{
@@ -81,7 +75,7 @@ namespace XS
 	};
 
     //=====================================================================
-    // C++调用脚本的基本接口
+    // Information of c++ function which can be override
     //=====================================================================
     class CCallbackInfo : public CCallInfo
 	{

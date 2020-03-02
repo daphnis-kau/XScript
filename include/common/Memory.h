@@ -1,6 +1,6 @@
 ﻿/**@file  		Memory.h
 * @brief		memory interface
-* @author		Daphnis Kau
+* @author		Daphnis Kaw
 * @date			2020-01-17
 * @version		V1.0
 */

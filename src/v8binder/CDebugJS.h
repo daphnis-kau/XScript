@@ -1,11 +1,12 @@
-﻿#ifndef __DEBUG_JS_H__
+﻿/**@file  		CDebugJS.h
+* @brief		V8 debugger interface
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
+*/
+
+#ifndef __DEBUG_JS_H__
 #define __DEBUG_JS_H__
-//=====================================================================
-// CDebugJS.h  
-// 为JS定义的调试器接口
-// 柯达昭
-// 2007-10-16
-//=====================================================================
 #include "v8/v8.h"
 #include "v8/v8-inspector.h"
 #include "v8/v8-platform.h"

@@ -1,6 +1,6 @@
 ﻿/**@file  		CommonType.h
 * @brief		Common type definition
-* @author		Daphnis Kau
+* @author		Daphnis Kaw
 * @date			2020-01-17
 * @version		V1.0
 */

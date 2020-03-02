@@ -1,9 +1,14 @@
 ﻿/**@file  		TList.h
 * @brief		Double link list
-* @author		Daphnis Kau
+* @author		Daphnis Kaw
 * @date			2020-01-17
 * @version		V1.0
-* @note			Without any memory be alloc/free when insert/remove node 
+* @note			No memory need to be allocated/freed when insert a node to \n
+*				or remove node from a TList. Nodes can be removed directly \n
+*				without knowing the parent TList. An object can exist in \n
+*				multiple lists by inheritance from multiple subclasses of \n
+*				CListNode.
+*				
 */
 #ifndef __XS_LIST_H__
 #define __XS_LIST_H__

@@ -1,12 +1,15 @@
-﻿//=========================================================================================
-// TRBTree.h 
-// 定义一个嵌入式红黑树类，参考《算法导论》第三部分 第13章
-// 优点：插入和删除节点不需要进行内存的分配和释放，节点操作速度极快
-//		 节点可以自删除，不需要知道所处的树
-// 缺点：数据需要从指定的节点类继承
-// 柯达昭
-// 2017-06-16
-//=========================================================================================
+﻿/**@file  		TRBTree.h 
+* @brief		Red-black tree
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
+* @note			Chapter 13 of Introduction to Algorithms: Red-Black Trees
+*				No memory need to be allocated/freed when insert a node to \n
+*				or remove node from a TRBTree. Nodes can be removed directly \n
+*				without knowing the parent TRBTree. An object can exist in \n
+*				multiple trees by inheritance from multiple subclasses of \n
+*				CRBTreeNode.
+*/
 #ifndef __XS_RBTREE_H__
 #define __XS_RBTREE_H__
 
@@ -39,7 +42,6 @@ namespace XS
 
 			friend class TRBTree<ImpClass>;
 
-			// 红黑树的左旋
 			void LeftRotate()
 			{
 				assert( m_pRightChild );
@@ -61,7 +63,6 @@ namespace XS
 				pRight->m_pLeftChild = this;
 			}
 
-			// 红黑树的右旋
 			void RightRotate()
 			{
 				assert( m_pLeftChild );
@@ -142,10 +143,10 @@ namespace XS
 				if( !IsInTree() )
 					return;
 
-				// 哨兵节点，临时用
-				struct CSentryNode : public CRBTreeNode
+				// Sentinel node, temporary variable
+				struct CSentinelNode : public CRBTreeNode
 				{
-					~CSentryNode()
+					~CSentinelNode()
 					{
 						if( !m_pParent )
 							return;
@@ -162,31 +163,31 @@ namespace XS
 					}
 				};
 
-				// 哨兵节点，方便删除操作，析构时自动从树上移除
-				CSentryNode SentryNode;
+				// Sentinel node, auto be remove from tree when destructed.
+				CSentinelNode SentinelNode;
 
-				// 如果有两个子节点，则和后序（Next）节点进行交换，
-				// 直到其中一个子节点为空。
+				// If the node has two children, so we exchange the node 
+				// with the follow node until one child of the node is null
 				while( m_pLeftChild && m_pRightChild )
 				{
 					CRBTreeNode* pNext = GetNext();
 
-					// 调换位置，但是保留CRBTreeNode的属性;
+					//Exchange node's but keep property in previous place
 
-					// 先用SentryNode把pNode替换出来
-					ReplaceBy( &SentryNode );
+					// Replace the node by sentinel node
+					ReplaceBy( &SentinelNode );
 
-					// 再用pNode替换pNext
+					// Replace next node by current node
 					pNext->ReplaceBy( this );
 
-					// 再用pNext替换SentryNode
-					SentryNode.ReplaceBy( pNext );
+					// Sentinel node by next node
+					SentinelNode.ReplaceBy( pNext );
 				}
 
 				CRBTreeNode* pParent = m_pParent;
 				CRBTreeNode* pNode = m_pLeftChild ? m_pLeftChild : m_pRightChild;
 				if( !pNode )
-					pNode = &SentryNode;
+					pNode = &SentinelNode;
 
 				if( m_bRootNode )
 					m_pTree->m_pRootNode = pNode;
@@ -203,34 +204,37 @@ namespace XS
 				m_pLeftChild = NULL;
 				m_pRightChild = NULL;
 
+				// Loop while the node color is double black
 				while( !pNode->m_bRootNode && pNode->m_nNodeColor == eDoubleBlack )
 				{
 					pParent = pNode->GetParent();
 
-					// 若 “x”是“它父节点的左孩子”，则设置 “w”为“x的叔叔”(即x为它父节点的右孩子) 
+					// If the node is left child, so rotate it's brother as it's uncle.
 					if( pNode == pParent->m_pLeftChild )
 					{
 						CRBTreeNode* pBrother = pParent->m_pRightChild;
 
-						// Case 1: x是“黑+黑”节点，x的兄弟节点是红色。(此时x的父节点和x的兄弟节点的子节点都是黑节点)。
-						//  原理：交换兄弟和父节点颜色后左旋，
-						//		是在保持红黑树的每条分支的黑节点数量不变的情况下将兄弟节点变为黑色
+						// Case 1: The node is double black and it's brother is red.
+						//			Color of the node's parent and brother are black:
+						// Theory: Rotate around the parent after the parent exchange 
+						//			color with the node's brother.
 						if( pBrother->m_nNodeColor == eRed )
 						{
-							// 不会改变红黑树每条分支的黑节点数量
+							// Number of black nodes of all paths in right branch isn't changed.
 							pBrother->m_nNodeColor = eBlack;
 							pParent->m_nNodeColor = eRed;
 							pParent->LeftRotate();
 							continue;
 						}
 
-						// 侄子的颜色
+						// Color of nephews
 						CRBTreeNode* pLeftNephew = pBrother->m_pLeftChild;
 						CRBTreeNode* pRightNephew = pBrother->m_pRightChild;
 						int8 nLeftNephewColor = pLeftNephew ? pLeftNephew->m_nNodeColor : eBlack;
 						int8 nRightNephewColor = pRightNephew ? pRightNephew->m_nNodeColor : eBlack; 
-						// Case 2: x是“黑+黑”节点，x的兄弟节点是黑色，x的兄弟节点的两个孩子都是黑色。
-						//	原理：共同抽取兄弟节点与当前节点的一个黑到父节点去
+						// Case 2: The node is double black and it's brother is black.
+						//			Color of two nephew's are black:
+						// Theory: Mark the node and brother node with red and mark parent with double black.
 						if( nLeftNephewColor == eBlack && nRightNephewColor == eBlack )
 						{
 							pBrother->m_nNodeColor--;
@@ -240,9 +244,10 @@ namespace XS
 							continue;
 						}
 
-						// Case 3: x是“黑+黑”节点，x的兄弟节点是黑色；x的兄弟节点的左孩子是红色，右孩子是黑色的。
-						//  原理：交换兄弟节点和兄弟节点的左孩子的颜色，然后对x的兄弟节点进行右旋，
-						//		目标是让兄弟节点的右孩子变成红色节点进入第四步
+						// Case 3: The node is double black and it's brother is black.
+						//			Left child of brother is red and other is black:
+						// Theory: Brother exchange color with brother's left child and 
+						//			do right rotation around itself.
 						if( nLeftNephewColor == eRed && nRightNephewColor == eBlack )
 						{
 							pBrother->m_nNodeColor = eRed;
@@ -251,13 +256,12 @@ namespace XS
 							continue;
 						}
 
-						// Case 4: x是“黑+黑”节点，x的兄弟节点是黑色；x的兄弟节点的右孩子是红色的。
-						//  原理：因为右孩子为红色，所以父节点进行左旋后为了保持红黑树的每条分支的黑节点数量不变，
-						//   需要进行以下颜色改变，则红黑树正好平衡，将黑+黑拆开了
-						//   (01) 将x父节点颜色 赋值给 x的兄弟节点。
-						//   (02) 将x兄弟节点的右子节设为“黑色”。
-						//   (03) 将x父节点设为“黑色”。
-						//   (04) 将当前节点设为“黑色”。
+						// Case 4: The node is double black and it's brother is black.
+						//			Right child of brother is red:
+						//   (01) Mark color of brother with parent's color 
+						//   (02) Mark right child of brother with black
+						//   (03) Mark parent with black
+						//   (04) Mark current node with black
 						pParent->LeftRotate();
 						pBrother->m_nNodeColor = pParent->m_nNodeColor;
 						pRightNephew->m_nNodeColor = eBlack;
@@ -268,25 +272,22 @@ namespace XS
 					{
 						CRBTreeNode* pBrother = pParent->m_pLeftChild;
 
-						// Case 1: x是“黑+黑”节点，x的兄弟节点是红色。(此时x的父节点和x的兄弟节点的子节点都是黑节点)。
-						//  原理：交换兄弟和父节点颜色后右旋，
-						//		是在保持红黑树的每条分支的黑节点数量不变的情况下将兄弟节点变为黑色
+						// Case 1: Current node is double black, the brother is red.
 						if( pBrother->m_nNodeColor == eRed )
 						{
-							// 不会改变红黑树每条分支的黑节点数量
 							pBrother->m_nNodeColor = eBlack;
 							pParent->m_nNodeColor = eRed;
 							pParent->RightRotate();
 							continue;
 						}
 
-						// 侄子的颜色
+						// Color of nephews
 						CRBTreeNode* pLeftNephew = pBrother->m_pLeftChild;
 						CRBTreeNode* pRightNephew = pBrother->m_pRightChild;
 						int8 nLeftNephewColor = pLeftNephew ? pLeftNephew->m_nNodeColor : eBlack;
 						int8 nRightNephewColor = pRightNephew ? pRightNephew->m_nNodeColor : eBlack; 
-						// Case 2: x是“黑+黑”节点，x的兄弟节点是黑色，x的兄弟节点的两个孩子都是黑色。
-						//	原理：共同抽取兄弟节点与当前节点的一个黑到父节点去
+						// Case 2: Current node is double black, the brother is black, 
+						//			Color of brother's children are black
 						if( nLeftNephewColor == eBlack && nRightNephewColor == eBlack )
 						{
 							pBrother->m_nNodeColor--;
@@ -296,9 +297,8 @@ namespace XS
 							continue;
 						}
 
-						// Case 3: x是“黑+黑”节点，x的兄弟节点是黑色；x的兄弟节点的右孩子是红色，左孩子是黑色的。
-						//  原理：交换兄弟节点和兄弟节点的右孩子的颜色，然后对x的兄弟节点进行左旋，
-						//		目标是让兄弟节点的右孩子变成红色节点进入第四步
+						// Case 3: Current node is double black, the brother is black, 
+						//			left child of brother is black and right child is red
 						if( nRightNephewColor == eRed && nLeftNephewColor == eBlack )
 						{
 							pBrother->m_nNodeColor = eRed;
@@ -307,13 +307,8 @@ namespace XS
 							continue;
 						}
 
-						// Case 4: x是“黑+黑”节点，x的兄弟节点是黑色；x的兄弟节点的左孩子是红色的。
-						//  原理：因为左孩子为红色，所以父节点进行右旋后为了保持红黑树的每条分支的黑节点数量不变，
-						//   需要进行以下颜色改变，则红黑树正好平衡，将黑+黑拆开了
-						//   (01) 将x父节点颜色 赋值给 x的兄弟节点。
-						//   (02) 将x兄弟节点的左子节设为“黑色”。
-						//   (03) 将x父节点设为“黑色”。
-						//   (04) 将当前节点设为“黑色”。
+						// Case 4: Current node is double black, the brother is black, 
+						//			left child of brother is red
 						pParent->RightRotate();
 						pBrother->m_nNodeColor = pParent->m_nNodeColor;
 						pLeftNephew->m_nNodeColor = eBlack;
@@ -433,7 +428,7 @@ namespace XS
 			Node.m_pLeftChild = NULL;
 			Node.m_pRightChild = NULL;
 
-			// 插入根节点
+			// Insert root node
 			if( m_pRootNode == NULL )
 			{
 				m_pRootNode = &Node;
@@ -447,7 +442,7 @@ namespace XS
 			Node.m_bRootNode = false;
 			CRBTreeNode* pNode = m_pRootNode;
 
-			// 插入二叉查找树
+			// Insert to tree
 			while( true )
 			{
 				if( Node < *static_cast<CNode*>( pNode ) )
@@ -474,19 +469,19 @@ namespace XS
 
 			pNode = &Node;
 			CRBTreeNode* pParent = static_cast<CRBTreeNode&>( Node ).m_pParent;
-			// 如果父节点和当前节点都为红色，则纠正
+			// When parent node and child node are red, we then fix them up by rotating nodes.
 			while( pNode && pNode->m_nNodeColor == eRed && pParent->m_nNodeColor == eRed )
 			{
 				CRBTreeNode* pGrandpa = pParent->m_pParent;
 				CRBTreeNode* pUncle = pGrandpa->m_pLeftChild == pParent ? 
 					pGrandpa->m_pRightChild : pGrandpa->m_pLeftChild;
 
-				// Case 1	当前节点的父节点是红色，且当前节点的祖父节点的另一个子节点（叔叔节点）也是红色。	
-				// 	(01) 将“父节点”设为黑色。
-				// 	(02) 将“叔叔节点”设为黑色。
-				//  (03) 如果“祖父节点”是根节点，这时调整完成，所有分支上的黑色节点增加1。
-				// 	(04) 如果“祖父节点”不是根节点，将“祖父节点”设为“红色”。
-				// 	(05) 将“祖父节点”设为“当前节点”(红色节点)；即，之后继续对“当前节点”进行操作。
+				// Case 1	Parent node and uncle node are red	
+				// 	(01) Mark parent with black
+				// 	(02) Mark uncle with black
+				//  (03) If grandparent is root, fix-up completed
+				// 	(04) Otherwise, mark grandparent with red
+				// 	(05) Set grandparent as current node and continue next loop
 				if( pUncle && pUncle->m_nNodeColor == eRed )
 				{
 					pParent->m_nNodeColor = eBlack;
@@ -499,11 +494,12 @@ namespace XS
 					continue;
 				}
 
+				// Parent is left child of grandparent
 				if( pParent == pGrandpa->m_pLeftChild )
 				{
-					// Case 2	当前节点的父节点是红色，叔叔节点是黑色，且当前节点是其父节点的右孩子	
-					// 	(01) 将“父节点”作为“新的当前节点”。
-					// 	(02) 以“新的当前节点”为支点进行左旋。
+					// Case 2	Parent is red, uncle is black, current node is right child	
+					// 	(01) Set parent as new current node
+					// 	(02) Do left rotation around new current node and continue next loop
 					if( pNode == pParent->m_pRightChild )
 					{
 						pParent->LeftRotate();
@@ -512,21 +508,22 @@ namespace XS
 						continue;
 					}
 
-					// Case 3	当前节点的父节点是红色，叔叔节点是黑色，且当前节点是其父节点的左孩子	
-					// 	(01) 将“父节点”设为“黑色”。
-					// 	(02) 将“祖父节点”设为“红色”。
-					// 	(03) 以“祖父节点”为支点进行右旋。
+					// Case 3	Parent is red, uncle is black, current node is left child	
+					// 	(01) Mark parent with black
+					// 	(02) Mark grandparent with red
+					// 	(03) Do right rotation around grandparent
 					pParent->m_nNodeColor = eBlack;
 					pGrandpa->m_nNodeColor = eRed;
 					pGrandpa->RightRotate();
 					pNode = pGrandpa->m_pRightChild;
 					pParent = pGrandpa;
 				}
+				// Parent is left right of grandparent
 				else
 				{
-					// Case 2	当前节点的父节点是红色，叔叔节点是黑色，且当前节点是其父节点的右孩子	
-					// 	(01) 将“父节点”作为“新的当前节点”。
-					// 	(02) 以“新的当前节点”为支点进行左旋。
+					// Case 2	Parent is red, uncle is black, current node is right child	
+					// 	(01) Set parent as new current node
+					// 	(02) Do left rotation around new current node and continue next loop
 					if( pNode == pParent->m_pLeftChild )
 					{
 						pParent->RightRotate();
@@ -535,10 +532,10 @@ namespace XS
 						continue;
 					}
 
-					// Case 3	当前节点的父节点是红色，叔叔节点是黑色，且当前节点是其父节点的左孩子	
-					// 	(01) 将“父节点”设为“黑色”。
-					// 	(02) 将“祖父节点”设为“红色”。
-					// 	(03) 以“祖父节点”为支点进行右旋。
+					// Case 3	Parent is red, uncle is black, current node is left child	
+					// 	(01) Mark parent with black
+					// 	(02) Mark grandparent with red
+					// 	(03) Do right rotation around grandparent
 					pParent->m_nNodeColor = eBlack;
 					pGrandpa->m_nNodeColor = eRed;
 					pGrandpa->LeftRotate();

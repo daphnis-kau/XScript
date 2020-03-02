@@ -1,12 +1,12 @@
-﻿#ifndef __SCRIPT_BASE_H__
-#define __SCRIPT_BASE_H__
-//=====================================================================
-// CScriptBase.h 
-// 定义脚本和C++接口的基类，不同的脚本虚拟机可以从这里派生不同的接口代码
-// 柯达昭
-// 2007-10-16
-//=====================================================================
+﻿/**@file  		CScriptBase.h
+* @brief		Script VM base wrapper
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
+*/
 
+#ifndef __SCRIPT_BASE_H__
+#define __SCRIPT_BASE_H__
 #include "common/TList.h"
 #include "CClassInfo.h"
 #include <stdarg.h>

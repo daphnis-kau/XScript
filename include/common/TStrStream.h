@@ -1,10 +1,10 @@
-﻿//===============================================
-// TStrStream.h 
-// 定义字符串构造类，替代swprintf以及sprintf
-// 柯达昭
-// 2007-09-07
-//===============================================
-
+﻿/**@file  		TStrStream.h
+* @brief		String stream
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
+* @note			The string stream can be created with std::string, C array.
+*/
 #ifndef __XS_STR_STREAM_H__
 #define __XS_STR_STREAM_H__
 #include "common/CommonType.h"
@@ -16,9 +16,6 @@
 
 namespace XS
 {
-	//========================================================================
-	// 字符串构造类，作用类似sprintf
-	//========================================================================
 	template<class _Elem, class _Traits = std::char_traits<_Elem> >
 	class TStrStream
 		: public std::basic_streambuf<_Elem>

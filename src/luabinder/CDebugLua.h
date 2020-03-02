@@ -1,12 +1,12 @@
-﻿#ifndef __LUA_DEBUG_H__
-#define __LUA_DEBUG_H__
-//=====================================================================
-// CLuaDebug.h 
-// 为lua定义的调试器接口
-// 柯达昭
-// 2007-10-16
-//=====================================================================
+﻿/**@file  		CLuaDebug.h
+* @brief		LUA debugger interface
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
+*/
 
+#ifndef __LUA_DEBUG_H__
+#define __LUA_DEBUG_H__
 #include "common/TRBTree.h"
 #include "core/CDebugBase.h"
 #include <vector>

@@ -1,12 +1,12 @@
-﻿#ifndef __TYPE_LUA_H__
-#define __TYPE_LUA_H__
-//=====================================================================
-// CTypeLua.h
-// 定义Lua的数据类型接口
-// 柯达昭
-// 2007-10-16
-//=====================================================================
+﻿/**@file  		CTypeLua.h
+* @brief		Data interface between LUA&c++
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
+*/
 
+#ifndef __TYPE_LUA_H__
+#define __TYPE_LUA_H__
 #include <stdlib.h>
 #include "common/Help.h"
 #include "core/CTypeBase.h"
@@ -17,7 +17,7 @@ namespace XS
 {
 	class CLuaTypeBase;
 	//=====================================================================
-	/// lua对C++数据的操作方法封装
+	/// aux function
 	//=====================================================================
 	double			GetNumFromLua( lua_State* pL, int32 nStkId );
 	void*			GetPointerFromLua( lua_State* pL, int32 nStkId );
@@ -26,13 +26,12 @@ namespace XS
 	CLuaTypeBase*	GetLuaTypeBase( DataType eType );
 
     //=====================================================================
-    /// lua对C++数据的操作方法，调用Lua库实现对数据在lua中的操作
+    /// Base class of data type
     //=====================================================================
     class CLuaTypeBase : public CTypeBase
 	{
 	public:
 		CLuaTypeBase(){}
-		//不 pop 出堆栈
         virtual void GetFromVM( DataType eType, 
 			lua_State* pL, char* pDataBuf, int32 nStkId ) = 0;        
         virtual void PushToVM( DataType eType, 
@@ -40,7 +39,7 @@ namespace XS
     };
 
     //=====================================================================
-    /// C++内置类型在lua中的操作
+    /// Common class of data type
     //=====================================================================
     template<typename T>
     class TLuaValue : public CLuaTypeBase
@@ -66,7 +65,7 @@ namespace XS
 		}
     };
 
-    //特化部分函数
+    // POD type class specialization
     template<> inline void TLuaValue<float>::GetFromVM
 	( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId )
 	{ *(float*)( pDataBuf ) = GetNumFromLua( pL, nStkId ); }
@@ -116,7 +115,7 @@ namespace XS
     { CScriptLua::NewUnicodeString( pL, *(const wchar_t**)( pDataBuf ) ); }
 
     //=====================================================================
-    /// C++对象以lua形式的表示及其操作，必须以CClassRegistInfo* 构造
+    /// Interface of class pointer
     //=====================================================================
     class CLuaObject : public TLuaValue<void*>
     {
@@ -129,7 +128,7 @@ namespace XS
     };
 
     //=====================================================================
-    /// lua数据类型之C++对象类型，必须以CClassRegistInfo* 构造
+    /// Interface of class value
     //=====================================================================
     class CLuaValueObject : public CLuaObject
     {

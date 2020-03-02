@@ -1,6 +1,6 @@
 ﻿/**@file  		CJson.h
 * @brief		Read/write Json
-* @author		Daphnis Kau
+* @author		Daphnis Kaw
 * @date			2020-01-17
 * @version		V1.0
 */

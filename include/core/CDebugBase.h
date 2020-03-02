@@ -1,12 +1,12 @@
-﻿#ifndef __DEBUG_BASE_H__
-#define __DEBUG_BASE_H__
-//=====================================================================
-// CDebugBase.h
-// 定义基本的调试器接口
-// 柯达昭
-// 2007-10-16
-//=====================================================================
+﻿/**@file  		CDebugBase.h
+* @brief		Debugger interface
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
+*/
 
+#ifndef __DEBUG_BASE_H__
+#define __DEBUG_BASE_H__
 #include "core/XScriptDef.h"
 #include "common/TConstString.h"
 #include "common/TList.h"
@@ -137,7 +137,7 @@ namespace XS
 		virtual bool		ProcessCommand( CDebugCmd* pCmd );
 
 		//=================================================================
-		// 重载下面的函数实现其他的调试协议
+		// Implement other debug protocol by override next two function
 		//=================================================================
 		virtual bool		ReciveRemoteData( char(&szBuffer)[2048], int32 nCurSize );
 		virtual bool		CheckRemoteCmd();

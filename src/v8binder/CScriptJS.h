@@ -1,11 +1,12 @@
-﻿#ifndef __SCRIPT_JS_H__
+﻿/**@file  		CScriptJS3.h
+* @brief		V8 base wrapper
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
+*/
+
+#ifndef __SCRIPT_JS_H__
 #define __SCRIPT_JS_H__
-//=====================================================================
-// CScriptJS3.h 
-// 为JS定义的C++到虚拟机的接口
-// 柯达昭
-// 2007-10-16
-//=====================================================================
 #include "common/TRBTree.h"
 #include "core/CScriptBase.h"
 

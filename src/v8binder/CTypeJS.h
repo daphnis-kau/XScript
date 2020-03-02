@@ -1,12 +1,12 @@
-﻿#ifndef __TYPE_JS_H__
-#define __TYPE_JS_H__
-//=====================================================================
-// CTypeJS.h
-// 定义JS的数据类型接口
-// 柯达昭
-// 2007-10-16
-//=====================================================================
+﻿/**@file  		CTypeJS.h
+* @brief		Data interface between V8&c++
+* @author		Daphnis Kaw
+* @date			2020-01-17
+* @version		V1.0
+*/
 
+#ifndef __TYPE_JS_H__
+#define __TYPE_JS_H__
 #include "common/Memory.h"
 #include "core/CTypeBase.h"
 #include "V8Context.h"
@@ -18,12 +18,12 @@ namespace XS
 
 	class CJSTypeBase;
 	//=====================================================================
-	/// 所有JS数据类型
+	/// aux function
 	//=====================================================================
 	CJSTypeBase* GetJSTypeBase( DataType eType );
 	
 	//=====================================================================
-    /// JS对C++数据的操作方法，调用JS库实现对数据在JS中的操作
+    /// Base class of data type
     //=====================================================================
     class CJSTypeBase : public CTypeBase
     {
@@ -36,7 +36,7 @@ namespace XS
     };
 	
 	//=====================================================================
-	/// C++内置类型在JS中的操作
+	/// Common class of data type
 	//=====================================================================
 	template<typename T>
 	class TJSValue : public CJSTypeBase
@@ -64,7 +64,7 @@ namespace XS
 		}
 	};
 
-	//特化部分函数
+	// POD type class specialization
 	template<> inline void TJSValue<double>::FromVMValue(
 		DataType eType, CScriptJS& Script, char* pDataBuf, LocalValue obj)
 	{
@@ -238,7 +238,7 @@ namespace XS
 	}
 
 	//=====================================================================
-	/// C++对象以JS形式的表示及其操作，必须以CClassRegistInfo* 构造
+	/// Interface of class pointer
 	//=====================================================================
 	class CJSObject : public TJSValue<void*>
 	{
@@ -258,7 +258,7 @@ namespace XS
 	};
 
 	//=====================================================================
-	/// JS数据类型之C++对象类型，必须以CClassRegistInfo* 构造
+	/// Interface of class value
 	//=====================================================================
 	class CJSValueObject : public CJSObject
 	{
