@@ -67,13 +67,13 @@
 
     g_App.TestVirtualObjectValue = function (Config)
     {
-        Test(config == Config, "Test object value to Script");
+        Test(config != Config, "Test object value to Script");
         return CApplication.prototype.TestVirtualObjectValue.call( this, Config );
     }
 
     window.StartApplication = function(name, id) 
     {
-        config.szName = name;
+        config.SetName( name );
         config.nID = id;
 	    config.Address = address;
 

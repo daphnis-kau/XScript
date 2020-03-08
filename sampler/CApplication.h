@@ -27,7 +27,7 @@ struct SApplicationConfig
 
 	SApplicationConfig(const SApplicationConfig& Config)
 	{
-		szName = Config.szName;
+		memcpy(szName, Config.szName, sizeof(szName));
 		nID = Config.nID;
 		Address = Config.Address;
 		strContext = Config.strContext;
@@ -40,13 +40,22 @@ struct SApplicationConfig
 		assert( false );
 	}
 
-	const char*	szName;
+	void SetName( const char* Name )
+	{
+		strcpy( szName, Name );
+	}
+
+	const char*	GetName()
+	{
+		return szName;
+	}
+
+	char		szName[32];
 	uint32		nID;
 	SAddress	Address;
 	std::string	strContext;
 };
 
-// ¥ø–È¿‡
 class IApplicationHandler
 {
 public:

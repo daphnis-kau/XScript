@@ -57,7 +57,7 @@ function g_App:TestVirtualObjectValue( Config )
 end
 
 function StartApplication( name, id )
-	config:szName( name );
+	config:SetName( name );
 	config:nID( id );
 	config:Address( address );
 

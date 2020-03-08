@@ -17,7 +17,8 @@ DEFINE_CLASS_BEGIN( SAddress )
 DEFINE_CLASS_END();
 
 DEFINE_CLASS_BEGIN( SApplicationConfig )
-	REGIST_CLASSMEMBER( szName )
+	REGIST_CLASSFUNCTION( SetName )
+	REGIST_CLASSFUNCTION( GetName )
 	REGIST_CLASSMEMBER( nID )
 	REGIST_CLASSMEMBER( Address )
 DEFINE_CLASS_END();
@@ -80,8 +81,8 @@ int main( int argc, const char* argv[] )
 		chdir( szDir );
 	}
 
-	//CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
-	CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
+	CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
+	//CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
 
 	while( true )
 	{
