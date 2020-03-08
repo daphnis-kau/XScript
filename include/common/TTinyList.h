@@ -1,7 +1,7 @@
 ﻿/**@file  		TList.h
 * @brief		Single link list
-* @author		Daphnis Kaw
-* @date			2020-01-17
+* @author		Daphnis Kau
+* @date			2019-06-24
 * @version		V1.0
 * @note			The sizeof TTinyList is very small, it's size is equal to \n
 *				the sizeof void*. No memory need to be allocated/freed \n

@@ -1,7 +1,7 @@
 ﻿/**@file  		CDebugJS.h
 * @brief		V8 debugger interface
-* @author		Daphnis Kaw
-* @date			2020-01-17
+* @author		Daphnis Kau
+* @date			2019-06-24
 * @version		V1.0
 */
 

@@ -1,7 +1,7 @@
 ﻿/**@file  		TList.h
 * @brief		Double link list
-* @author		Daphnis Kaw
-* @date			2020-01-17
+* @author		Daphnis Kau
+* @date			2019-06-24
 * @version		V1.0
 * @note			No memory need to be allocated/freed when insert a node to \n
 *				or remove node from a TList. Nodes can be removed directly \n

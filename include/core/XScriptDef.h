@@ -1,7 +1,7 @@
 ﻿/**@file  		XScriptDef.h
 * @brief		Base interface of XScript
-* @author		Daphnis Kaw
-* @date			2020-01-17
+* @author		Daphnis Kau
+* @date			2019-06-24
 * @version		V1.0
 */
 

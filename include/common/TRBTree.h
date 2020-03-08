@@ -1,7 +1,7 @@
 ﻿/**@file  		TRBTree.h 
 * @brief		Red-black tree
-* @author		Daphnis Kaw
-* @date			2020-01-17
+* @author		Daphnis Kau
+* @date			2019-06-24
 * @version		V1.0
 * @note			Chapter 13 of Introduction to Algorithms: Red-Black Trees
 *				No memory need to be allocated/freed when insert a node to \n

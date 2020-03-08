@@ -1,7 +1,7 @@
 ﻿/**@file  		TStrStream.h
 * @brief		String stream
-* @author		Daphnis Kaw
-* @date			2020-01-17
+* @author		Daphnis Kau
+* @date			2019-06-24
 * @version		V1.0
 * @note			The string stream can be created with std::string, C array.
 */

@@ -1,7 +1,7 @@
 ﻿/**@file  		CVirtualFun.h
 * @brief		Define virtual function structure and interface
-* @author		Daphnis Kaw
-* @date			2020-01-17
+* @author		Daphnis Kau
+* @date			2019-06-24
 * @version		V1.0
 */
 #ifndef __XS_VIRTUALFUN_H__

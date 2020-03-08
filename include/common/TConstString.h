@@ -1,7 +1,7 @@
 ﻿/**@file  		TConstString.h
 * @brief		Const string implement
-* @author		Daphnis Kaw
-* @date			2020-01-17
+* @author		Daphnis Kau
+* @date			2019-06-24
 * @version		V1.0
 * @note			The class can construct a instance from C string by 
 *				reference to C string's memory or use new memory.

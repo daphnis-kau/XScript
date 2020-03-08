@@ -1,7 +1,7 @@
 ﻿/**@file  		CppTypeParser.h
 * @brief		Fetch type information of C++ base type
-* @author		Daphnis Kaw
-* @date			2020-01-17
+* @author		Daphnis Kau
+* @date			2019-06-24
 * @version		V1.0
 */
 #ifndef _XS_CPP_TYPE_H_

@@ -1,7 +1,7 @@
 ﻿/**@file  		CommonType.h
 * @brief		Common type definition
-* @author		Daphnis Kaw
-* @date			2020-01-17
+* @author		Daphnis Kau
+* @date			2019-06-24
 * @version		V1.0
 */
 #ifndef __XS_COMMON_TYPE__
