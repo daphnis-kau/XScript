@@ -187,7 +187,7 @@ namespace XS
 		return (int32)m_vecOverridableFun.size();
     }
 
-    void CClassInfo::Create( CScriptBase* pScript, void* pObject ) const
+    void CClassInfo::Create( CScriptBase* pScript, void* pObject, void** aryArg ) const
 	{
 		pScript->CheckDebugCmd();
 		//声明性质的类不可创建
@@ -195,16 +195,16 @@ namespace XS
 		assert( m_pObjectConstruct );
 		if( !m_pObjectConstruct )
 			return;
-		m_pObjectConstruct->Construct( pObject );
+		m_pObjectConstruct->Construct( pObject, aryArg );
 	}
 
-	void CClassInfo::Assign( CScriptBase* pScript, void* pDest, void* pSrc ) const
+	void CClassInfo::Clone( CScriptBase* pScript, void* pDest, void* pSrc ) const
 	{
 		pScript->CheckDebugCmd();
 		assert( m_pObjectConstruct );
 		if( !m_pObjectConstruct )
 			return;
-		m_pObjectConstruct->Assign( pDest, pSrc );
+		m_pObjectConstruct->CopyConstruct( pDest, pSrc );
 	}
 
     void CClassInfo::Release( CScriptBase* pScript, void* pObject ) const
@@ -215,6 +215,15 @@ namespace XS
 		if( !m_pObjectConstruct )
 			return;
 		m_pObjectConstruct->Destruct( pObject );
+	}
+
+	void CClassInfo::Assign( CScriptBase* pScript, void* pDest, void* pSrc ) const
+	{
+		pScript->CheckDebugCmd();
+		assert( m_pObjectConstruct );
+		if( !m_pObjectConstruct )
+			return;
+		m_pObjectConstruct->Assign( pDest, pSrc );
 	}
 
 	const CCallInfo* CClassInfo::GetCallBase( const const_string& strFunName ) const

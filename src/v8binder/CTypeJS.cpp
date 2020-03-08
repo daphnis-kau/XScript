@@ -82,8 +82,9 @@ namespace XS
 			return v8::Null( isolate );
 
 		const SObjInfo* pObjInfo = NULL;
-		if( !bCopy && ( pObjInfo = Script.FindExistObjInfo( pObj ) ) != NULL )
-			return pObjInfo->m_Object.Get(isolate);
+		if( !bCopy && ( pObjInfo = Script.FindExistObjInfo( pObj ) ) != NULL &&
+			pObjInfo->m_pClassInfo->m_pClassInfo->FindBase(pClassInfo) )
+			return pObjInfo->m_Object.Get( isolate );
 
 		static PersistentFunTmplt s_Instance;
 		SJSClassInfo* classInfo = Script.m_mapClassInfo.Find((const void*)pClassInfo);
@@ -98,10 +99,7 @@ namespace XS
 		NewObj->Set(context, __proto__, JSClass->Get(context, Prototype).ToLocalChecked() );
 
 		if (bCopy)
-		{
 			Context.BindObj(NULL, NewObj, pClassInfo, pObj);
-			pClassInfo->Release( &Script, pObj );
-		}
 		else
 			Context.BindObj(pObj, NewObj, pClassInfo);
 		return NewObj;
@@ -138,17 +136,7 @@ namespace XS
 	void CJSValueObject::FromVMValue(DataType eType,
 		CScriptJS& Script, char* pDataBuf, v8::Local<v8::Value> obj)
 	{
-		void* pObject = NULL;
-		const CClassInfo* pClassInfo = 
-			_FromVMValue(eType, Script, (char*)&pObject, obj);
-		CJSObject::FromVMValue(eType, Script, (char*)&pObject, obj);
-		assert(pClassInfo);
-		auto pCurClassInfo = (const CClassInfo*)((eType >> 1) << 1);
-		int32 nOffset = pClassInfo->GetBaseOffset(pCurClassInfo);
-		assert(nOffset >= 0);
-
-		pObject = ((char*)pObject) + nOffset;
-		pCurClassInfo->Assign( &Script, pDataBuf, pObject );
+		CJSObject::FromVMValue(eType, Script, pDataBuf, obj);
 	}
 
 	XS::LocalValue CJSValueObject::ToVMValue(DataType eType, 

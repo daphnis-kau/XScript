@@ -10,10 +10,40 @@ enum ETestEnum
 	eTE_0 = 1234,
 };
 
+struct SAddress
+{
+	uint32 nIP;
+	uint16 nPort;
+};
+
 struct SApplicationConfig
 {
-	const char* szName;
+	static int nCount;
+
+	SApplicationConfig()
+	{
+		strContext.assign( "sdfsd" );
+	}
+
+	SApplicationConfig(const SApplicationConfig& Config)
+	{
+		szName = Config.szName;
+		nID = Config.nID;
+		Address = Config.Address;
+		strContext = Config.strContext;
+	}
+
+	~SApplicationConfig()
+	{
+		if( strContext == "sdfsd" )
+			return;
+		assert( false );
+	}
+
+	const char*	szName;
 	uint32		nID;
+	SAddress	Address;
+	std::string	strContext;
 };
 
 // ¥ø–È¿‡
@@ -41,9 +71,14 @@ protected:
 public:
 
 	static CApplication& GetInst();
-	
-	SApplicationConfig& TestCallObject( IApplicationHandler* Handler,
-		SApplicationConfig v0, SApplicationConfig& v1, SApplicationConfig* v2 );
+
+	IApplicationHandler* TestCallObjectPointer( IApplicationHandler* Handler );
+	SApplicationConfig& TestCallObjectReference( SApplicationConfig& Config );
+	SApplicationConfig TestCallObjectValue( SApplicationConfig Config );
+
+	virtual IApplicationHandler* TestVirtualObjectPointer( IApplicationHandler* Handler );
+	virtual SApplicationConfig& TestVirtualObjectReference( SApplicationConfig& Config );
+	virtual SApplicationConfig TestVirtualObjectValue( SApplicationConfig Config );
 
 	const char* TestCallPOD( 
 		ETestEnum e, int8 v0, int16 v1, int32 v2, int64 v3, long v4,
@@ -51,7 +86,4 @@ public:
 		float v10, double v11, const char* v12, const wchar_t* v13 );
 
 	const char* TestNoParamFunction();
-
-	virtual SApplicationConfig& TestVirtual( SApplicationConfig v0, 
-		SApplicationConfig& v1, SApplicationConfig* v2 );
 };

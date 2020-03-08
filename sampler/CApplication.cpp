@@ -1,5 +1,7 @@
 ﻿#include "CApplication.h"
 
+int SApplicationConfig::nCount = 0;
+
 static void Test( bool bResult, const char* szMessage )
 {
 	printf( "%s ........ %s\n", szMessage, ( bResult ? "OK" : "Failed" ) );
@@ -15,15 +17,41 @@ CApplication& CApplication::GetInst()
 	return s_Instance;
 }
 
-SApplicationConfig& CApplication::TestCallObject( IApplicationHandler* Handler,
-	SApplicationConfig v0, SApplicationConfig& v1, SApplicationConfig* v2 )
+IApplicationHandler* CApplication::TestCallObjectPointer( IApplicationHandler* Handler )
 {
 	m_pHandler = Handler;
-	Test( !strcmp( v0.szName, "sampler" ) && v0.nID == 12345, "Test object value from Script" );
-	Test( !strcmp( v1.szName, "sampler" ) && v1.nID == 12345, "Test object reference from Script" );
-	Test( !strcmp( v2->szName, "sampler" ) && v2->nID == 12345, "Test object pointer from Script" );
-	Test( v2 == &v1 && &v0 != v2, "Test object value copy from Script" );
-	return TestVirtual( v0, v1, v2 );
+	Test( !strcmp( m_pHandler->OnTestNoParamPureVirtual(), "OK" ), "Test object pointer from Script" );
+	return TestVirtualObjectPointer( Handler );
+}
+
+SApplicationConfig& CApplication::TestCallObjectReference( SApplicationConfig& Config )
+{
+	Test( !strcmp( Config.szName, "sampler" ) && Config.nID == 12345, "Test object reference from Script" );
+	return TestVirtualObjectReference( Config );
+}
+
+SApplicationConfig CApplication::TestCallObjectValue( SApplicationConfig Config )
+{
+	Test( !strcmp( Config.szName, "sampler" ) && Config.nID == 12345, "Test object value from Script" );
+	return TestVirtualObjectValue( Config );
+}
+
+IApplicationHandler* CApplication::TestVirtualObjectPointer( IApplicationHandler* Handler )
+{
+	Test( true, "Test object pointer virtual function super call" );
+	return Handler;
+}
+
+SApplicationConfig& CApplication::TestVirtualObjectReference( SApplicationConfig& Config )
+{
+	Test( true, "Test object reference virtual function super call" );
+	return Config;
+}
+
+SApplicationConfig CApplication::TestVirtualObjectValue( SApplicationConfig Config )
+{
+	Test( true, "Test object value virtual function super call" );
+	return Config;
 }
 
 const char* CApplication::TestCallPOD(
@@ -58,11 +86,4 @@ const char* CApplication::TestCallPOD(
 const char* CApplication::TestNoParamFunction()
 {
 	return m_pHandler->OnTestNoParamPureVirtual();
-}
-
-SApplicationConfig& CApplication::TestVirtual( SApplicationConfig v0,
-	SApplicationConfig& v1, SApplicationConfig* v2 )
-{
-	Test( false, "Test virtual function call" );
-	return v1;
 }

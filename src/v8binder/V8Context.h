@@ -108,14 +108,14 @@ namespace XS
 
 		static void					Log(const v8::FunctionCallbackInfo<v8::Value>& args);
 		static void					Break(const v8::FunctionCallbackInfo<v8::Value>& args);
-		static void					Callback(const v8::FunctionCallbackInfo<v8::Value>& args);
 		static void					NewObject(const v8::FunctionCallbackInfo<v8::Value>& args);
 		static void					Destruction(const v8::FunctionCallbackInfo<v8::Value>& args);
 		static void					GCCallback(const v8::WeakCallbackInfo<SObjInfo>& data);
 
-		static void					GetterCallback(v8::Local<v8::Name> property, 
+		static void					CallFromV8(const v8::FunctionCallbackInfo<v8::Value>& args);
+		static void					GetterFromV8(v8::Local<v8::Name> property, 
 			 							const v8::PropertyCallbackInfo<v8::Value>& info);
-		static void					SetterCallback(v8::Local<v8::Name> property, LocalValue value,
+		static void					SetterFromV8(v8::Local<v8::Name> property, LocalValue value,
 			 							const v8::PropertyCallbackInfo<void>& info);
 	};
 }

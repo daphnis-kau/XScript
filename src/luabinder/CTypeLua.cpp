@@ -1,5 +1,4 @@
-﻿#include "zlib.h"
-#include <string>
+﻿#include <string>
 #include <locale>
 #include <codecvt>
 #include <algorithm>
@@ -37,11 +36,11 @@ namespace XS
 	//=====================================================================
 	/// lua对C++数据的操作方法封装
 	//=====================================================================
-	inline int32 AbsStackIdx( lua_State* pL, int32 nStkId )
+	inline int32 ToAbsStackIndex( lua_State* pL, int32 nStkId )
 	{
-		int r = nStkId > 0 ? nStkId : ( lua_gettop( pL ) + nStkId + 1 );
-		assert( r >=0 );
-		return r;
+		if( nStkId > 0 )
+			return nStkId;
+		return lua_gettop( pL ) + nStkId + 1;
 	}
 
 	//=====================================================================
@@ -73,7 +72,7 @@ namespace XS
 
 	void CLuaObject::GetFromVM(DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId)
     {
-        nStkId = AbsStackIdx( pL, nStkId );
+        nStkId = ToAbsStackIndex( pL, nStkId );
 		int32 nType = lua_type( pL, nStkId );
         if( nType == LUA_TNIL || nType == LUA_TNONE )
             *(void**)( pDataBuf ) = NULL;    
@@ -185,17 +184,14 @@ namespace XS
 
 	void CLuaValueObject::GetFromVM(DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId)
 	{
-		void* pObject = NULL;
-		auto pClassInfo = (const CClassInfo*)( ( eType >> 1 ) << 1 );
-		CLuaObject::GetFromVM( eType, pL, (char*)&pObject, nStkId );
-		pClassInfo->Assign( CScriptLua::GetScript( pL ), pDataBuf, pObject );
+		CLuaObject::GetFromVM( eType, pL, pDataBuf, nStkId );
 	}
 
 	void CLuaValueObject::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
 	{
 		// Table 在Lua栈顶
 		lua_newtable( pL );// Obj
-		int32 nStkId = AbsStackIdx( pL, -1 );
+		int32 nStkId = ToAbsStackIndex( pL, -1 );
 
 		auto pClassInfo = (const CClassInfo*)( ( eType >> 1 ) << 1 );
 		lua_getglobal( pL, pClassInfo->GetClassName().c_str() );
@@ -203,7 +199,6 @@ namespace XS
 
 		CScriptLua::NewLuaObj( pL, pClassInfo, pDataBuf );
 		ConstructLua( pL );
-		pClassInfo->Release( CScriptLua::GetScript( pL ), pDataBuf );
 	}
 
 	//=====================================================================
@@ -253,9 +248,6 @@ namespace XS
 		static int32		WriteUTF( lua_State* pL );
 		static int32		WriteUTFBytes( lua_State* pL );
 		static int32		WriteBytes( lua_State* pL );
-
-		static int32		Uncompress( lua_State* pL );
-		static int32		Compress( lua_State* pL );
 
 		static int32		SetPosition( lua_State* pL );
 		static int32		GetPosition( lua_State* pL );
@@ -309,7 +301,7 @@ namespace XS
 
 	inline SBufferInfo* CLuaBuffer::GetBufferInfo( lua_State* pL, int32 nStkID )
 	{
-		nStkID = AbsStackIdx( pL, nStkID );
+		nStkID = ToAbsStackIndex( pL, nStkID );
 		lua_pushstring( pL, s_szLuaBufferInfo );
 		lua_rawget( pL, nStkID );
 		SBufferInfo* pInfo = (SBufferInfo*)lua_touserdata( pL, -1 );
@@ -341,10 +333,10 @@ namespace XS
 			return 0;
 		}
 
-		uint32 nReadPos = GetNumFromLua( pL, 2 );
+		uint32 nReadPos = (uint32)GetNumFromLua( pL, 2 );
 		uint32 nNum = 1;
 		if( nArg > 3 )
-			nNum = GetNumFromLua( pL, 3 );
+			nNum = (uint32)GetNumFromLua( pL, 3 );
 		SBufferInfo* pInfo = GetBufferInfo( pL, 1 );
 		if( nNum <= 0 || nNum > 64 )
 			return 0;
@@ -388,7 +380,7 @@ namespace XS
 
 	int32 CLuaBuffer::ReadInt64( lua_State* pL )
 	{
-		lua_pushnumber( pL, ReadData<int64>( pL ) );
+		lua_pushnumber( pL, (double)ReadData<int64>( pL ) );
 		return 1;
 	}
 
@@ -412,7 +404,7 @@ namespace XS
 
 	int32 CLuaBuffer::ReadUint64( lua_State* pL )
 	{
-		lua_pushnumber( pL, ReadData<uint64>( pL ) );
+		lua_pushnumber( pL, (double)ReadData<uint64>( pL ) );
 		return 1;
 	}
 
@@ -452,7 +444,7 @@ namespace XS
 
 	int32 CLuaBuffer::ReadUTFBytes( lua_State* pL )
 	{
-		uint32 nLen = GetNumFromLua( pL, -1 );
+		uint32 nLen = (uint32)GetNumFromLua( pL, -1 );
 		lua_pop( pL, 1 );
 
 		SBufferInfo* pInfo = GetBufferInfo( pL, 1 );
@@ -503,7 +495,7 @@ namespace XS
 
 	int32 CLuaBuffer::ReadUCSCounts( lua_State* pL )
 	{
-		uint32 nLen = GetNumFromLua( pL, 2 );
+		uint32 nLen = (uint32)GetNumFromLua( pL, 2 );
 		SBufferInfo* pInfo = GetBufferInfo( pL, 1 );
 		if( !pInfo || pInfo->nPosition + nLen*sizeof(uint16) > pInfo->nDataSize )
 		{
@@ -544,7 +536,7 @@ namespace XS
 
 		if( lua_type( pL, 2 ) != LUA_TTABLE )
 		{
-			uint32 nReadCount = nArg >= 2 ? GetNumFromLua( pL, 2 ) : INVALID_32BITID;
+			uint32 nReadCount = nArg >= 2 ? (uint32)GetNumFromLua( pL, 2 ) : INVALID_32BITID;
 
 			if( nReadCount == INVALID_32BITID )
 				nReadCount = pInfoSrc->nDataSize - pInfoSrc->nPosition;
@@ -563,8 +555,8 @@ namespace XS
 		else
 		{
 			SBufferInfo* pInfoDes = GetBufferInfo( pL, 2 );
-			uint32 nOffset = nArg >= 3 ? GetNumFromLua( pL, 3 ) : 0;
-			uint32 nReadCount = nArg >= 4 ? GetNumFromLua( pL, 4 ) : INVALID_32BITID;
+			uint32 nOffset = nArg >= 3 ? (uint32)GetNumFromLua( pL, 3 ) : 0;
+			uint32 nReadCount = nArg >= 4 ? (uint32)GetNumFromLua( pL, 4 ) : INVALID_32BITID;
 
 			if( nReadCount == INVALID_32BITID )
 				nReadCount = pInfoSrc->nDataSize - pInfoSrc->nPosition;
@@ -614,13 +606,13 @@ namespace XS
 
 		char aryBuffer[9];
 		uint64& nValue = *(uint64*)aryBuffer;
-		uint32 nWritePos = GetNumFromLua( pL, 2 );
+		uint32 nWritePos = (uint32)GetNumFromLua( pL, 2 );
 		nValue = (uint64)( LUA_TBOOLEAN == lua_type( pL, 3 ) ?
 			lua_toboolean( pL, 3 ) : (int64)GetNumFromLua( pL, 3 ) );
 
 		uint32 nNum = 1;
 		if( nArg > 4 )
-			nNum = GetNumFromLua( pL, 4 );
+			nNum = (uint32)GetNumFromLua( pL, 4 );
 		if( nNum <= 0 || nNum > 64 )
 			return 0;
 		int32 nOffset = nWritePos%8;
@@ -731,8 +723,8 @@ namespace XS
 		{
 			size_t nDataSize = 0;
 			const char* szSrc = luaL_checklstring( pL, 2, &nDataSize );
-			uint32 nOffset = nArg >= 3 ? GetNumFromLua( pL, 3 ) : 0;
-			uint32 nWriteCount = nArg >= 4 ? GetNumFromLua( pL, 4 ) : INVALID_32BITID;
+			uint32 nOffset = nArg >= 3 ? (uint32)GetNumFromLua( pL, 3 ) : 0;
+			uint32 nWriteCount = nArg >= 4 ? (uint32)GetNumFromLua( pL, 4 ) : INVALID_32BITID;
 
 			if( nWriteCount == INVALID_32BITID )
 				nWriteCount = (uint32)nDataSize - nOffset;
@@ -793,90 +785,6 @@ namespace XS
 			pInfoDes->nDataSize = std::max<uint32>( pInfoDes->nPosition, pInfoDes->nDataSize );
 			return 0;
 		}
-	}
-
-	int32 CLuaBuffer::Uncompress( lua_State* pL )
-	{
-		SBufferInfo* pInfo = GetBufferInfo( pL, 1 );
-		if( !pInfo || ( IsLightData( pInfo ) && pInfo->pBuffer ) )
-		{
-			luaL_error( pL,  "invalid buffer" );
-			return 0;
-		}
-
-		std::string strBuffer;
-		Bytef szBuffer[4096];
-
-		z_stream zipStream;
-		memset( &zipStream, 0, sizeof(zipStream) );
-		inflateInit( &zipStream );
-		zipStream.next_in = pInfo->pBuffer;
-		zipStream.avail_in = pInfo->nDataSize;
-
-		while( zipStream.avail_in )
-		{
-			zipStream.next_out = szBuffer;
-			zipStream.avail_out = 4096;
-			zipStream.total_out = 0;
-			inflate( &zipStream, Z_SYNC_FLUSH );
-			strBuffer.append( (char*)szBuffer, zipStream.total_out );
-		}
-
-		zipStream.next_out = szBuffer;
-		zipStream.avail_out = 4096;
-		zipStream.total_out = 0;
-		inflate( &zipStream, Z_FINISH );
-		inflateEnd( &zipStream );	
-		strBuffer.append( (char*)szBuffer, zipStream.total_out );	
-
-		pInfo = CheckBufferSpace( pInfo, (uint32)strBuffer.size(), pL, 1 );
-		memcpy( pInfo->pBuffer, strBuffer.c_str(), strBuffer.size() );
-		pInfo->nPosition = 0;
-		pInfo->nDataSize = (uint32)strBuffer.size();
-		lua_settop( pL, 0 );
-		return 0;
-	}
-
-	int32 CLuaBuffer::Compress( lua_State* pL )
-	{
-		SBufferInfo* pInfo = GetBufferInfo( pL, 1 );
-		if( !pInfo || ( IsLightData( pInfo ) && pInfo->pBuffer ) )
-		{
-			luaL_error( pL, "invalid buffer" );
-			return 0;
-		}
-
-		std::string strBuffer;
-		Bytef szBuffer[4096];
-
-		z_stream zipStream;
-		memset( &zipStream, 0, sizeof(zipStream) );
-		deflateInit( &zipStream, 9 );
-		zipStream.next_in = pInfo->pBuffer;
-		zipStream.avail_in = pInfo->nDataSize;
-
-		while( zipStream.avail_in )
-		{
-			zipStream.next_out = szBuffer;
-			zipStream.avail_out = 4096;
-			zipStream.total_out = 0;
-			deflate( &zipStream, Z_SYNC_FLUSH );
-			strBuffer.append( (char*)szBuffer, zipStream.total_out );
-		}
-
-		zipStream.next_out = szBuffer;
-		zipStream.avail_out = 4096;
-		zipStream.total_out = 0;
-		deflate( &zipStream, Z_FINISH );
-		deflateEnd( &zipStream );	
-		strBuffer.append( (char*)szBuffer, zipStream.total_out );	
-
-		pInfo = CheckBufferSpace( pInfo, (uint32)strBuffer.size(), pL, 1 );
-		memcpy( pInfo->pBuffer, strBuffer.c_str(), strBuffer.size() );
-		pInfo->nPosition = 0;
-		pInfo->nDataSize = (uint32)strBuffer.size();
-		lua_settop( pL, 0 );
-		return 0;
 	}
 
 	int32 CLuaBuffer::SetPosition( lua_State* pL )
@@ -1003,9 +911,6 @@ namespace XS
 		REGISTER( WriteUTFBytes );
 		REGISTER( WriteBytes );
 
-		REGISTER( Uncompress );
-		REGISTER( Compress );
-
 		REGISTER( SetPosition );
 		REGISTER( GetPosition );
 		REGISTER( GetDataSize );
@@ -1021,7 +926,7 @@ namespace XS
 	//=====================================================================
 	double GetNumFromLua( lua_State* pL, int32 nStkId )
 	{
-		nStkId = AbsStackIdx( pL, nStkId );
+		nStkId = ToAbsStackIndex( pL, nStkId );
 		if( lua_isboolean( pL, nStkId ) )
 			return (double)(int32)lua_toboolean( pL, nStkId );
 		if( LUA_TSTRING == lua_type( pL, nStkId ) )
@@ -1052,7 +957,7 @@ namespace XS
 
 	void* GetPointerFromLua( lua_State* pL, int32 nStkId )
 	{
-		nStkId = AbsStackIdx( pL, nStkId );
+		nStkId = ToAbsStackIndex( pL, nStkId );
 		int32 nType = lua_type( pL, nStkId );
 		if( nType == LUA_TNIL || nType == LUA_TNONE )
 			return nullptr;
@@ -1116,7 +1021,7 @@ namespace XS
 		lua_pop( pL, 2 );
 
 		lua_newtable( pL );// Obj
-		int32 nStkId = AbsStackIdx( pL, -1 );
+		int32 nStkId = ToAbsStackIndex( pL, -1 );
 
 		lua_getglobal( pL, s_szLuaBufferClass );
 		if( lua_isnil( pL, -1 ) )//szClass必须被注册

@@ -47,22 +47,40 @@
     g_handler = new CApplicationHandler();
     g_App = CApplication.GetInst();
 
-    g_App.TestVirtual = function (v0, v1, v2) 
+    var address = new SAddress();
+    address.nIP = 123456789;
+    address.nPort = 1234;
+
+    var config = new SApplicationConfig;
+
+    g_App.TestVirtualObjectPointer = function (Handler)
     {
-        Test(v0.szName == "sampler" && v0.nID == 12345, "Test object value to Script");
-        Test(v1.szName == "sampler" && v1.nID == 12345, "Test object reference to Script");
-        Test(v2.szName == "sampler" && v2.nID == 12345, "Test object pointer to Script");
-        Test(v2 == v1 && v0 != v2, "Test object value copy to Script");
-        return v1
+        Test(g_handler == Handler, "Test object pointer to Script");
+        return CApplication.prototype.TestVirtualObjectPointer.call( this, Handler );
+    }
+
+    g_App.TestVirtualObjectReference = function (Config)
+    {
+        Test(config == Config, "Test object reference to Script");
+        return CApplication.prototype.TestVirtualObjectReference.call( this, Config );
+    }
+
+    g_App.TestVirtualObjectValue = function (Config)
+    {
+        Test(config == Config, "Test object value to Script");
+        return CApplication.prototype.TestVirtualObjectValue.call( this, Config );
     }
 
     window.StartApplication = function(name, id) 
     {
-        var config = new SApplicationConfig;
         config.szName = name;
         config.nID = id;
+	    config.Address = address;
 
-        Test(g_App.TestCallObject(g_handler, config, config, config) == config, "Test return obj");
+        Test( config.Address.nIP == 123456789 && config.Address.nPort == 1234, "Test object value member" );
+	    Test( g_App.TestCallObjectPointer(g_handler) == g_handler, "Test return obj pointer" );
+	    Test( g_App.TestCallObjectReference(config) == config, "Test return obj reference" );
+	    Test( g_App.TestCallObjectValue(config) != config, "Test return obj value " );
         Test(g_App.TestCallPOD(1234, -123, -12345, -12345678, -1234567891011, -123456789, 123, 12345,
             12345678, 1234567891011, 123456789, 1234567, 123456789101112, "abcdefg", "abcdefg") == "OK",
             "Test return string");

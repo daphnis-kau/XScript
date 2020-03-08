@@ -16,6 +16,7 @@ namespace XS
 	typedef ptrdiff_t DataType;
 	class CTypeBase { protected: virtual ~CTypeBase() {} };
 
+	bool			IsValueClass( DataType nType );
 	DataType		ToDataType( const STypeInfo& argTypeInfo );
 	size_t			GetSizeOfType( DataType nType );
 	size_t			GetAligenSizeOfType( DataType nType );

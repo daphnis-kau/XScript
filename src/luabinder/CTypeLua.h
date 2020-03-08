@@ -68,7 +68,7 @@ namespace XS
     // POD type class specialization
     template<> inline void TLuaValue<float>::GetFromVM
 	( DataType eType, lua_State* pL, char* pDataBuf, int32 nStkId )
-	{ *(float*)( pDataBuf ) = GetNumFromLua( pL, nStkId ); }
+	{ *(float*)( pDataBuf ) = (float)GetNumFromLua( pL, nStkId ); }
 
     template<> inline void TLuaValue<float>::PushToVM
 	( DataType eType, lua_State* pL, char* pDataBuf )

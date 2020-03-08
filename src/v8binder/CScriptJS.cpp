@@ -297,15 +297,16 @@ namespace XS
 		v8::Local<v8::Context> context = Context.m_Context.Get( isolate );
 		v8::Context::Scope context_scope( context );
 
-		DataType nThisType = pCallBase->GetParamList()[0];
+		auto& listParam = pCallBase->GetParamList();
+		DataType nThisType = listParam[0];
 		LocalValue pThis = CJSObject::GetInst().ToVMValue( nThisType, Script, (char*)&pObject );
 		v8::Local<v8::Object> object = pThis->ToObject( isolate );
 
-		int32 nParamCount = (int32)pCallBase->GetParamCount() - 1;
-		const DataType* aryParam = nParamCount ? &( pCallBase->GetParamList()[1] ) : nullptr;
+		uint32 nParamCount = (uint32)listParam.size() - 1;
+		const DataType* aryParam = nParamCount ? &( listParam[1] ) : nullptr;
 		size_t nTotalSize = sizeof( LocalValue )*nParamCount;
 		LocalValue* args = (LocalValue*)alloca( nTotalSize );
-		for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+		for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 		{
 			new ( args + nArgIndex ) LocalValue;
 			DataType nType = aryParam[nArgIndex];
@@ -316,7 +317,7 @@ namespace XS
 		v8::MaybeLocal<v8::Value> fun = object->Get( context, pInfo->m_strName.Get( isolate ) );
 		if( fun.IsEmpty() )
 		{
-			for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+			for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 				args[nArgIndex].~LocalValue();
 			Context.CallJSStatck( false );
 			return false;
@@ -325,7 +326,7 @@ namespace XS
 		LocalValue funField = fun.ToLocalChecked();
 		if( !funField->IsFunction() )
 		{
-			for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+			for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 				args[nArgIndex].~LocalValue();
 			Context.CallJSStatck( false );
 			return false;
@@ -333,7 +334,7 @@ namespace XS
 
 		v8::Local<v8::Function> funCallback = v8::Local<v8::Function>::Cast( funField );
 		LocalValue result = funCallback->Call( object, nParamCount, args );
-		for( int32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+		for( uint32 nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 			args[nArgIndex].~LocalValue();
 
 		Context.CallJSStatck( false );
@@ -345,7 +346,19 @@ namespace XS
 
 		DataType nResultType = pCallBase->GetResultType();
 		if( nResultType )
-			GetJSTypeBase( nResultType )->FromVMValue( nResultType, Script, (char*)pRetBuf, result );
+		{
+			CJSTypeBase* pReturnType = GetJSTypeBase( nResultType );
+			if( !IsValueClass( nResultType ) )
+				pReturnType->FromVMValue( nResultType, Script, (char*)pRetBuf, result );
+			else
+			{
+				void* pObject = nullptr;
+				pReturnType->FromVMValue( nResultType, Script, (char*)&pObject, result );
+				auto pClassInfo = (const CClassInfo*)( ( nResultType >> 1 ) << 1 );
+				pClassInfo->Assign( this, pRetBuf, pObject );
+			}
+		}
+
 		return true;
 	}
 
@@ -527,21 +540,21 @@ namespace XS
 				{
 					Prototype->SetAccessor( context, 
 						v8::String::NewFromUtf8( isolate, szFunName ),
-						&SV8Context::GetterCallback, &SV8Context::SetterCallback,
+						&SV8Context::GetterFromV8, &SV8Context::SetterFromV8,
 						v8::External::New( isolate, GetCallInfo( pCall ) ) );
 				}
 				else if( pCall->GetFunctionIndex() == eCT_ClassStaticFunction )
 				{
 					NewClass->Set( context, 
 						v8::String::NewFromUtf8( isolate, szFunName ),
-						v8::Function::New( isolate, &SV8Context::Callback,
+						v8::Function::New( isolate, &SV8Context::CallFromV8,
 						v8::External::New( isolate, GetCallInfo( pCall ) ) ) );
 				}
 				else
 				{
 					Prototype->Set( context, 
 						v8::String::NewFromUtf8( isolate, szFunName ),
-						v8::Function::New( isolate, &SV8Context::Callback,
+						v8::Function::New( isolate, &SV8Context::CallFromV8,
 						v8::External::New( isolate, GetCallInfo( pCall ) ) ) );
 				}
 			}
@@ -592,7 +605,7 @@ namespace XS
 				for( auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext() )
 				{
 					v8::Local<v8::Function> funGlobal = v8::Function::New( isolate,
-						&SV8Context::Callback, v8::External::New( isolate, GetCallInfo(pCall) ) );
+						&SV8Context::CallFromV8, v8::External::New( isolate, GetCallInfo(pCall) ) );
 					const char* szFunName = pCall->GetFunctionName().c_str();
 					Package->ToObject( isolate )->Set(
 						v8::String::NewFromUtf8( isolate, szFunName ), funGlobal );

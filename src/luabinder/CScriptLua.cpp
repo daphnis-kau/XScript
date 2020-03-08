@@ -439,7 +439,18 @@ namespace XS
 		int32 nArg = (int32)( listParam.size() );
 		lua_pcall( pL, nArg, nResultType ? 1 : 0, nErrFunIndex );
 		if( nResultType )
-			GetLuaTypeBase( nResultType )->GetFromVM( nResultType, pL, (char*)pRetBuf, -1 );
+		{
+			CLuaTypeBase* pReturnType = GetLuaTypeBase( nResultType );
+			if( !IsValueClass( nResultType ) )
+				pReturnType->GetFromVM( nResultType, pL, (char*)pRetBuf, -1 );
+			else
+			{
+				void* pObject = nullptr;
+				pReturnType->GetFromVM( nResultType, pL, (char*)&pObject, -1 );
+				auto pClassInfo = (const CClassInfo*)( ( nResultType >> 1 ) << 1 );
+				pClassInfo->Assign( this, pRetBuf, pObject );
+			}
+		}
 		lua_settop( pL, nErrFunIndex - 1 );
 		return true;
 	}
@@ -511,9 +522,11 @@ namespace XS
 
 		CScriptLua* pScriptLua = GetScript(pL);
 		pScriptLua->PushLuaState( pL );
-		pInfo->Create( pScriptLua, pObj );                //userdata为对象指针的指针
 		if( pSrc )
-			pInfo->Assign( pScriptLua, pObj, pSrc );
+			pInfo->Clone( pScriptLua, pObj, pSrc );
+		else
+			pInfo->Create( pScriptLua, pObj, nullptr );                //userdata为对象指针的指针
+
 		pScriptLua->PopLuaState();
 		
 		//stack top = 2, 对象指针在栈顶,保存对象的表在下面
@@ -614,11 +627,6 @@ namespace XS
 		return (const wchar_t*)lua_tostring( pL, nStkId );
 	}
 
-//==================================================================================================================================//
-//                                                        对Lua提供的功能性函数                                                        //
-//==================================================================================================================================//
-
-
     //=========================================================================
     // 构造和析构                                            
     //=========================================================================
@@ -645,8 +653,8 @@ namespace XS
 		const CClassInfo* pInfo = (const CClassInfo*)lua_touserdata( pL, -1 );
 		lua_pop( pL, 1 );
 		lua_remove( pL, -2 );
-		NewLuaObj( pL, pInfo, NULL );                //stack top = 1, 返回Obj
-		return 1;                            //stack top = 1, 返回Obj, 留在堆栈里
+		NewLuaObj( pL, pInfo, NULL ); 
+		return 1;
 	}
 
 	//=========================================================================
@@ -703,18 +711,19 @@ namespace XS
 		try
 		{
 			auto& listParam = pCallBase->GetParamList();
-			size_t nParamCount = listParam.size();
+			uint32 nParamCount = (uint32)listParam.size();
 			const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
 			size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
 			size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
 			DataType nResultType = pCallBase->GetResultType();
 			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
-			size_t nArgSize = pCallBase->GetParamCount()*sizeof( void* );
-			char* pDataBuf = (char*)alloca( nParamSize + nReturnSize + nArgSize );
-			char* pResultBuf = pDataBuf + nParamSize;
-			void** pArgArray = (void**)( pResultBuf + nReturnSize );
+			size_t nArgSize = nParamCount*sizeof( void* );
+			char* pDataBuf = (char*)alloca( nParamSize + nArgSize + nReturnSize );
+			void** pArgArray = (void**)( pDataBuf + nParamSize );
+			char* pResultBuf = pDataBuf + nParamSize + nArgSize;
 
 			int32 nStkId = 1;
+
 			//Lua函数最右边的参数，在Lua stack的栈顶,         
 			//放在m_listParam的第一个成员中
 			for( size_t nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
@@ -722,7 +731,7 @@ namespace XS
 				DataType nType = aryParam[nArgIndex];
 				CLuaTypeBase* pParamType = GetLuaTypeBase( nType );
 				pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
-				pArgArray[nArgIndex] = pDataBuf;
+				pArgArray[nArgIndex] = IsValueClass(nType) ? *(void**)pDataBuf : pDataBuf;
 				pDataBuf += aryParamSize[nArgIndex];
 			}
 			lua_settop( pL, 0 );
@@ -731,13 +740,29 @@ namespace XS
 			{
 				pCallBase->Call( nTop > 1 ? NULL : pResultBuf, pArgArray, *pScript );
 				if( nResultType && nTop <= 1 )
-					GetLuaTypeBase( nResultType )->PushToVM( nResultType, pL, pResultBuf );
+				{
+					CLuaTypeBase* pReturnType = GetLuaTypeBase( nResultType );
+					pReturnType->PushToVM( nResultType, pL, pResultBuf );
+					if( IsValueClass( nResultType ) )
+					{
+						auto pClassInfo = (const CClassInfo*)( ( nResultType >> 1 ) << 1 );
+						pClassInfo->Release( pScript, pResultBuf );
+					}
+				}
 			}
 			else
 			{
 				pCallBase->Call( pResultBuf, pArgArray, *pScript );
 				if( nResultType )
-					GetLuaTypeBase( nResultType )->PushToVM( nResultType, pL, pResultBuf );
+				{
+					CLuaTypeBase* pReturnType = GetLuaTypeBase( nResultType );
+					pReturnType->PushToVM( nResultType, pL, pResultBuf );
+					if( IsValueClass( nResultType ) )
+					{
+						auto pClassInfo = (const CClassInfo*)( ( nResultType >> 1 ) << 1 );
+						pClassInfo->Release( pScript, pResultBuf );
+					}
+				}
 			}
 			pScript->PopLuaState();
 			return 1;
@@ -745,23 +770,25 @@ namespace XS
 		catch( std::exception& exp )
 		{
 			char szBuf[256];
-			sprintf( szBuf, "An unknow exception occur on calling %s\n", pCallBase->GetFunctionName().c_str() );
+			sprintf( szBuf, "An unknow exception occur on calling %s\n", 
+				pCallBase->GetFunctionName().c_str() );
 			pScript->Output( szBuf, -1 );
 			luaL_error( pL, exp.what() );
 		}
 		catch( ... )
 		{
 			char szBuf[256];
-			sprintf( szBuf, "An unknow exception occur on calling %s\n", pCallBase->GetFunctionName().c_str() );
+			sprintf( szBuf, "An unknow exception occur on calling %s\n", 
+				pCallBase->GetFunctionName().c_str() );
 			pScript->Output( szBuf, -1 );
 			luaL_error( pL, szBuf );
 		}
 
 		pScript->PopLuaState();
 		return 0;
-	}
-
-    //=========================================================================
+	}    
+	
+	//=========================================================================
     // 类型转换                                                
     //=========================================================================
     int32 CScriptLua::ClassCast( lua_State* pL )
@@ -804,9 +831,6 @@ namespace XS
         lua_getfield( pL, -1, szOldName );
 		void* pObj = (void*)lua_touserdata( pL, -1 );
 		
-		// 不需要调用UnRegisterObject，仅仅恢复虚表即可，
-		// 弱表索引会被RegisterObject自动覆盖
-		// UnRegisterObject( L, pOrgInfo, *ppObj );
 		CScriptLua* pScriptLua = GetScript(pL);
 		pOrgInfo->RecoverVirtualTable( pScriptLua, pObj );
 
@@ -896,7 +920,8 @@ namespace XS
 			ToString( pL );
 			s = lua_tostring( pL, -1 );  /* get result */
 			if( s == NULL )
-				return luaL_error( pL, LUA_QL("tostring") " must return a string to " LUA_QL("print") );
+				return luaL_error( pL, LUA_QL("tostring") 
+					" must return a string to " LUA_QL("print") );
 			if( i > 1 )
 				pScriptLua->Output( "\t", -1 );
 			pScriptLua->Output( s, -1 );
@@ -960,13 +985,11 @@ namespace XS
 		lua_rawget( pL, -4 );
 		const void* pObject = lua_touserdata( pL, -1 );
 		lua_pop( pL, 4 );
-		lua_pushfstring( pL, "%s: %p->%p", pInfo->GetClassName().c_str(), ptr, pObject );
+		lua_pushfstring( pL, "%s: %p->%p", 
+			pInfo->GetClassName().c_str(), ptr, pObject );
 		return 1;
 	}
 
-    //==================================================================================================================================//
-    //                                                        对内部提供的功能性函数                                                        //
-    //==================================================================================================================================//
     void CScriptLua::AddLoader()
     {
 		lua_State* pL = GetLuaState();
@@ -1124,39 +1147,34 @@ namespace XS
 			 const char* szClass = pInfo->GetClassName().c_str();
 			 if( szClass && szClass[0] )
 			 {
-				 //调用完毕之后，lua stack 还有一个值，新的class
 				 lua_getglobal( pL, "class" );
-				 assert( !lua_isnil( pL, -1 ) );            //"class"没被注册
+				 assert( !lua_isnil( pL, -1 ) );
 
 				 int nClassIdx = lua_gettop( pL );
 				 lua_getglobal( pL, szClass );
-				 assert( lua_isnil( pL, -1 ) );            //szClass已被注册
-				 lua_pop( pL, 1 );                        //1
+				 assert( lua_isnil( pL, -1 ) );
+				 lua_pop( pL, 1 ); 
 
-				 //生成全局类名
 				 for( size_t i = 0; i < pInfo->BaseRegist().size(); i++ )
 				 {
 					 auto pBaseInfo = pInfo->BaseRegist()[i].m_pBaseInfo;
 					 assert( pBaseInfo != NULL );
 					 lua_getglobal( pL, pBaseInfo->GetClassName().c_str() );
-					 assert( !lua_isnil( pL, -1 ) );            //Base class do not exsit.
+					 assert( !lua_isnil( pL, -1 ) ); 
 				 }
 
-				 lua_call( pL, (int32)pInfo->BaseRegist().size(), 1 );            //top = 1, the new class 
+				 lua_call( pL, (int32)pInfo->BaseRegist().size(), 1 );
 				 lua_pushvalue( pL, -1 );
-				 lua_setglobal( pL, szClass );            //top = 1, the new class
+				 lua_setglobal( pL, szClass );           
 
-				 //给类设置类属性结构
 				 lua_pushstring( pL, "_info" );
 				 lua_pushlightuserdata( pL, pInfo );
-				 lua_rawset( pL, nClassIdx );            //top = 1
+				 lua_rawset( pL, nClassIdx );
 
-				 //设置垃圾回收函数
 				 lua_pushstring( pL, "__gc" );
 				 lua_pushcfunction( pL, Delete );
-				 lua_rawset( pL, nClassIdx );            //top = 1
+				 lua_rawset( pL, nClassIdx );
 
-				 //将默认的new替换成新的new
 				 lua_pushstring( pL, "ctor" );
 				 lua_pushcfunction( pL, Construct );
 				 lua_rawset( pL, nClassIdx );
@@ -1205,9 +1223,6 @@ namespace XS
 	 }
 #endif
 
-    //==================================================================================================================================//
-    //                                                        对C++提供的功能性函数                                                     //
-    //==================================================================================================================================//
     bool CScriptLua::RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName )
 	{
 		struct SReadContext
@@ -1238,7 +1253,6 @@ namespace XS
 		sprintf( szBuf, "@%s", szFileName );
 		SReadContext Context = { pBuffer, nSize };
 
-		// 通过_ReadString装载字符串的代码块
 		if( GetGlobObject( pL, szFileName ) ||
 			( !lua_load( pL, &SReadContext::Read, &Context, szBuf ) && 
 				SetGlobObject( pL, szFileName ) ) )
@@ -1250,7 +1264,6 @@ namespace XS
 			return re;
 		}
 
-		// 装载失败时移走错误函数，并且从s_setRuningString删除字符串
 		if( !m_bPreventExeInRunBuffer )
 			lua_remove( pL, nErrFunIndex );
 
@@ -1305,13 +1318,13 @@ namespace XS
 	{
 		lua_State* pL = GetLuaState();
 		int32 nTop = lua_gettop( pL );
-		// 从全局对象表查找pObj对应的table，table必须存在
+
 		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
-		lua_rawget( pL, LUA_REGISTRYINDEX );		    // nStk = 1
+		lua_rawget( pL, LUA_REGISTRYINDEX );
 		assert( !lua_isnil( pL, -1 ) );  
 
-		lua_pushlightuserdata( pL, pObj );              // nStk = 2
-		lua_gettable( pL, -2 );							// nStk = 2
+		lua_pushlightuserdata( pL, pObj );
+		lua_gettable( pL, -2 );		
 
 		if( lua_isnil( pL, -1 ) )
 		{
@@ -1319,34 +1332,31 @@ namespace XS
 			return;
 		}
 
-		lua_getmetatable( pL, -1 );						// nStk = 3
+		lua_getmetatable( pL, -1 );
 		if( !lua_isnil( pL, -1 ) )
 		{
 			struct SClearClassInfo
 			{
 				static void Run( lua_State* pL, int32 nObj )
 				{
-					lua_getfield( pL, -1, "_info" );				// nStk = 4
-					void* pData = lua_touserdata( pL, -1 );		// nStk = 4
+					lua_getfield( pL, -1, "_info" );
+					void* pData = lua_touserdata( pL, -1 );
 					if( pData )
 					{
 						const CClassInfo* pInfo = (const CClassInfo*)pData;
-						lua_pushstring( pL, pInfo->GetObjectIndex().c_str() );	// nStk = 5
+						lua_pushstring( pL, pInfo->GetObjectIndex().c_str() );
 						lua_rawget( pL, nObj );			
 						void* pObj = lua_touserdata( pL, -1 );
 						if( pObj )
 						{
 							int32 nTop = lua_gettop( pL );
-							// 从全局对象表查找pObj对应的table，table必须存在
 							lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
-							lua_rawget( pL, LUA_REGISTRYINDEX );		    // nStk = 1
+							lua_rawget( pL, LUA_REGISTRYINDEX );
 							assert( !lua_isnil( pL, -1 ) );  
 
-							lua_pushlightuserdata( pL, pObj );              // nStk = 2
-							lua_gettable( pL, -2 );							// nStk = 2
+							lua_pushlightuserdata( pL, pObj );
+							lua_gettable( pL, -2 );
 
-							// 这里不需要恢复虚表，因为当基类析构时虚表自然恢复了，
-							// 而且恢复虚表可能会发生内存越界，因为pObj已经释放了
 							RemoveFromLua( pL, pInfo, pObj, nTop + 1, nTop + 2 );
 
 							lua_pushnil( pL );

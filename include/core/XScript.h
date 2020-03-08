@@ -15,8 +15,8 @@
 */
 #define DEFINE_CLASS_BEGIN( _class, ... ) \
 	DEFINE_CLASS_BEGIN_IMPLEMENT( TGetVTable<_class>, true, _class, ##__VA_ARGS__)
-#define DEFINE_CLASS_END() \
-	DEFINE_CLASS_END_IMPLEMENT( TGetVTable<_class>, true )
+#define DEFINE_CLASS_END( ... ) \
+	DEFINE_CLASS_END_IMPLEMENT( TGetVTable<_class>, true, ##__VA_ARGS__ )
 
 /**
 * @brief  Register the class which can not be duplicated
@@ -27,8 +27,8 @@
 */
 #define DEFINE_UNDUPLICATABLE_CLASS_BEGIN( _class, ... ) \
 	DEFINE_CLASS_BEGIN_IMPLEMENT( TGetVTable<_class>, false, _class, ##__VA_ARGS__)
-#define DEFINE_UNDUPLICATABLE_CLASS_END() \
-	DEFINE_CLASS_END_IMPLEMENT( TGetVTable<_class>, false )
+#define DEFINE_UNDUPLICATABLE_CLASS_END( ... ) \
+	DEFINE_CLASS_END_IMPLEMENT( TGetVTable<_class>, false, ##__VA_ARGS__ )
 
 /**
 * @brief  Register the class which can not be instantiated
@@ -39,8 +39,8 @@
 */
 #define DEFINE_ABSTRACT_CLASS_BEGIN( _class, ... ) \
 	DEFINE_CLASS_BEGIN_IMPLEMENT( TGetVTable<void>, nullptr, _class, ##__VA_ARGS__)
-#define DEFINE_ABSTRACT_CLASS_END() \
-	DEFINE_CLASS_END_IMPLEMENT( TGetVTable<void>, nullptr )
+#define DEFINE_ABSTRACT_CLASS_END( ... ) \
+	DEFINE_CLASS_END_IMPLEMENT( TGetVTable<void>, nullptr, ##__VA_ARGS__ )
 
 /**
 * @brief  Register the class's virtual destructor

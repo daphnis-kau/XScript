@@ -11,6 +11,50 @@
 
 namespace XS
 {
+	///< Function calling wrapper
+	template< typename T >
+	struct ArgFetcher
+	{
+		static inline T& CallWrapArg( void* pData )
+		{ 
+			return *(T*)pData; 
+		}
+
+		static inline void* CallBackArg( T*& pData )
+		{ 
+			return pData; 
+		}
+	};
+
+	template<typename T>
+	struct ArgFetcher<T&>
+	{
+		static inline T& CallWrapArg( void* pData ) 
+		{ 
+			return **(T**)pData; 
+		}
+
+		static inline void* CallBackArg( T*& pData ) 
+		{
+			return &pData; 
+		}
+	};
+
+	template<> struct ArgFetcher<const char		&> : public ArgFetcher<char		> {};
+	template<> struct ArgFetcher<const int8		&> : public ArgFetcher<int8		> {};
+	template<> struct ArgFetcher<const int16	&> : public ArgFetcher<int16	> {};
+	template<> struct ArgFetcher<const int32	&> : public ArgFetcher<int32	> {};
+	template<> struct ArgFetcher<const int64	&> : public ArgFetcher<int64	> {};
+	template<> struct ArgFetcher<const long		&> : public ArgFetcher<long		> {};
+	template<> struct ArgFetcher<const wchar_t	&> : public ArgFetcher<wchar_t	> {};
+	template<> struct ArgFetcher<const uint8	&> : public ArgFetcher<uint8	> {};
+	template<> struct ArgFetcher<const uint16	&> : public ArgFetcher<uint16	> {};
+	template<> struct ArgFetcher<const uint32	&> : public ArgFetcher<uint32	> {};
+	template<> struct ArgFetcher<const uint64	&> : public ArgFetcher<uint64	> {};
+	template<> struct ArgFetcher<const ulong	&> : public ArgFetcher<ulong	> {};
+	template<> struct ArgFetcher<const float	&> : public ArgFetcher<float	> {};
+	template<> struct ArgFetcher<const double	&> : public ArgFetcher<double	> {};
+
 	///< Capture compile error
 	template<bool bCompileSucceed> struct TCompileSucceed {};
 	template<> struct TCompileSucceed<true> { struct Succeeded {}; };
@@ -28,6 +72,10 @@ namespace XS
 	{ TCopy( void* pDest, void* pSrc ) { *(_T*)pDest = *(_T*)pSrc; } };
 	template<typename _T> struct TCopy<_T, false> 
 	{ TCopy( void* pDest, void* pSrc ) { throw( "Can not duplicate object" ); } };
+	template<typename _T, bool bDuplicatable> struct TCopyConstruct
+	{ TCopyConstruct( void* pDest, void* pSrc ) { new( pDest )_T( *(_T*)pSrc ); } };
+	template<typename _T> struct TCopyConstruct<_T, false>
+	{ TCopyConstruct( void* pDest, void* pSrc ) { throw( "Can not duplicate object" ); } };
 
 	template<typename ClassType>
 	struct TGetVTable : public ClassType
@@ -63,17 +111,43 @@ namespace XS
 	};
 
 	///< Construct the object
-	template<typename GetVTableType, typename ClassType, bool bDuplicatable>
-	struct TConstruct : public IObjectConstruct
+	template<typename GetVTableType, typename ClassType, bool bDuplicatable, typename... Param>
+	class TConstruct : public IObjectConstruct
 	{
+		template<typename... RemainParam> struct TFetchParam {};
+		template<> struct TFetchParam<>
+		{
+			template<typename... FetchParam>
+			static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam&...p )
+			{
+				return new( pObj )ClassType( p... );
+			}
+		};
+
+		template<typename FirstParam, typename... RemainParam>
+		struct TFetchParam<FirstParam, RemainParam...>
+		{
+			template<typename... FetchParam>
+			static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam&...p )
+			{
+				FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( aryArg[nIndex] );
+				return TFetchParam<RemainParam...>::Construct( nIndex + 1, pObj, aryArg, p..., f );
+			}
+		};
+	public:
 		virtual void Assign( void* pDest, void* pSrc )
 		{
 			TCopy<ClassType, bDuplicatable>( pDest, pSrc );
 		}
 
-		virtual void Construct( void* pObj )
+		virtual void CopyConstruct( void* pDest, void* pSrc )
 		{
-			ClassType* pNew = new( pObj )ClassType;
+			TCopyConstruct<ClassType, bDuplicatable>( pDest, pSrc );
+		}
+
+		virtual void Construct( void* pObj, void** aryArg )
+		{
+			ClassType* pNew = TFetchParam<Param...>::Construct( 0, pObj, aryArg );
 			if( !GetVTableType::GetFunInst() )
 				return;
 			( ( XS::SVirtualObj* )pNew )->m_pTable = GetVTableType::GetVTbInst();
@@ -92,8 +166,8 @@ namespace XS
 	};
 
 	template<typename ClassType, bool bDuplicatable>
-	struct TConstruct<TGetVTable<void>, ClassType, bDuplicatable>
-	{ static IObjectConstruct* Inst() { return nullptr; } };
+	class TConstruct<TGetVTable<void>, ClassType, bDuplicatable>
+	{ public: static IObjectConstruct* Inst() { return nullptr; } };
 
 	///< Put all function register in a list and invoke them recursively
 	class CScriptRegisterNode : public TList<CScriptRegisterNode>::CListNode
@@ -160,36 +234,6 @@ namespace XS
 		STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
 		return TypeInfo;
 	}
-
-	///< Function calling wrapper
-	template< typename T > 
-	struct ArgFetcher
-	{ 
-		static inline T& CallWrapArg( void* pData )		{ return *(T*)pData; }	
-		static inline void* CallBackArg( T*& pData )	{ return pData; }
-	};
-
-	template<typename T> 
-	struct ArgFetcher<T&>
-	{ 
-		static inline T& CallWrapArg( void* pData )		{ return **(T**)pData; } 
-		static inline void* CallBackArg( T*& pData )	{ return &pData; }
-	};
-	
-	template<> struct ArgFetcher<const char		&> : public ArgFetcher<char		> {};
-	template<> struct ArgFetcher<const int8		&> : public ArgFetcher<int8		> {};
-	template<> struct ArgFetcher<const int16	&> : public ArgFetcher<int16	> {};
-	template<> struct ArgFetcher<const int32	&> : public ArgFetcher<int32	> {};
-	template<> struct ArgFetcher<const int64	&> : public ArgFetcher<int64	> {};
-	template<> struct ArgFetcher<const long		&> : public ArgFetcher<long		> {};
-	template<> struct ArgFetcher<const wchar_t	&> : public ArgFetcher<wchar_t	> {};
-	template<> struct ArgFetcher<const uint8	&> : public ArgFetcher<uint8	> {};
-	template<> struct ArgFetcher<const uint16	&> : public ArgFetcher<uint16	> {};
-	template<> struct ArgFetcher<const uint32	&> : public ArgFetcher<uint32	> {};
-	template<> struct ArgFetcher<const uint64	&> : public ArgFetcher<uint64	> {};
-	template<> struct ArgFetcher<const ulong	&> : public ArgFetcher<ulong	> {};
-	template<> struct ArgFetcher<const float	&> : public ArgFetcher<float	> {};
-	template<> struct ArgFetcher<const double	&> : public ArgFetcher<double	> {};
 
 	template<typename RetType, typename... Param >
 	class TFunctionWrap : public IFunctionWrap
@@ -301,7 +345,7 @@ namespace XS
 		};
 
 		template<typename RetType, typename ClassType, typename... Param >
-		class TCallBackWrap
+		class TCallBackWrap : public IFunctionWrap
 		{
 		public:
 			static int32& GetCallBackIndex()
@@ -323,7 +367,69 @@ namespace XS
 				return WrapAddress( &p ... );
 			}
 
-			typedef decltype(&TCallBackWrap::BootFunction) FunctionType;
+			typedef decltype( &TCallBackWrap::BootFunction ) FunctionType;
+
+		private:
+			template< typename Type > struct TFetchResult
+			{
+				TFetchResult( FunctionType funCall, void* pRetBuf, TCallBackWrap* pObj, Param...p )
+				{
+					Type result = (pObj->*funCall)( p... );
+					new( pRetBuf ) Type( result );
+				}
+			};
+
+			template< typename Type > struct TFetchResult<Type&>
+			{
+				TFetchResult( FunctionType funCall, void* pRetBuf, TCallBackWrap* pObj, Param...p )
+				{
+					*(Type**)pRetBuf = &( ( pObj->*funCall )( p... ) );
+				}
+			};
+
+			template<> struct TFetchResult<void>
+			{
+				TFetchResult( FunctionType funCall, void* pRetBuf, TCallBackWrap* pObj, Param...p )
+				{
+					( pObj->*funCall )( p... );
+				}
+			};
+
+			template<typename... RemainParam> struct TFetchParam {};
+			template<> struct TFetchParam<>
+			{
+				template<typename... FetchParam>
+				static void CallFun( size_t nIndex, FunctionType funCall,
+					void* pRetBuf, TCallBackWrap* pObj, void** pArgArray, FetchParam&...p )
+				{
+					TFetchResult<RetType> Temp( funCall, pRetBuf, pObj, p... );
+				}
+			};
+
+			template<typename FirstParam, typename... RemainParam>
+			struct TFetchParam<FirstParam, RemainParam...>
+			{
+				template<typename... FetchParam>
+				static void CallFun( size_t nIndex, FunctionType funCall,
+					void* pRetBuf, TCallBackWrap* pObj, void** pArgArray, FetchParam&...p )
+				{
+					FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( pArgArray[nIndex] );
+					TFetchParam<RemainParam...>::CallFun( nIndex + 1, funCall, pRetBuf, pObj, pArgArray, p..., f );
+				}
+			};
+
+		public:
+			void Call( void* pRetBuf, void** pArgArray, uintptr_t funRaw )
+			{
+				TCallBackWrap* pObj = *(TCallBackWrap**)pArgArray[0];
+				TFetchParam<Param...>::CallFun( 0, *(FunctionType*)&funRaw, pRetBuf, pObj, pArgArray + 1 );
+			}
+
+			static TCallBackWrap* GetInst()
+			{
+				static TCallBackWrap s_Inst;
+				return &s_Inst;
+			}
 		};
 	public:
 		static XS::SFunctionTable* GetVirtualTable( void* p )
@@ -341,8 +447,7 @@ namespace XS
 		static void Bind( bool bPureVirtual, const char* szFunName,
 			RetType(ClassType::*pFun)(Param...) )
 		{
-			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;		
-			typedef TFunctionWrap<RetType, ClassType*, Param...> FunctionWrap;
+			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;	
 
 			/**
 			* @note If compile error occur, it is mean the size of FunctionType 
@@ -352,7 +457,7 @@ namespace XS
 			typedef TClassSizeEqual<CallBackWrap::FunctionType, uintptr_t> SizeCheck;
 			typedef typename SizeCheck::Succeeded Succeeded;
 
-			IFunctionWrap* pWrap = FunctionWrap::GetInst();
+			IFunctionWrap* pWrap = CallBackWrap::GetInst();
 			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
 			CallBackWrap::FunctionType funBoot = &CallBackWrap::BootFunction;
 			CallBackWrap::GetCallBackIndex() = GetVirtualFunIndex(pFun);
@@ -453,16 +558,37 @@ namespace XS
 	{
 	public:
 		void Call( void* pRetBuf, void** pArgArray, uintptr_t funContext )
-		{ 
-			*(MemberType*)( (*(char**)pArgArray[0]) + funContext ) =
-			ArgFetcher<MemberType>::CallWrapArg( pArgArray[1] );
+		{
+			*(MemberType*)( ( *(char**)pArgArray[0] ) + funContext ) =
+				ArgFetcher<MemberType>::CallWrapArg( pArgArray[1] );
 		}
 		static IFunctionWrap* GetInst() { static TMemberSetWrap s_Inst; return &s_Inst; }
 	};
 
 	template<typename MemberType>
+	class TMemberSetWrapObject : public IFunctionWrap
+	{
+	public:
+		void Call( void* pRetBuf, void** pArgArray, uintptr_t funContext )
+		{
+			*(MemberType*)( ( *(char**)pArgArray[0] ) + funContext ) =
+				ArgFetcher<MemberType>::CallWrapArg( *(void**)pArgArray[1] );
+		}
+		static IFunctionWrap* GetInst() { static TMemberSetWrapObject s_Inst; return &s_Inst; }
+	};
+
+	template<typename MemberType>
 	inline IFunctionWrap* CreateMemberSetWrap( MemberType* )
 	{
+		static STypeInfo MemberInfo = GetTypeInfo<MemberType>();
+		if( ( ( MemberInfo.m_nType >> 24 ) == eDT_class &&
+			( ( MemberInfo.m_nType >> 20 )&0xf ) < eDTE_Pointer &&
+			( ( MemberInfo.m_nType >> 16 )&0xf ) < eDTE_Pointer &&
+			( ( MemberInfo.m_nType >> 12 )&0xf ) < eDTE_Pointer &&
+			( ( MemberInfo.m_nType >>  8 )&0xf ) < eDTE_Pointer &&
+			( ( MemberInfo.m_nType >>  4 )&0xf ) < eDTE_Pointer &&
+			( ( MemberInfo.m_nType )&0xf ) < eDTE_Pointer ) )
+			return TMemberSetWrapObject<MemberType>::GetInst();
 		return TMemberSetWrap<MemberType>::GetInst();
 	}
 

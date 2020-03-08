@@ -46,7 +46,6 @@ namespace XS
 		IFunctionWrap*			GetFunWrap()		const { return m_funWrap; }
 		const DataTypeArray&	GetParamList()		const { return m_listParam; }
 		DataType				GetResultType()		const { return m_nResult; }
-		uint32					GetParamCount()		const { return m_nParamCount; }
 		int32					GetFunctionIndex()	const { return m_nFunIndex; }
 		const const_string&		GetFunctionName()	const { return m_sFunName; }
 
@@ -56,7 +55,6 @@ namespace XS
 		const_string			m_sFunName;
 		DataType				m_nResult;
 		DataTypeArray			m_listParam;
-		uint32					m_nParamCount;
 		int32					m_nFunIndex;
 	};
 

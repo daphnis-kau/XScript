@@ -29,10 +29,10 @@
 	typedef struct _first : public CGetClassVTable{}
 
 
-#define DEFINE_CLASS_END_IMPLEMENT( _get_vtable_class, _type ) _last;\
+#define DEFINE_CLASS_END_IMPLEMENT( _get_vtable_class, _type, ... ) _last;\
 	struct _class : public _last {}; \
 	static XS::SGlobalExe _class_fun_register( listRegister.GetFirst()->Register() ); \
-	typedef TConstruct<_get_vtable_class, _class, _type> ConstructType; \
+	typedef TConstruct<_get_vtable_class, _class, _type, ##__VA_ARGS__> ConstructType; \
 	static XS::SGlobalExe _class_construct_register( \
 	XS::CScriptBase::RegisterConstruct( ConstructType::Inst(), typeid( org_##_type ).name() ) ); }
 

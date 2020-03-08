@@ -64,9 +64,10 @@ namespace XS
 		static const CCallInfo*			RegisterCallBack( const char* szTypeInfoName, uint32 nIndex, CCallbackInfo* pCallScriptBase );
 		static const CTypeIDNameMap&	GetAllRegisterInfo();
 
-		void							Create( CScriptBase* pScript, void * pObject ) const;
-		void							Assign( CScriptBase* pScript, void* pDest, void* pSrc ) const;
+		void							Create( CScriptBase* pScript, void* pObject, void** aryArg ) const;
+		void							Clone( CScriptBase* pScript, void* pDest, void* pSrc ) const;
 		void                        	Release( CScriptBase* pScript, void * pObject ) const;
+		void							Assign( CScriptBase* pScript, void* pDest, void* pSrc ) const;
 		void							InitVirtualTable( SFunctionTable* pNewTable ) const;
 		int32							GetMaxRegisterFunctionIndex() const;
         void                            ReplaceVirtualTable( CScriptBase* pScript, void* pObj, bool bNewByVM, uint32 nInheritDepth ) const;

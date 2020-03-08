@@ -90,6 +90,11 @@ namespace XS
 		}
 	}
 
+	bool IsValueClass( DataType nType )
+	{
+		return nType > eDT_enum && !( nType & 1 );
+	}
+
 	size_t GetSizeOfType( DataType nType )
 	{
 		if( nType <= eDT_enum )

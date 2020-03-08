@@ -35,20 +35,36 @@ end
 g_handler = CApplicationHandler:new();
 g_App = CApplication.GetInst();
 
-function g_App:TestVirtual( v0, v1, v2 )
-	Test( v0:szName() == "sampler" and v0:nID() == 12345, "Test object value to Script" );
-	Test( v1:szName() == "sampler" and v1:nID() == 12345, "Test object reference to Script" );
-	Test( v2:szName() == "sampler" and v2:nID() == 12345, "Test object pointer to Script" );
-	Test( v2 == v1 and v0 ~= v2, "Test object value copy to Script" );
-	return v1
+local address = SAddress:new();
+address:nIP(123456789);
+address:nPort(1234);
+
+local config = SApplicationConfig:new();
+
+function g_App:TestVirtualObjectPointer( Handler )
+	Test( g_handler == Handler, "Test object pointer to Script" );
+	return CApplication.TestVirtualObjectPointer( self, Handler )
+end
+
+function g_App:TestVirtualObjectReference( Config )
+	Test( config == Config, "Test object reference to Script" );
+	return CApplication.TestVirtualObjectReference( self, Config )
+end
+
+function g_App:TestVirtualObjectValue( Config )
+	Test( config ~= Config, "Test object value to Script" );
+	return CApplication.TestVirtualObjectValue( self, Config )
 end
 
 function StartApplication( name, id )
-	local config = SApplicationConfig:new();
 	config:szName( name );
 	config:nID( id );
+	config:Address( address );
 
-	Test( g_App:TestCallObject(g_handler, config, config, config) == config, "Test return obj" );
+	Test( config:Address():nIP() == 123456789 and config:Address():nPort() == 1234, "Test object value member" );
+	Test( g_App:TestCallObjectPointer(g_handler) == g_handler, "Test return obj pointer" );
+	Test( g_App:TestCallObjectReference(config) == config, "Test return obj reference" );
+	Test( g_App:TestCallObjectValue(config) ~= config, "Test return obj value " );
 	Test( g_App:TestCallPOD(1234, -123, -12345, -12345678, -1234567891011, -123456789, 123, 12345, 
 		12345678, 1234567891011, 123456789, 1234567, 123456789101112, "abcdefg", "abcdefg") == "OK",
 		"Test return string" );

@@ -233,7 +233,7 @@ namespace XS
 		( (CDebugJS*)( pScript->GetDebugger() ) )->Stop();
 	}
 
-	void SV8Context::Callback( const v8::FunctionCallbackInfo<v8::Value>& args )
+	void SV8Context::CallFromV8( const v8::FunctionCallbackInfo<v8::Value>& args )
 	{
 		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast( args.Data() );
 		SCallInfo* pCallInfo = (SCallInfo*)wrap->Value();
@@ -247,16 +247,16 @@ namespace XS
 		try
 		{
 			auto& listParam = pCallBase->GetParamList();
-			size_t nParamCount = listParam.size();
+			uint32 nParamCount = (uint32)listParam.size();
 			const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
 			size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
 			size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
 			DataType nResultType = pCallBase->GetResultType();
 			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
-			size_t nArgSize = pCallBase->GetParamCount()*sizeof( void* );
-			char* pDataBuf = (char*)alloca( nParamSize + nReturnSize + nArgSize );
-			char* pResultBuf = pDataBuf + nParamSize;
-			void** pArgArray = (void**)( pResultBuf + nReturnSize );
+			size_t nArgSize = nParamCount*sizeof( void* );
+			char* pDataBuf = (char*)alloca( nParamSize + nArgSize + nReturnSize );
+			void** pArgArray = (void**)( pDataBuf + nParamSize );
+			char* pResultBuf = pDataBuf + nParamSize + nArgSize;
 
 			int32 nFunctionIndex = pCallBase->GetFunctionIndex();
 			int32 nArgCount = args.Length();
@@ -275,7 +275,7 @@ namespace XS
 					pParamType->FromVMValue( nType, Script, pDataBuf, args[nArgIndex] );
 				else
 					pParamType->FromVMValue( nType, Script, pDataBuf, undefined );
-				pArgArray[nParamIndex] = pDataBuf;
+				pArgArray[nParamIndex] = IsValueClass( nType ) ? *(void**)pDataBuf : pDataBuf;
 				pDataBuf += aryParamSize[nParamIndex];
 			}
 
@@ -284,6 +284,11 @@ namespace XS
 				return;
 			CJSTypeBase* pReturnType = GetJSTypeBase( nResultType );
 			args.GetReturnValue().Set( pReturnType->ToVMValue( nResultType, Script, pResultBuf ) );
+			if( IsValueClass( nResultType ) )
+			{
+				auto pClassInfo = (const CClassInfo*)( ( nResultType >> 1 ) << 1 );
+				pClassInfo->Release( &Script, pResultBuf );
+			}
 		}
 		catch( ... )
 		{
@@ -351,7 +356,7 @@ namespace XS
 		pInfo->m_pScript->GetV8Context().UnbindObj( pObjectInfo, true );
 	}
 
-	void SV8Context::GetterCallback( v8::Local<v8::Name> property, 
+	void SV8Context::GetterFromV8( v8::Local<v8::Name> property, 
 		const v8::PropertyCallbackInfo<v8::Value>& info )
 	{
 		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast( info.Data() );
@@ -380,13 +385,18 @@ namespace XS
 				return;
 			CJSTypeBase* pReturnType = GetJSTypeBase( nResultType );
 			info.GetReturnValue().Set( pReturnType->ToVMValue( nResultType, Script, pResultBuf ) );
+			if( IsValueClass( nResultType ) )
+			{
+				auto pClassInfo = (const CClassInfo*)( ( nResultType >> 1 ) << 1 );
+				pClassInfo->Release( &Script, pResultBuf );
+			}
 		}
 		catch( ... )
 		{
 		}
 	}
 
-	void SV8Context::SetterCallback( v8::Local<v8::Name> property, 
+	void SV8Context::SetterFromV8( v8::Local<v8::Name> property, 
 		LocalValue value, const v8::PropertyCallbackInfo<void>& info )
 	{
 		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast( info.Data() );
@@ -413,7 +423,8 @@ namespace XS
 			LocalValue undefined = Undefined(isolate);
 			CJSTypeBase* pParamType = GetJSTypeBase( nType );
 			pParamType->FromVMValue( nType, Script, pDataBuf, value );
-			void* aryArg[] = { &pObject, pDataBuf, nullptr };
+			void* pArg = IsValueClass( nType ) ? *(void**)pDataBuf : pDataBuf;
+			void* aryArg[] = { &pObject, pArg, nullptr };
 			pCallBase->Call( NULL, aryArg, Script );
 		}
 		catch (...)
@@ -429,9 +440,10 @@ namespace XS
 		if( !pObject )
 		{
 			pObject = new tbyte[pInfo->GetClassSize()];
-			pInfo->Create( m_pScript, pObject );
 			if( pSrc )
-				pInfo->Assign( m_pScript, pObject, pSrc );
+				pInfo->Clone( m_pScript, pObject, pSrc );
+			else
+				pInfo->Create( m_pScript, pObject, nullptr );
 			ObjectInfo.m_bRecycle = true;
 		}
 

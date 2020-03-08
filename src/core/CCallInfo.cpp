@@ -27,7 +27,6 @@ namespace XS
 		for( uint32 i = 0; i < aryTypeInfo.nSize - 1; i++ )
 			m_listParam.push_back( ToDataType( aryTypeInfo.aryInfo[i] ) );
 		m_nResult = ToDataType( aryTypeInfo.aryInfo[aryTypeInfo.nSize - 1] );
-		m_nParamCount = (uint32)m_listParam.size();
 	}
 	
 	void CCallInfo::Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const
@@ -48,7 +47,6 @@ namespace XS
 	{
 		DataType nType = ToDataType( aryTypeInfo.aryInfo[1] );
 		m_listParam.push_back( nType );
-		m_nParamCount = 1;
 	}
 
 	void CMemberInfo::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script) const

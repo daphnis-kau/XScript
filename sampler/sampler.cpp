@@ -4,15 +4,22 @@
 #include <direct.h>
 #endif
 
+#include <stdio.h>
 #include <chrono>
 #include <thread>
 
 #include "sampler.h"
 #include "CApplication.h"
 
+DEFINE_CLASS_BEGIN( SAddress )
+	REGIST_CLASSMEMBER( nIP )
+	REGIST_CLASSMEMBER( nPort )
+DEFINE_CLASS_END();
+
 DEFINE_CLASS_BEGIN( SApplicationConfig )
 	REGIST_CLASSMEMBER( szName )
 	REGIST_CLASSMEMBER( nID )
+	REGIST_CLASSMEMBER( Address )
 DEFINE_CLASS_END();
 
 DEFINE_CLASS_BEGIN( IApplicationHandler )
@@ -22,10 +29,14 @@ DEFINE_CLASS_END();
 
 DEFINE_ABSTRACT_CLASS_BEGIN( CApplication )
 	REGIST_DESTRUCTOR()
-	REGIST_CLASSFUNCTION( TestCallObject )
+	REGIST_CLASSFUNCTION( TestCallObjectPointer )
+	REGIST_CLASSFUNCTION( TestCallObjectReference )
+	REGIST_CLASSFUNCTION( TestCallObjectValue )
+	REGIST_CALLBACKFUNCTION( TestVirtualObjectPointer )
+	REGIST_CALLBACKFUNCTION( TestVirtualObjectReference )
+	REGIST_CALLBACKFUNCTION( TestVirtualObjectValue )
 	REGIST_CLASSFUNCTION( TestCallPOD )
 	REGIST_CLASSFUNCTION( TestNoParamFunction )
-	REGIST_CALLBACKFUNCTION( TestVirtual )
 	REGIST_STATICFUNCTION( GetInst )
 DEFINE_ABSTRACT_CLASS_END();
 
@@ -44,8 +55,33 @@ CScriptBase* CreateScript(const char* szFilePath)
 
 int main( int argc, const char* argv[] )
 {
-	CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
-	//CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
+	while(true)
+	{
+		FILE* fp = fopen( "lua/test.lua", "rb" );
+		if(fp)
+		{
+			fclose( fp );
+			break;
+		}
+
+#ifdef _WIN32
+		printf( 
+			"Can not find the sampler scripte file. \n"
+			"Please enter the path of sampler folder.\n"
+			"Such as: C:\\XScript\\sampler\n" );
+#else
+		printf(
+			"Can not find the sampler scripte file. \n"
+			"Please enter the path of sampler folder.\n"
+			"Such as: /XScript/sampler\n" );
+#endif
+		char szDir[256];
+		scanf( "%s", szDir );
+		chdir( szDir );
+	}
+
+	//CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
+	CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
 
 	while( true )
 	{

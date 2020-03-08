@@ -27,7 +27,8 @@ namespace XS
 	{
 	public:
 		virtual void		Assign( void*, void* ) = 0;
-		virtual void		Construct( void* ) = 0;
+		virtual void		CopyConstruct( void*, void* ) = 0;
+		virtual void		Construct( void*, void** ) = 0;
 		virtual void		Destruct( void* ) = 0;
 	};
 
