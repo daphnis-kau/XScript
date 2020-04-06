@@ -23,7 +23,7 @@ DEFINE_CLASS_BEGIN( SApplicationConfig )
 	REGIST_CLASSMEMBER( Address )
 DEFINE_CLASS_END();
 
-DEFINE_CLASS_BEGIN( IApplicationHandler )
+DEFINE_UNDUPLICATABLE_CLASS_BEGIN( IApplicationHandler )
 	REGIST_PUREVIRTUALFUNCTION( OnTestPureVirtual )
 	REGIST_PUREVIRTUALFUNCTION( OnTestNoParamPureVirtual )
 DEFINE_CLASS_END();
@@ -39,7 +39,7 @@ DEFINE_ABSTRACT_CLASS_BEGIN( CApplication )
 	REGIST_CLASSFUNCTION( TestCallPOD )
 	REGIST_CLASSFUNCTION( TestNoParamFunction )
 	REGIST_STATICFUNCTION( GetInst )
-DEFINE_ABSTRACT_CLASS_END();
+DEFINE_CLASS_END();
 
 REGIST_GLOBALFUNCTION( AligenUp )
 
@@ -81,8 +81,8 @@ int main( int argc, const char* argv[] )
 		chdir( szDir );
 	}
 
-	CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
-	//CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
+	//CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
+	CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
 
 	while( true )
 	{

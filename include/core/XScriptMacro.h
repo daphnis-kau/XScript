@@ -23,18 +23,18 @@
 		XS::TInheritInfo<_class, ##__VA_ARGS__>::Types().data(), \
 		XS::TInheritInfo<_class, ##__VA_ARGS__>::Values().data() ) ); \
 	static XS::CScriptRegisterList listRegister; \
+	static const auto bDuplicatable = _type; \
 	typedef _class org_class; \
-	typedef _class org_##_type; \
 	typedef _get_vtable_class CGetClassVTable;\
 	typedef struct _first : public CGetClassVTable{}
 
 
-#define DEFINE_CLASS_END_IMPLEMENT( _get_vtable_class, _type, ... ) _last;\
+#define DEFINE_CLASS_END() _last;\
 	struct _class : public _last {}; \
 	static XS::SGlobalExe _class_fun_register( listRegister.GetFirst()->Register() ); \
-	typedef TConstruct<_get_vtable_class, _class, _type, ##__VA_ARGS__> ConstructType; \
+	typedef TConstruct<CGetClassVTable, _class, bDuplicatable> ConstructType; \
 	static XS::SGlobalExe _class_construct_register( \
-	XS::CScriptBase::RegisterConstruct( ConstructType::Inst(), typeid( org_##_type ).name() ) ); }
+	XS::CScriptBase::RegisterConstruct( ConstructType::Inst(), typeid( org_class ).name() ) ); }
 
 
 #define REGIST_CLASSFUNCTION_IMPLEMENT( _function_type, _function, _function_name ) \
