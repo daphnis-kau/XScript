@@ -14,7 +14,7 @@
 *	DEFINE_CLASS_END()\n
 */
 #define DEFINE_CLASS_BEGIN( _class, ... ) \
-	DEFINE_CLASS_BEGIN_IMPLEMENT( TGetVTable<_class>, true, _class, ##__VA_ARGS__)
+	DEFINE_CLASS_BEGIN_IMPLEMENT( eConstructType_Normal, _class, ##__VA_ARGS__)
 
 /**
 * @brief  Register the class which can not be duplicated
@@ -24,7 +24,7 @@
 *	DEFINE_CLASS_END()\n
 */
 #define DEFINE_UNDUPLICATABLE_CLASS_BEGIN( _class, ... ) \
-	DEFINE_CLASS_BEGIN_IMPLEMENT( TGetVTable<_class>, false, _class, ##__VA_ARGS__)
+	DEFINE_CLASS_BEGIN_IMPLEMENT( eConstructType_Unduplicatable, _class, ##__VA_ARGS__)
 
 /**
 * @brief  Register the class which can not be instantiated
@@ -34,7 +34,7 @@
 *	DEFINE_CLASS_END()\n
 */
 #define DEFINE_ABSTRACT_CLASS_BEGIN( _class, ... ) \
-	DEFINE_CLASS_BEGIN_IMPLEMENT( TGetVTable<void>, nullptr, _class, ##__VA_ARGS__)
+	DEFINE_CLASS_BEGIN_IMPLEMENT( eConstructType_Abstract, _class, ##__VA_ARGS__)
 
 /**
 * @brief  Register the class's virtual destructor

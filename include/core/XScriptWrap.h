@@ -66,6 +66,24 @@ namespace XS
 		typedef typename CCompileSucceed::Succeeded Succeeded;
 	};
 
+	///< Fetch function type
+	template<typename RetType, typename... Param>
+	inline STypeInfoArray MakeFunArg()
+	{
+		static STypeInfo aryInfo[] =
+		{ GetTypeInfo<Param>()..., GetTypeInfo<RetType>() };
+		STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
+		return TypeInfo;
+	}
+
+	///< Construct Type
+	enum EConstructType
+	{
+		eConstructType_Normal,
+		eConstructType_Unduplicatable,
+		eConstructType_Abstract,
+	};
+
 	///< Get original virtual table
 	typedef SFunctionTable* ( *GetVirtualTableFun )( void* );
 	template<typename _T, bool bDuplicatable> struct TCopy 
@@ -77,7 +95,7 @@ namespace XS
 	template<typename _T> struct TCopyConstruct<_T, false>
 	{ TCopyConstruct( void* pDest, void* pSrc ) { throw( "Can not duplicate object" ); } };
 
-	template<typename ClassType>
+	template<typename ClassType, EConstructType eType, typename... Param>
 	struct TGetVTable : public ClassType
 	{
 		static GetVirtualTableFun& GetFunInst()
@@ -92,7 +110,8 @@ namespace XS
 			return s_table;
 		}
 
-		TGetVTable()
+		TGetVTable( Param...p )
+			: ClassType( p... )
 		{
 			if( !GetFunInst() || GetVTbInst() )
 				return;
@@ -100,8 +119,8 @@ namespace XS
 		}
 	};
 
-	template<>
-	struct TGetVTable<void> 
+	template<typename ClassType>
+	struct TGetVTable<ClassType, eConstructType_Abstract>
 	{
 		static GetVirtualTableFun& GetFunInst()
 		{
@@ -111,7 +130,9 @@ namespace XS
 	};
 
 	///< Construct the object
-	template<typename GetVTableType, typename ClassType, bool bDuplicatable, typename... Param>
+	template<typename... Param> class TConstructParams;
+	template<typename OrgClass, typename ClassType,
+		typename ConstructParamsType, EConstructType eType>
 	class TConstruct : public IObjectConstruct
 	{
 		template<typename... RemainParam> struct TFetchParam {};
@@ -134,23 +155,43 @@ namespace XS
 				return TFetchParam<RemainParam...>::Construct( nIndex + 1, pObj, aryArg, p..., f );
 			}
 		};
+
+		template<typename... Param>
+		ClassType* PlacementNew( TConstructParams<Param...>*, void* pObj, void** aryArg )
+		{
+			return TFetchParam<Param...>::Construct( 0, pObj, aryArg );
+		}
+
+		template<typename... Param>
+		void SetVTable( TConstructParams<Param...>*, ClassType* pObj )
+		{
+			typedef TGetVTable<OrgClass, eType, Param...> GetVTableType;
+			if( !GetVTableType::GetFunInst() )
+				return;
+			( ( XS::SVirtualObj* )pObj )->m_pTable = GetVTableType::GetVTbInst();
+		}
+
+		template<typename... Param>
+		STypeInfoArray GetTypes( TConstructParams<Param...>* )
+		{
+			return MakeFunArg<void, Param...>();
+		}
+
 	public:
 		virtual void Assign( void* pDest, void* pSrc )
 		{
-			TCopy<ClassType, bDuplicatable>( pDest, pSrc );
+			TCopy<ClassType, eType == eConstructType_Normal>( pDest, pSrc );
 		}
 
 		virtual void CopyConstruct( void* pDest, void* pSrc )
 		{
-			TCopyConstruct<ClassType, bDuplicatable>( pDest, pSrc );
+			TCopyConstruct<ClassType, eType == eConstructType_Normal>( pDest, pSrc );
 		}
 
 		virtual void Construct( void* pObj, void** aryArg )
 		{
-			ClassType* pNew = TFetchParam<Param...>::Construct( 0, pObj, aryArg );
-			if( !GetVTableType::GetFunInst() )
-				return;
-			( ( XS::SVirtualObj* )pNew )->m_pTable = GetVTableType::GetVTbInst();
+			ConstructParamsType* pType = nullptr;
+			SetVTable( pType, PlacementNew( pType, pObj, aryArg ) );
 		}
 
 		virtual void Destruct( void* pObj )
@@ -158,15 +199,20 @@ namespace XS
 			static_cast<ClassType*>( pObj )->~ClassType();
 		}
 
+		virtual STypeInfoArray GetFunArg()
+		{
+			return GetTypes((ConstructParamsType*)nullptr);
+		}
+
 		static IObjectConstruct* Inst()
 		{
-			static TConstruct<GetVTableType, ClassType, bDuplicatable> s_Instance;
+			static TConstruct<OrgClass, ClassType, ConstructParamsType, eType> s_Instance;
 			return &s_Instance;
 		}
 	};
 
-	template<typename ClassType, bool bDuplicatable>
-	class TConstruct<TGetVTable<void>, ClassType, bDuplicatable>
+	template<typename OrgClass, typename ClassType>
+	class TConstruct<OrgClass, ClassType, TConstructParams<>, eConstructType_Abstract>
 	{ public: static IObjectConstruct* Inst() { return nullptr; } };
 
 	///< Put all function register in a list and invoke them recursively
@@ -224,16 +270,6 @@ namespace XS
 			return { typeid( _Derive ).name(), typeid( _Base... ).name()... };
 		}
 	};
-
-	///< Fetch function type
-	template<typename RetType, typename... Param>
-	inline STypeInfoArray MakeFunArg()
-	{
-		static STypeInfo aryInfo[] =
-		{ GetTypeInfo<Param>()..., GetTypeInfo<RetType>() };
-		STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
-		return TypeInfo;
-	}
 
 	template<typename RetType, typename... Param >
 	class TFunctionWrap : public IFunctionWrap

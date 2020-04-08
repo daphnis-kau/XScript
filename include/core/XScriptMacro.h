@@ -15,7 +15,7 @@
 #pragma warning(disable: 4510)
 #pragma warning(disable: 4610)
 
-#define DEFINE_CLASS_BEGIN_IMPLEMENT( _get_vtable_class, _type, _class, ... ) \
+#define DEFINE_CLASS_BEGIN_IMPLEMENT( _type, _class, ... ) \
 	namespace _class##_namespace { \
 	static XS::SGlobalExe _class##_register( \
 		XS::CScriptBase::RegisterClass( #_class, \
@@ -23,18 +23,24 @@
 		XS::TInheritInfo<_class, ##__VA_ARGS__>::Types().data(), \
 		XS::TInheritInfo<_class, ##__VA_ARGS__>::Values().data() ) ); \
 	static XS::CScriptRegisterList listRegister; \
-	static const auto bDuplicatable = _type; \
+	static const auto eConstructType = _type; \
+	typedef TConstructParams<> ConstructParamsType;\
+	namespace _class##_internal_namespace { \
 	typedef _class org_class; \
-	typedef _get_vtable_class CGetClassVTable;\
-	typedef struct _first : public CGetClassVTable{}
+	typedef TGetVTable<org_class, eConstructType> \
 
 
 #define DEFINE_CLASS_END() _last;\
-	struct _class : public _last {}; \
 	static XS::SGlobalExe _class_fun_register( listRegister.GetFirst()->Register() ); \
-	typedef TConstruct<CGetClassVTable, _class, bDuplicatable> ConstructType; \
+	typedef TConstruct<org_class, _last, ConstructParamsType, eConstructType> ConstructType; \
 	static XS::SGlobalExe _class_construct_register( \
-	XS::CScriptBase::RegisterConstruct( ConstructType::Inst(), typeid( org_class ).name() ) ); }
+	XS::CScriptBase::RegisterConstruct( ConstructType::Inst(), typeid( org_class ).name() ) ); } }
+
+
+#define REGIST_CONSTRUCTOR( ... )\
+	abandon_##_Base_Class; \
+	typedef TConstructParams<##__VA_ARGS__> ConstructParamsType;  \
+	typedef TGetVTable<org_class, eConstructType, ##__VA_ARGS__>
 
 
 #define REGIST_CLASSFUNCTION_IMPLEMENT( _function_type, _function, _function_name ) \
@@ -74,23 +80,34 @@
 		typedef decltype( (_function_type)nullptr ) FunctionType;\
 		typedef _function##_Base_Class BaseClass;\
 		\
-		template<bool bConst, bool bPure, typename _BaseClass, typename... Param> \
-		struct TFunctionOverride : public _BaseClass {}; \
-		template<typename _BaseClass, typename _RetType, typename... Param> \
-		struct TFunctionOverride<false, true, _BaseClass, _RetType, Param...> \
-		: public _BaseClass { _RetType _function( Param ... p ) { throw; } }; \
-		template<typename _BaseClass, typename _RetType, typename... Param> \
-		struct TFunctionOverride<true, true, _BaseClass, _RetType, Param...> \
-		: public _BaseClass { _RetType _function( Param ... p ) const { throw; } }; \
+		template<typename... ConstructParam>\
+		struct TConstructType \
+		{\
+			template<bool bConst, bool bPure, typename _BaseClass, typename... Param> \
+			struct TFunctionOverride \
+			: public _BaseClass { TFunctionOverride( ConstructParam...p ):_BaseClass( p... ){} }; \
+			template<typename _BaseClass, typename _RetType, typename... Param> \
+			struct TFunctionOverride<false, true, _BaseClass, _RetType, Param...> \
+			: public _BaseClass { TFunctionOverride( ConstructParam...p ):_BaseClass( p... ){}\
+				_RetType _function( Param ... p ) { throw; } }; \
+			template<typename _BaseClass, typename _RetType, typename... Param> \
+			struct TFunctionOverride<true, true, _BaseClass, _RetType, Param...> \
+			: public _BaseClass { TFunctionOverride( ConstructParam...p ):_BaseClass( p... ){}\
+				_RetType _function( Param ... p ) const { throw; } }; \
+			\
+			template<typename ClassType, typename RetType, typename... Param> \
+			static TFunctionOverride<false, _is_pure, BaseClass, RetType, Param...> \
+				Decl( RetType ( ClassType::*pFun )( Param... ) );\
+			template<typename ClassType, typename RetType, typename... Param> \
+			static TFunctionOverride<true, _is_pure, BaseClass, RetType, Param...> \
+				Decl( RetType ( ClassType::*pFun )( Param... ) const );\
+		};\
 		\
-		template<typename ClassType, typename RetType, typename... Param> \
-		TFunctionOverride<false, _is_pure, BaseClass, RetType, Param...> \
-			Decl( RetType ( ClassType::*pFun )( Param... ) );\
-		template<typename ClassType, typename RetType, typename... Param> \
-		TFunctionOverride<true, _is_pure, BaseClass, RetType, Param...> \
-			Decl( RetType ( ClassType::*pFun )( Param... ) const );\
-		typedef decltype (Decl( (_function_type)nullptr )) ImplementClass;\
+		template<typename... Param>\
+		TConstructType<Param...> GetConstructType( TConstructParams<Param...>* );\
+		typedef decltype ( GetConstructType((ConstructParamsType*)nullptr) ) ConstructType;\
 		\
+		typedef decltype (ConstructType::Decl( (_function_type)nullptr )) ImplementClass;\
 		typedef XS::TCallBackBinder<ImplementClass> CallbackBinder;\
 		struct RegisterImpl : public org_class { \
 		static FunctionType GetFun() { return (FunctionType)&RegisterImpl::_function; } \

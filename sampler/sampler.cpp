@@ -12,8 +12,10 @@
 #include "CApplication.h"
 
 DEFINE_CLASS_BEGIN( SAddress )
+	REGIST_CONSTRUCTOR( uint32, uint16 )
 	REGIST_CLASSMEMBER( nIP )
 	REGIST_CLASSMEMBER( nPort )
+	REGIST_CALLBACKFUNCTION( OnTestVirtualWithConstruct )
 DEFINE_CLASS_END();
 
 DEFINE_CLASS_BEGIN( SApplicationConfig )

@@ -71,7 +71,14 @@ namespace XS
 		CGlobalClassRegist& Inst = CGlobalClassRegist::GetInst();
 		assert( Inst.m_mapTypeID2ClassInfo.Find( strKey ) );
 		CClassInfo* pInfo = Inst.m_mapTypeID2ClassInfo.Find( strKey );
+		pInfo->m_vecParamType.clear();
 		pInfo->m_pObjectConstruct = pObjectConstruct;
+
+		if( !pObjectConstruct )
+			return pInfo;
+		STypeInfoArray aryTypeInfo = pObjectConstruct->GetFunArg();
+		for( uint32 i = 0; i < aryTypeInfo.nSize - 1; i++ )
+			pInfo->m_vecParamType.push_back( ToDataType( aryTypeInfo.aryInfo[i] ) );
 		return pInfo;
 	}
 
@@ -187,7 +194,7 @@ namespace XS
 		return (int32)m_vecOverridableFun.size();
     }
 
-    void CClassInfo::Create( CScriptBase* pScript, void* pObject, void** aryArg ) const
+    void CClassInfo::Construct( CScriptBase* pScript, void* pObject, void** aryArg ) const
 	{
 		pScript->CheckDebugCmd();
 		//声明性质的类不可创建
@@ -198,7 +205,7 @@ namespace XS
 		m_pObjectConstruct->Construct( pObject, aryArg );
 	}
 
-	void CClassInfo::Clone( CScriptBase* pScript, void* pDest, void* pSrc ) const
+	void CClassInfo::CopyConstruct( CScriptBase* pScript, void* pDest, void* pSrc ) const
 	{
 		pScript->CheckDebugCmd();
 		assert( m_pObjectConstruct );
@@ -207,7 +214,7 @@ namespace XS
 		m_pObjectConstruct->CopyConstruct( pDest, pSrc );
 	}
 
-    void CClassInfo::Release( CScriptBase* pScript, void* pObject ) const
+    void CClassInfo::Destruct( CScriptBase* pScript, void* pObject ) const
 	{
 		pScript->CheckDebugCmd();
 		//声明性质的类不可销毁

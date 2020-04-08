@@ -197,7 +197,14 @@ namespace XS
 		lua_getglobal( pL, pClassInfo->GetClassName().c_str() );
 		lua_setmetatable( pL, nStkId );
 
-		CScriptLua::NewLuaObj( pL, pClassInfo, pDataBuf );
+		void* pNewObj = CScriptLua::NewLuaObj( pL, pClassInfo );
+		CScriptLua* pScriptLua = CScriptLua::GetScript( pL );
+		pScriptLua->PushLuaState( pL );
+		pClassInfo->CopyConstruct( pScriptLua, pNewObj, pDataBuf );
+		pScriptLua->PopLuaState();
+
+		//stack top = 2, 对象指针在栈顶,保存对象的表在下面
+		CScriptLua::RegisterObject( pL, pClassInfo, pNewObj, true );
 		ConstructLua( pL );
 	}
 

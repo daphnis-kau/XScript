@@ -287,7 +287,7 @@ namespace XS
 			if( IsValueClass( nResultType ) )
 			{
 				auto pClassInfo = (const CClassInfo*)( ( nResultType >> 1 ) << 1 );
-				pClassInfo->Release( &Script, pResultBuf );
+				pClassInfo->Destruct( &Script, pResultBuf );
 			}
 		}
 		catch( ... )
@@ -315,13 +315,40 @@ namespace XS
 			v8::MaybeLocal<v8::Value> field = ScriptObj->Get( context, key );
 			pCppBind = v8::External::Cast( *( field.ToLocalChecked() ) );
 		}
+
 		if( pCppBind->Value() )
 		{
 			args.GetReturnValue().Set( ScriptObj );
 			return;
 		}
 
-		Context.BindObj( NULL, args.This(), pInfo->m_pClassInfo );
+		auto& listParam = pInfo->m_pClassInfo->GetConstructorParamType();
+		uint32 nParamCount = (uint32)listParam.size();
+		const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
+		size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
+		size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
+		size_t nArgSize = nParamCount*sizeof( void* );
+		char* pDataBuf = (char*)alloca( nParamSize + nArgSize );
+		void** pArgArray = (void**)( pDataBuf + nParamSize );
+
+		int32 nArgCount = args.Length();
+		LocalValue undefined = Undefined( isolate );
+		for( uint32 nParamIndex = 0; nParamIndex < nParamCount; nParamIndex++ )
+		{
+			DataType nType = aryParam[nParamIndex];
+			CJSTypeBase* pParamType = GetJSTypeBase( nType );
+			LocalValue arg = undefined;
+			if( (int32)nParamIndex < nArgCount )
+				pParamType->FromVMValue( nType, Script, pDataBuf, args[nParamIndex] );
+			else
+				pParamType->FromVMValue( nType, Script, pDataBuf, undefined );
+			pArgArray[nParamIndex] = IsValueClass( nType ) ? *(void**)pDataBuf : pDataBuf;
+			pDataBuf += aryParamSize[nParamIndex];
+		}
+
+		void* pObject = new tbyte[pInfo->m_pClassInfo->GetClassSize()];
+		pInfo->m_pClassInfo->Construct( &Script, pObject, pArgArray );
+		Context.BindObj( pObject, args.This(), pInfo->m_pClassInfo, true );
 	}
 
 	void SV8Context::Destruction( const v8::FunctionCallbackInfo<v8::Value>& args )
@@ -388,7 +415,7 @@ namespace XS
 			if( IsValueClass( nResultType ) )
 			{
 				auto pClassInfo = (const CClassInfo*)( ( nResultType >> 1 ) << 1 );
-				pClassInfo->Release( &Script, pResultBuf );
+				pClassInfo->Destruct( &Script, pResultBuf );
 			}
 		}
 		catch( ... )
@@ -433,20 +460,12 @@ namespace XS
 	}
 
 	void SV8Context::BindObj( void* pObject, v8::Local<v8::Object> ScriptObj, 
-		const CClassInfo* pInfo, void* pSrc )
+		const CClassInfo* pInfo, bool bRecycle )
 	{
-		SObjInfo& ObjectInfo = *m_pScript->AllocObjectInfo();
-		ObjectInfo.m_bRecycle = false;
 		if( !pObject )
-		{
-			pObject = new tbyte[pInfo->GetClassSize()];
-			if( pSrc )
-				pInfo->Clone( m_pScript, pObject, pSrc );
-			else
-				pInfo->Create( m_pScript, pObject, nullptr );
-			ObjectInfo.m_bRecycle = true;
-		}
-
+			return;
+		SObjInfo& ObjectInfo = *m_pScript->AllocObjectInfo();
+		ObjectInfo.m_bRecycle = bRecycle;
 		ObjectInfo.m_Object.Reset( m_pIsolate, ScriptObj );
 		ObjectInfo.m_pClassInfo = m_pScript->m_mapClassInfo.Find( (const void*)pInfo );
 		ObjectInfo.m_pObject = pObject;
@@ -494,7 +513,7 @@ namespace XS
 		pInfo->RecoverVirtualTable( m_pScript, pObject );
 		if( !bRecycle )
 			return;
-		pInfo->Release( m_pScript, pObject );
+		pInfo->Destruct( m_pScript, pObject );
 		delete[]( tbyte* )pObject;
 	}
 }

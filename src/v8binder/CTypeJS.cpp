@@ -98,10 +98,15 @@ namespace XS
 		v8::Local<v8::String> Prototype = Context.m_Prototype.Get(isolate);
 		NewObj->Set(context, __proto__, JSClass->Get(context, Prototype).ToLocalChecked() );
 
-		if (bCopy)
-			Context.BindObj(NULL, NewObj, pClassInfo, pObj);
-		else
-			Context.BindObj(pObj, NewObj, pClassInfo);
+		if( !bCopy )
+		{
+			Context.BindObj( pObj, NewObj, pClassInfo, false );
+			return NewObj;
+		}
+
+		void* pNewObject = new tbyte[pClassInfo->GetClassSize()];
+		pClassInfo->CopyConstruct( &Script, pNewObject, pObj );
+		Context.BindObj( pNewObject, NewObj, pClassInfo, true );
 		return NewObj;
 	}
 

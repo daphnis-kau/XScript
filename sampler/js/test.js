@@ -47,7 +47,7 @@
     g_handler = new CApplicationHandler();
     g_App = CApplication.GetInst();
 
-    var address = new SAddress();
+    var address = new SAddress(3, 5);
     address.nIP = 123456789;
     address.nPort = 1234;
 

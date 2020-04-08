@@ -36,8 +36,8 @@ namespace XS
 		static int32			ErrorHandler( lua_State* pState );
 		static int32			DebugBreak( lua_State* pState );
 		static int32			BackTrace( lua_State* pState );
-        static int32			Delete( lua_State* pL );
-        static int32			Construct( lua_State* pL );
+        static int32			ObjectGC( lua_State* pL );
+        static int32			ObjectConstruct( lua_State* pL );
 		static int32			LoadFile( lua_State* pL );
 		static int32			DoFile( lua_State* pL );
 		static int32			Panic( lua_State* pL );	
@@ -77,7 +77,7 @@ namespace XS
         //==============================================================================
         // common function
         //==============================================================================
-        static void				NewLuaObj( lua_State* pL, const CClassInfo* pInfo, void* pSrc );
+        static void*			NewLuaObj( lua_State* pL, const CClassInfo* pInfo );
 		static void				RegisterObject( lua_State* pL, const CClassInfo* pInfo, void* pObj, bool bGC );
 		static void				NewUnicodeString( lua_State* pL, const wchar_t* szStr );
 		static const wchar_t*	ConvertUtf8ToUcs2( lua_State* pL, int32 nStkId );

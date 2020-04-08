@@ -111,19 +111,11 @@ namespace XS
 			"		nIndex = nIndex + 1\n"
 			"	end\n"
 
-            "	NewClass.ctor = function( self, Instance )\n"
-            "	    for i = 1, #self.__base_list do\n"
-            "	        local base_class = self.__base_list[i]\n"
-            "	        base_class.ctor( base_class, Instance )\n"
-            "	    end\n"
-            "	end\n"
-
             "	NewClass.new = function( self, ... )\n"
             "	    local NewInstance = {}\n"
             "	    setmetatable( NewInstance, self )\n"
-            "	    self.ctor( self, NewInstance )\n"
-			"	    if( self.Ctor )then\n"
-			"			self.Ctor( NewInstance, ... )\n"
+			"	    if( self.construction )then\n"
+			"			self.construction( NewInstance, ... )\n"
             "	    end\n"
             "	    return NewInstance\n"
             "	end\n"
@@ -218,8 +210,8 @@ namespace XS
             "			__cpp_cast( obj, base )\n"
             "		end\n"
 			"		setmetatable( obj, class )\n"
-			"		if( class.Ctor )then\n"
-			"			class.Ctor( obj, ... )\n"
+			"		if( class.construction )then\n"
+			"			class.construction( obj, ... )\n"
 			"	    end\n"
             "		return obj\n"
             "	end\n"
@@ -503,7 +495,7 @@ namespace XS
     // 通用函数
     //--------------------------------------------------------------------------------
     // Lua stack 堆栈必须只有一个值，类（表,在栈底）.调用后， stack top = 1, 对象对应的表在栈顶
-    void CScriptLua::NewLuaObj( lua_State* pL, const CClassInfo* pInfo, void* pSrc )
+    void* CScriptLua::NewLuaObj( lua_State* pL, const CClassInfo* pInfo )
     {
 		lua_pushstring( pL, pInfo->GetObjectIndex().c_str() );
         void* pObj = lua_newuserdata( pL, pInfo->GetClassSize() );
@@ -513,24 +505,13 @@ namespace XS
 		lua_pushlightuserdata( pL, ms_pClassInfoKey );
 		lua_pushlightuserdata( pL, (void*)pInfo );
 		lua_rawset( pL, -3 );
-		lua_pushcfunction( pL, Delete );
+		lua_pushcfunction( pL, ObjectGC );
 		lua_setfield( pL, -2, "__gc");
 		lua_setmetatable( pL, -2 );            //setmetatable( userdata, mt )
 
 		// Obj.ClassName_hObject = userdata;
 		lua_rawset( pL, -3 );
-
-		CScriptLua* pScriptLua = GetScript(pL);
-		pScriptLua->PushLuaState( pL );
-		if( pSrc )
-			pInfo->Clone( pScriptLua, pObj, pSrc );
-		else
-			pInfo->Create( pScriptLua, pObj, nullptr );                //userdata为对象指针的指针
-
-		pScriptLua->PopLuaState();
-		
-		//stack top = 2, 对象指针在栈顶,保存对象的表在下面
-		RegisterObject( pL, pInfo, pObj, true ); 
+		return pObj;
     }
 
     void CScriptLua::RegistToLua( lua_State* pL, const CClassInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj )
@@ -630,7 +611,7 @@ namespace XS
     //=========================================================================
     // 构造和析构                                            
     //=========================================================================
-    int32 CScriptLua::Delete( lua_State* pL )
+    int32 CScriptLua::ObjectGC( lua_State* pL )
     {
 		lua_getmetatable( pL, -1 );
 		lua_pushlightuserdata( pL, ms_pClassInfoKey );
@@ -642,18 +623,48 @@ namespace XS
 		// 调用UnRegisterObject反而会导致gc问题（table[obj] = nil 会crash）
 		CScriptLua* pScriptLua = GetScript(pL);
 		pInfo->RecoverVirtualTable( pScriptLua, pObject );
-		pInfo->Release( pScriptLua, pObject );
+		pInfo->Destruct( pScriptLua, pObject );
         lua_pop( pL, 3 );
         return 0;
     }
 
-    int32 CScriptLua::Construct( lua_State* pL )
-    {
-        lua_getfield( pL, -2, "_info" );        //得到c++类属性
-		const CClassInfo* pInfo = (const CClassInfo*)lua_touserdata( pL, -1 );
-		lua_pop( pL, 1 );
-		lua_remove( pL, -2 );
-		NewLuaObj( pL, pInfo, NULL ); 
+    int32 CScriptLua::ObjectConstruct( lua_State* pL )
+	{
+		void* pUpValue = lua_touserdata( pL, lua_upvalueindex( 1 ) );
+		const CClassInfo* pInfo = (const CClassInfo*)pUpValue;
+
+		auto& listParam = pInfo->GetConstructorParamType();
+		uint32 nParamCount = (uint32)listParam.size();
+		const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
+		size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
+		size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
+		size_t nArgSize = nParamCount*sizeof( void* );
+		char* pDataBuf = (char*)alloca( nParamSize + nArgSize );
+		void** pArgArray = (void**)( pDataBuf + nParamSize );
+
+		// 跳过第一个参数
+		int32 nStkId = 2;
+
+		//Lua函数最右边的参数，在Lua stack的栈顶,         
+		//放在m_listParam的第一个成员中
+		for( size_t nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
+		{
+			DataType nType = aryParam[nArgIndex];
+			CLuaTypeBase* pParamType = GetLuaTypeBase( nType );
+			pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
+			pArgArray[nArgIndex] = IsValueClass( nType ) ? *(void**)pDataBuf : pDataBuf;
+			pDataBuf += aryParamSize[nArgIndex];
+		}
+
+		// 清掉除了table以外的参数
+		lua_settop( pL, 1 );
+
+		void* pNewObj = NewLuaObj( pL, pInfo );		
+		CScriptLua* pScriptLua = GetScript( pL );
+		pScriptLua->PushLuaState( pL );
+		pInfo->Construct( pScriptLua, pNewObj, pArgArray );
+		pScriptLua->PopLuaState();
+		RegisterObject( pL, pInfo, pNewObj, true );
 		return 1;
 	}
 
@@ -746,7 +757,7 @@ namespace XS
 					if( IsValueClass( nResultType ) )
 					{
 						auto pClassInfo = (const CClassInfo*)( ( nResultType >> 1 ) << 1 );
-						pClassInfo->Release( pScript, pResultBuf );
+						pClassInfo->Destruct( pScript, pResultBuf );
 					}
 				}
 			}
@@ -760,7 +771,7 @@ namespace XS
 					if( IsValueClass( nResultType ) )
 					{
 						auto pClassInfo = (const CClassInfo*)( ( nResultType >> 1 ) << 1 );
-						pClassInfo->Release( pScript, pResultBuf );
+						pClassInfo->Destruct( pScript, pResultBuf );
 					}
 				}
 			}
@@ -1172,12 +1183,12 @@ namespace XS
 				 lua_rawset( pL, nClassIdx );
 
 				 lua_pushstring( pL, "__gc" );
-				 lua_pushcfunction( pL, Delete );
+				 lua_pushcfunction( pL, ObjectGC );
 				 lua_rawset( pL, nClassIdx );
 
-				 lua_pushstring( pL, "ctor" );
-				 lua_pushcfunction( pL, Construct );
-				 lua_rawset( pL, nClassIdx );
+				 lua_pushlightuserdata( pL, pInfo );
+				 lua_pushcclosure( pL, CScriptLua::ObjectConstruct, 1 );
+				 lua_setfield( pL, nClassIdx, "construction" );
 			 }
 			 else
 			 {

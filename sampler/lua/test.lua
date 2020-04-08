@@ -35,7 +35,7 @@ end
 g_handler = CApplicationHandler:new();
 g_App = CApplication.GetInst();
 
-local address = SAddress:new();
+local address = SAddress:new(3, 5);
 address:nIP(123456789);
 address:nPort(1234);
 

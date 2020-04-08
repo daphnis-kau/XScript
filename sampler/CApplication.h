@@ -12,8 +12,12 @@ enum ETestEnum
 
 struct SAddress
 {
+	SAddress(uint32 i = 0, uint16 p = 0)
+		: nIP(i), nPort(p){}
 	uint32 nIP;
 	uint16 nPort;
+
+	virtual void OnTestVirtualWithConstruct() const {};
 };
 
 struct SApplicationConfig

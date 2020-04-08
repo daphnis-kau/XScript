@@ -11,6 +11,7 @@
 #include "common/TRBTree.h"
 #include "common/CVirtualFun.h"
 #include "common/TConstString.h"
+#include "core/CTypeBase.h"
 #include "core/XScriptDef.h"
 #include <string>
 #include <vector>
@@ -37,6 +38,7 @@ namespace XS
 
 		const_string					m_szClassName;		// Name of class
 		const_string					m_szTypeIDName;		// typeid of the class
+		std::vector<DataType>			m_vecParamType;		// Parameter of constructor
 
 		std::vector<CCallbackInfo*>		m_vecOverridableFun;// Overridable function information
 		std::vector<SBaseInfo>			m_vecBaseRegist;    // All base classes' information
@@ -64,10 +66,12 @@ namespace XS
 		static const CCallInfo*			RegisterCallBack( const char* szTypeInfoName, uint32 nIndex, CCallbackInfo* pCallScriptBase );
 		static const CTypeIDNameMap&	GetAllRegisterInfo();
 
-		void							Create( CScriptBase* pScript, void* pObject, void** aryArg ) const;
-		void							Clone( CScriptBase* pScript, void* pDest, void* pSrc ) const;
-		void                        	Release( CScriptBase* pScript, void * pObject ) const;
+		const std::vector<DataType>&	GetConstructorParamType() const { return m_vecParamType; }
+		void							Construct( CScriptBase* pScript, void* pObject, void** aryArg ) const;
+		void							CopyConstruct( CScriptBase* pScript, void* pDest, void* pSrc ) const;
+		void                        	Destruct( CScriptBase* pScript, void * pObject ) const;
 		void							Assign( CScriptBase* pScript, void* pDest, void* pSrc ) const;
+
 		void							InitVirtualTable( SFunctionTable* pNewTable ) const;
 		int32							GetMaxRegisterFunctionIndex() const;
         void                            ReplaceVirtualTable( CScriptBase* pScript, void* pObj, bool bNewByVM, uint32 nInheritDepth ) const;

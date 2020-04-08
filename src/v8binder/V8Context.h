@@ -94,7 +94,7 @@ namespace XS
 										v8::Local<v8::Function> NewClass, 
 										v8::Local<v8::Object> Prototype, bool bBase);
 		void						BindObj(void* pObject, v8::Local<v8::Object> ScriptObj, 
-										const CClassInfo* pInfo, void* pSrc = NULL );
+										const CClassInfo* pInfo, bool bRecycle );
 		void						UnbindObj( SObjInfo* pObjectInfo, bool bFromGC );
 
 		v8::Local<v8::Value>		StringFromUtf8(const char* szUtf8);

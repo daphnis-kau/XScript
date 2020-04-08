@@ -26,16 +26,17 @@ namespace XS
 	class IObjectConstruct
 	{
 	public:
-		virtual void		Assign( void*, void* ) = 0;
-		virtual void		CopyConstruct( void*, void* ) = 0;
-		virtual void		Construct( void*, void** ) = 0;
-		virtual void		Destruct( void* ) = 0;
+		virtual void			Assign( void*, void* ) = 0;
+		virtual void			CopyConstruct( void*, void* ) = 0;
+		virtual void			Construct( void*, void** ) = 0;
+		virtual void			Destruct( void* ) = 0;
+		virtual STypeInfoArray	GetFunArg() = 0;
 	};
 
 	class IFunctionWrap
 	{
 	public:
-		virtual void		Call( void* pRetBuf, void** pArgArray, uintptr_t funContext ) = 0;
+		virtual void			Call( void* pRetBuf, void** pArgArray, uintptr_t funContext ) = 0;
 	};
 }
 
