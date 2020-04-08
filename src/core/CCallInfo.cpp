@@ -31,6 +31,8 @@ namespace XS
 	
 	void CCallInfo::Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const
 	{
+		if( GetFunctionIndex() >= eCT_ClassFunction && !*(char**)pArgArray[0] )
+			return;
 		m_funWrap->Call( pRetBuf, pArgArray, m_funOrg );
 		Script.CheckDebugCmd();
 	}
@@ -51,6 +53,8 @@ namespace XS
 
 	void CMemberInfo::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script) const
 	{
+		if( !*(char**)pArgArray[0] )
+			return;
 		if (!pRetBuf && m_funSet)
 			m_funSet->Call(&pRetBuf, pArgArray, GetOffset());
 		else if (pRetBuf && m_funWrap)
