@@ -31,7 +31,7 @@ namespace XS
 			friend class TList<CNode>;
 
 		public:
-			CListNode() : m_pPreNode(NULL), m_pNextNode(NULL)
+			CListNode() : m_pPreNode(nullptr), m_pNextNode(nullptr)
 			{
 			}
 
@@ -42,7 +42,7 @@ namespace XS
 
 			bool IsInList() const
 			{ 
-				return m_pPreNode != NULL; 
+				return m_pPreNode != nullptr; 
 			}
 
 			void Remove()
@@ -51,18 +51,18 @@ namespace XS
 					return;
 				m_pPreNode->m_pNextNode = m_pNextNode;
 				m_pNextNode->m_pPreNode = m_pPreNode;
-				m_pPreNode = NULL;
-				m_pNextNode = NULL;
+				m_pPreNode = nullptr;
+				m_pNextNode = nullptr;
 			}
 
 			CNode* GetPre() const
 			{
-				return m_pPreNode && m_pPreNode->m_pPreNode ? static_cast<CNode*>( m_pPreNode ) : NULL;
+				return m_pPreNode && m_pPreNode->m_pPreNode ? static_cast<CNode*>( m_pPreNode ) : nullptr;
 			}
 
 			CNode* GetNext() const
 			{
-				return m_pNextNode && m_pNextNode->m_pNextNode ? static_cast<CNode*>( m_pNextNode ) : NULL;
+				return m_pNextNode && m_pNextNode->m_pNextNode ? static_cast<CNode*>( m_pNextNode ) : nullptr;
 			}
 
 			void InsertBefore( CListNode& Node )
@@ -93,7 +93,7 @@ namespace XS
 		{
 			CNode* m_pNode;
 		public:
-			iterator() : m_pNode( NULL ){}
+			iterator() : m_pNode( nullptr ){}
 			iterator( CNode* pNode ) : m_pNode( pNode ){}
 			iterator( const iterator& rhs ) : m_pNode( rhs.m_pNode ){}
 			iterator operator= ( CNode* pNode ) { m_pNode = pNode; return *this; }
@@ -102,9 +102,9 @@ namespace XS
 			bool operator == ( const iterator& rhs ) const { return m_pNode == rhs.m_pNode; }
 			bool operator != ( CNode* pNode ) const { return m_pNode != pNode; }
 			bool operator != ( const iterator& rhs ) const { return m_pNode != rhs.m_pNode; }
-			iterator& operator++() { m_pNode = m_pNode ? m_pNode->CListNode::GetNext() : NULL; return *this; }
+			iterator& operator++() { m_pNode = m_pNode ? m_pNode->CListNode::GetNext() : nullptr; return *this; }
 			iterator operator++( int ) { iterator i = *this; ++*this; return i; }
-			iterator& operator--() { m_pNode = m_pNode ? m_pNode->CListNode::GetPre() : NULL; return *this; }
+			iterator& operator--() { m_pNode = m_pNode ? m_pNode->CListNode::GetPre() : nullptr; return *this; }
 			iterator operator--( int ) { iterator i = *this; ++*this; return i; }
 			CNode& operator* () const { return *m_pNode; }
 		};
@@ -118,8 +118,8 @@ namespace XS
 		~TList()
 		{
 			assert( IsEmpty() );
-			m_NodeHead.m_pNextNode = NULL;
-			m_NodeTail.m_pPreNode = NULL;
+			m_NodeHead.m_pNextNode = nullptr;
+			m_NodeTail.m_pPreNode = nullptr;
 		}
 
 		bool IsEmpty() const
@@ -129,12 +129,12 @@ namespace XS
 
 		void PushFront( CListNode& Node )
 		{
-			InsertAfter( Node, NULL );
+			InsertAfter( Node, nullptr );
 		}
 
 		void PushBack( CListNode& Node )
 		{
-			InsertBefore( Node, NULL );
+			InsertBefore( Node, nullptr );
 		}
 
 		void InsertBefore( CListNode& Node, CListNode* pNodePos )
@@ -163,12 +163,12 @@ namespace XS
 
 		CNode* GetFirst() const
 		{
-			return IsEmpty() ? NULL : static_cast<CNode*>( m_NodeHead.m_pNextNode );
+			return IsEmpty() ? nullptr : static_cast<CNode*>( m_NodeHead.m_pNextNode );
 		}
 
 		CNode* GetLast() const
 		{
-			return IsEmpty() ? NULL : static_cast<CNode*>( m_NodeTail.m_pPreNode );
+			return IsEmpty() ? nullptr : static_cast<CNode*>( m_NodeTail.m_pPreNode );
 		}
 		
 		iterator begin()
