@@ -27,12 +27,12 @@ namespace XS
 		auto pClassInfo = (const CClassInfo*)((eType >> 1) << 1);
 		if( obj == v8::Null(isolate) ||	!obj->IsObject() )
 		{
-			*(void**)( pDataBuf ) = NULL;
-			return NULL;
+			*(void**)( pDataBuf ) = nullptr;
+			return nullptr;
 		}
 
 		v8::Object* pScriptObject = v8::Object::Cast( *obj );
-		v8::External* pCppBind = NULL;
+		v8::External* pCppBind = nullptr;
 		if( pScriptObject->InternalFieldCount() )
 			pCppBind = v8::External::Cast( *pScriptObject->GetInternalField( 0 ) );
 		else
@@ -41,18 +41,18 @@ namespace XS
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 			v8::MaybeLocal<v8::Value> field = pScriptObject->Get( context, key );
 			if( field.IsEmpty() )
-				return NULL;
+				return nullptr;
 			v8::Local<v8::Value> extenalField = field.ToLocalChecked();
 			if( !extenalField->IsExternal() )
-				return NULL;
+				return nullptr;
 			pCppBind = v8::External::Cast( *extenalField );
 		}
 
 		const SObjInfo* pInfo = ( const SObjInfo* )pCppBind->Value();
 		if( !pInfo || !pInfo->m_pObject )
 		{
-			*(void**)( pDataBuf ) = NULL;
-			return NULL;
+			*(void**)( pDataBuf ) = nullptr;
+			return nullptr;
 		}
 
 		const CClassInfo* pObjInfo = pInfo->m_pClassInfo->m_pClassInfo;
@@ -78,11 +78,11 @@ namespace XS
 		auto pClassInfo = (const CClassInfo*)((eType >> 1) << 1);
 		SV8Context& Context = Script.GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
-		if( pObj == NULL )
+		if( pObj == nullptr )
 			return v8::Null( isolate );
 
-		const SObjInfo* pObjInfo = NULL;
-		if( !bCopy && ( pObjInfo = Script.FindExistObjInfo( pObj ) ) != NULL &&
+		const SObjInfo* pObjInfo = nullptr;
+		if( !bCopy && ( pObjInfo = Script.FindExistObjInfo( pObj ) ) != nullptr &&
 			pObjInfo->m_pClassInfo->m_pClassInfo->FindBase(pClassInfo) )
 			return pObjInfo->m_Object.Get( isolate );
 

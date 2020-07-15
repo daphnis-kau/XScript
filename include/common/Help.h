@@ -22,9 +22,9 @@
 #undef FAILED
 #undef MAKE_DWORD
 
-#define SAFE_RELEASE( p )				{ if( p ){ (p)->Release(); (p) = NULL; } }
-#define SAFE_DELETE( p )				{ delete (p); (p) = NULL; }
-#define SAFE_DEL_GROUP( p )				{ delete[] (p); (p) = NULL; }
+#define SAFE_RELEASE( p )				{ if( p ){ (p)->Release(); (p) = nullptr; } }
+#define SAFE_DELETE( p )				{ delete (p); (p) = nullptr; }
+#define SAFE_DEL_GROUP( p )				{ delete[] (p); (p) = nullptr; }
 #define ELEM_COUNT( _array )			( (uint32)( sizeof( _array )/sizeof( _array[0] ) ) )
 
 #define INVALID_64BITID		0xffffffffffffffffULL

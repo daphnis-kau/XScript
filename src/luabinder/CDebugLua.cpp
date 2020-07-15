@@ -32,8 +32,8 @@ namespace XS
 
     CDebugLua::CDebugLua( CScriptBase* pBase, uint16 nDebugPort )
         : CDebugBase( pBase, nDebugPort )
-		, m_pState( NULL )
-		, m_pPreState( NULL )
+		, m_pState( nullptr )
+		, m_pPreState( nullptr )
         , m_nBreakFrame( -1 )
 		, m_nValueID( ePDVID_Count )
 	{
@@ -46,7 +46,7 @@ namespace XS
 	void CDebugLua::SetCurState( lua_State* pL )
 	{
 		m_pState = pL;
-		m_pPreState = NULL;
+		m_pPreState = nullptr;
 	}
 
 	uint32 CDebugLua::GetFrameCount()
@@ -244,8 +244,8 @@ namespace XS
 
 		// local value
 		lua_newtable( m_pState );
-		const char* name = NULL;
-		for( int n = 1; ( name = lua_getlocal( m_pState, &ld, n ) ) != NULL; n++ )
+		const char* name = nullptr;
+		for( int n = 1; ( name = lua_getlocal( m_pState, &ld, n ) ) != nullptr; n++ )
 		{
 			if( lua_equal( m_pState, -1, -2 ) )
 				lua_pop( m_pState, 1 );
@@ -262,7 +262,7 @@ namespace XS
 			if( !lua_getstack( m_pState, nCurCount, &ld ) )
 				break;
 			lua_getinfo( m_pState, "f", &ld );
-			for( int n = 1; ( name = lua_getupvalue( m_pState, -1, n ) ) != NULL; n++ )
+			for( int n = 1; ( name = lua_getupvalue( m_pState, -1, n ) ) != nullptr; n++ )
 				lua_setfield( m_pState, -3, name[0] ? name : "(anonymous upvalue)" );
 			lua_pop( m_pState, 1 );
 			nCurCount--;
@@ -445,7 +445,7 @@ namespace XS
 
 	uint32 CDebugLua::EvaluateExpression(int32 nCurFrame, const char* szName)
 	{
-		if (szName == NULL)
+		if (szName == nullptr)
 			return INVALID_32BITID;
 		const_string strKey(szName, true);
 

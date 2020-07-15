@@ -79,7 +79,7 @@ namespace XS
 		, m_bAllExceptionsBreak( false )
 		, m_bUncaughtExceptionsBreak( false )
 		, m_bPrintFrame( true )
-		, m_pBuf( NULL )
+		, m_pBuf( nullptr )
 		, m_bLoopOnPause( false )
 		, m_bEnterDebug( false )
 		, m_eAttachType( eAT_Detach )
@@ -135,9 +135,9 @@ namespace XS
 		m_bEnterDebug = true;
 		m_nCurFrame = SwitchFrame( 0 );
 		if( m_nRemoteConnecter == INVALID_SOCKET )
-			ConsoleDebug( NULL );
+			ConsoleDebug( nullptr );
 		else
-			RemoteDebug( NULL );
+			RemoteDebug( nullptr );
 		m_bEnterDebug = false;
 	}
 
@@ -145,8 +145,8 @@ namespace XS
 	{
 		int32 nCurFrame = 0;
 		int32 nCurLine = 0;
-		const char* szFunction = NULL;
-		const char* szSource = NULL;
+		const char* szFunction = nullptr;
+		const char* szSource = nullptr;
 		while( (uint32)nCurFrame < (uint32)nFrameCount )
 		{ 
 			if( !GetFrameInfo( nCurFrame, &nCurLine, &szFunction, &szSource ) )
@@ -187,7 +187,7 @@ namespace XS
 		}
 
 		if( nLine <= 0 || nLine > (int32)it->second.size() )
-			return NULL;
+			return nullptr;
 		return it->second[nLine - 1].c_str();
 	}
 
@@ -267,7 +267,7 @@ namespace XS
 			int32 nResult = (int32)recv(m_nRemoteConnecter, szBuffer, 2048, 0);
 			if (ReciveRemoteData(szBuffer, nResult))
 			{
-				TeminateRemote(NULL);
+				TeminateRemote(nullptr);
 				continue;
 			}
 			closesocket(m_nRemoteConnecter);
@@ -310,7 +310,7 @@ namespace XS
 	{
 		m_eAttachType = eAT_Detach;
 		if( szSequence )
-			SendRespone( NULL, szSequence, true, "terminate" );
+			SendRespone( nullptr, szSequence, true, "terminate" );
 
 		CDebugCmd* pCmd = new CDebugCmd;
 		pCmd->AddChild( "seq", "0" );
@@ -478,7 +478,7 @@ namespace XS
 			//pBody->AddChild( "supportsExceptionInfoRequest", "true" );
 			//pBody->AddChild( "supportsExceptionOptions", "true" );
 			SendRespone( pBody, szSequence, true, szCommand );
-			SendEvent( NULL, "initialized" );
+			SendEvent( nullptr, "initialized" );
 			return true;
 		}
 		else if( !stricmp( szCommand, "launch" ) )
@@ -486,13 +486,13 @@ namespace XS
 			CJson* pArg = pCmd->GetChild( "arguments" );
 			bool bNoDebug = pArg->At<bool>( "noDebug" );
 			m_eAttachType = bNoDebug ? eAT_Detach : eAT_Launch;
-			SendRespone( NULL, szSequence, true, szCommand );
+			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
 		}
 		else if( !stricmp( szCommand, "attach" ) )
 		{
 			m_eAttachType = eAT_Attach;
-			SendRespone( NULL, szSequence, true, szCommand );
+			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
 		}
 		else if( !stricmp( szCommand, "loadedSources" ) )
@@ -580,7 +580,7 @@ namespace XS
 		{
 			if( !m_bEnterDebug )
 				Stop();
-			SendRespone( NULL, szSequence, true, szCommand );
+			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
 		}
 		else if( !stricmp( szCommand, "setExceptionBreakpoints" ) )
@@ -600,7 +600,7 @@ namespace XS
 				pName = pName->GetNext();
 			}
 
-			SendRespone( NULL, szSequence, true, szCommand );
+			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
 		}
 		else if( !stricmp( szCommand, "_clearall" ) )
@@ -612,7 +612,7 @@ namespace XS
 
 		if( !m_bEnterDebug )
 		{
-			SendRespone( NULL, szSequence, true, szCommand );
+			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
 		}
 
@@ -632,8 +632,8 @@ namespace XS
 			for( int32 i = nStartFrame; i <= nEndFrame; i++ )
 			{
 				int32 nLine;
-				const char* szSource = NULL;
-				const char* szFunction = NULL;
+				const char* szSource = nullptr;
+				const char* szFunction = nullptr;
 				GetFrameInfo( i, &nLine, &szFunction, &szSource );
 				CJson* pFrame = pFrameArray->AddChild( "" );
 				pFrame->AddChild( "id", i );
@@ -755,26 +755,26 @@ namespace XS
 		else if( !stricmp( szCommand, "stepIn" ) )
 		{
 			StepIn();
-			SendRespone( NULL, szSequence, true, szCommand );
+			SendRespone( nullptr, szSequence, true, szCommand );
 			m_bExpectStep = true;
 			return false;
 		}
 		else if( !stricmp( szCommand, "stepOut" ) )
 		{
 			StepOut();
-			SendRespone( NULL, szSequence, true, szCommand );
+			SendRespone( nullptr, szSequence, true, szCommand );
 			m_bExpectStep = true;
 			return false;
 		}
 		else if( !stricmp( szCommand, "next" ) )
 		{
 			StepNext();
-			SendRespone( NULL, szSequence, true, szCommand );
+			SendRespone( nullptr, szSequence, true, szCommand );
 			m_bExpectStep = true;
 			return false;
 		}
 
-		SendRespone( NULL, szSequence, true, szCommand );
+		SendRespone( nullptr, szSequence, true, szCommand );
 		return true;
 	}
 
@@ -784,12 +784,12 @@ namespace XS
 	const char* CDebugBase::ReadWord( bool bNewLine )
 	{
 		if( bNewLine )
-			m_pBuf = NULL;
+			m_pBuf = nullptr;
 
 		if( !m_pBuf )
 		{
 			if( !bNewLine )
-				return NULL;
+				return nullptr;
 
 			m_pBase->Output( "(gdb) ", -1 );
 			char szBuf[ sizeof(m_szBuffer) ];
@@ -814,7 +814,7 @@ namespace XS
 		if( *m_pBuf == 0 || *m_pBuf == '\n' )
 		{
 			*m_pBuf = 0;
-			m_pBuf = NULL;
+			m_pBuf = nullptr;
 		}
 
 		return pCur;
@@ -823,7 +823,7 @@ namespace XS
 	bool CDebugBase::PrintLine( int32 nFrame, 
 		const char* szSource, int32 nLine, bool bIsCurLine )
 	{
-		if( nLine <= 0 || szSource == NULL )
+		if( nLine <= 0 || szSource == nullptr )
 		{
 			m_pBase->Output( "Source not available.\n", -1 );
 			return false;
@@ -857,8 +857,8 @@ namespace XS
 	void CDebugBase::ConsoleDebug( SException* pException )
 	{
 		const char* szBuf;
-		const char* szCurFunction = NULL;
-		const char* szCurSource = NULL;
+		const char* szCurFunction = nullptr;
+		const char* szCurSource = nullptr;
 		if( pException )
 		{
 			m_pBase->Output( "Exception : ", -1 );
@@ -924,7 +924,7 @@ namespace XS
 			{
 				szBuf = ReadWord();
 				if( !szBuf )
-					GetFrameInfo( m_nCurFrame, NULL, NULL, &szBuf );
+					GetFrameInfo( m_nCurFrame, nullptr, nullptr, &szBuf );
 				m_pBase->RunFile( szBuf );
 			}
 			else if( !strcmp( szBuf, "next" ) || !strcmp( szBuf, "n" ) )
@@ -1013,20 +1013,20 @@ namespace XS
 	void CDebugBase::AddBreakPoint( const char* szBuf )
 	{
 		int32 nBreakLine = m_nCurLine;
-		const char* szSource = NULL;
-		char* pColon = NULL;
+		const char* szSource = nullptr;
+		char* pColon = nullptr;
 
 		if( !szBuf )
 		{
 			nBreakLine = m_nCurLine;
-			GetFrameInfo( m_nCurFrame, NULL, NULL, &szSource );
+			GetFrameInfo( m_nCurFrame, nullptr, nullptr, &szSource );
 		}
 		else if( IsNumber( *szBuf ) )
 		{
-			GetFrameInfo( m_nCurFrame, NULL, NULL, &szSource );
+			GetFrameInfo( m_nCurFrame, nullptr, nullptr, &szSource );
 			nBreakLine = atoi( szBuf );
 		}
-		else if( ( pColon = (char*)strchr( szBuf, ':' ) ) == NULL )
+		else if( ( pColon = (char*)strchr( szBuf, ':' ) ) == nullptr )
 		{
 			m_pBase->Output( "Filename and line number must be provided.\n", -1 );
 			return;
@@ -1067,8 +1067,8 @@ namespace XS
 			m_nShowLine = 1;
 
 		int32 nLine = 0;
-		const char* szCurSource = NULL;
-		if( !GetFrameInfo( m_nCurFrame, &nLine, NULL, &szCurSource ) )
+		const char* szCurSource = nullptr;
+		if( !GetFrameInfo( m_nCurFrame, &nLine, nullptr, &szCurSource ) )
 			return;
 
 		int32 nShowEndLine = m_nShowLine + LINE_COUNT_ON_SHOW;
@@ -1108,6 +1108,6 @@ namespace XS
 			return 0;
 		CBreakPoint bp( 0, szSource, true, nLine );
 		CBreakPointList::iterator it = m_setBreakPoint.find( bp );
-        return it == m_setBreakPoint.end() ? NULL : &*it;
+        return it == m_setBreakPoint.end() ? nullptr : &*it;
 	}
 }

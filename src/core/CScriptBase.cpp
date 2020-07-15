@@ -35,7 +35,7 @@ namespace XS
 	#define MAX_VIRTUAL_FUN_COUNT	( 1024*1024 )
 	#define RESERVED_SIZE			( sizeof(void*)*MAX_VIRTUAL_FUN_COUNT )
 
-	static void** s_aryFuctionTable = (void**)ReserveMemoryPage( NULL, RESERVED_SIZE );
+	static void** s_aryFuctionTable = (void**)ReserveMemoryPage( nullptr, RESERVED_SIZE );
 	static void** s_aryFuctionTableEnd = s_aryFuctionTable;
 
 	static SFunctionTableHead* AllocFunArray( size_t nArraySize )
@@ -83,7 +83,7 @@ namespace XS
 	// 虚拟机列表
 	//==================================================================
     CScriptBase::CScriptBase(void)
-        : m_pDebugger( NULL )
+        : m_pDebugger( nullptr )
 	{
     }
 
@@ -97,7 +97,7 @@ namespace XS
 		{
 			SFunctionTable* pNewFunTable = it->second;
 			SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pNewFunTable ) - 1;
-			pFunTableHead->m_pClassInfo = NULL;
+			pFunTableHead->m_pClassInfo = nullptr;
 			int32 nFunCount = pNewFunTable->GetFunctionCount();
 			assert( it->first == pFunTableHead->m_pOldFunTable );
 			memcpy( pNewFunTable->m_pFun, it->first->m_pFun, nFunCount*sizeof(void*) );
@@ -147,7 +147,7 @@ namespace XS
 			szClass, aryType[0], (uint32)aryValue[0], false );
 		for( uint32 i = 1; i < nCount; i++ )
 		{
-			assert( CClassInfo::GetClassInfo( aryType[i] ) != NULL );
+			assert( CClassInfo::GetClassInfo( aryType[i] ) != nullptr );
 			pClassInfo->AddBaseInfo( aryType[0], aryType[i], aryValue[i] );
 		}
 		return pClassInfo != nullptr;
@@ -218,7 +218,7 @@ namespace XS
 
 			VMObjectVTableInfo.second = nInheritDepth;
 			int32 nFunCount = pOldFunTable->GetFunctionCount();	
-			if( VMObjectVTableInfo.first == NULL )
+			if( VMObjectVTableInfo.first == nullptr )
 			{
 				SFunctionTableHead* pFunTableHead = AllocFunArray( nFunCount + 1 );
 				VMObjectVTableInfo.first = (SFunctionTable*)( pFunTableHead + 1 );
@@ -227,7 +227,7 @@ namespace XS
 			SFunctionTable* pNewFunTable = VMObjectVTableInfo.first;
 			SFunctionTableHead* pFunTableHead = ( (SFunctionTableHead*)pNewFunTable ) - 1;
 			memcpy( pNewFunTable->m_pFun, pOldFunTable->m_pFun, nFunCount*sizeof(void*) );
-			pNewFunTable->m_pFun[nFunCount] = NULL;
+			pNewFunTable->m_pFun[nFunCount] = nullptr;
 			pFunTableHead->m_pScript = this;
 			pFunTableHead->m_pOldFunTable = pOldFunTable;
 			pFunTableHead->m_pClassInfo = pClassInfo;
@@ -248,7 +248,7 @@ namespace XS
 			SFunctionTable* pNewFunTable = (SFunctionTable*)( pFunTableHead + 1 );
 			m_mapVirtualTableOld2New.insert( std::make_pair( pOldFunTable, pNewFunTable ) );
 			memcpy( pNewFunTable->m_pFun, pOldFunTable->m_pFun, nFunCount*sizeof(void*) );
-			pNewFunTable->m_pFun[nFunCount] = NULL;
+			pNewFunTable->m_pFun[nFunCount] = nullptr;
 			pFunTableHead->m_pScript = this;
 			pFunTableHead->m_pOldFunTable = pOldFunTable;
 			pFunTableHead->m_pClassInfo = pClassInfo;

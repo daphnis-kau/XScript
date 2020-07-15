@@ -66,7 +66,7 @@ namespace XS
 			uint32 nPID = (uint32)getpid();
 			char szBuffer[2048];
 			char_stream( szBuffer ) << "/proc/" << nPID << "/maps";
-			if( NULL != ( fp = fopen( szBuffer, "r" ) ) )
+			if( nullptr != ( fp = fopen( szBuffer, "r" ) ) )
 			{
 				while ( fgets( szBuffer, 2048, fp ) )
 				{
@@ -79,8 +79,8 @@ namespace XS
 						nIndex++;
 					if( szBuffer[nIndex + 3] != 'x' )
 						continue;
-					void* pStart = (void*)strtoll( szStart, NULL, 16 );		
-					m_mapExecutable[pStart] = (void*)strtoll( szEnd, NULL, 16 );	
+					void* pStart = (void*)strtoll( szStart, nullptr, 16 );		
+					m_mapExecutable[pStart] = (void*)strtoll( szEnd, nullptr, 16 );	
 				}
 				fclose( fp );
 			}

@@ -75,7 +75,7 @@ namespace XS
         nStkId = ToAbsStackIndex( pL, nStkId );
 		int32 nType = lua_type( pL, nStkId );
         if( nType == LUA_TNIL || nType == LUA_TNONE )
-            *(void**)( pDataBuf ) = NULL;    
+            *(void**)( pDataBuf ) = nullptr;    
         else
         {
 			if( !lua_istable( pL, nStkId )  )
@@ -93,12 +93,12 @@ namespace XS
 				if( lua_islightuserdata( pL, -1 ) || lua_type( pL, -1 ) == LUA_TUSERDATA )
 				{
 					SBufferInfo* pInfo = (SBufferInfo*)lua_touserdata( pL, -1 );
-					*(void**)( pDataBuf ) = pInfo ? pInfo->pBuffer : NULL;
+					*(void**)( pDataBuf ) = pInfo ? pInfo->pBuffer : nullptr;
 					lua_pop( pL, 2 );
 				}
 				else
 				{
-					*(void**)( pDataBuf ) = NULL;
+					*(void**)( pDataBuf ) = nullptr;
 					lua_pop( pL, 2 );
 				}
 				return;
@@ -112,7 +112,7 @@ namespace XS
     void CLuaObject::PushToVM( DataType eType, lua_State* pL, char* pDataBuf )
     {
         void* pObj = *(void**)( pDataBuf );
-        if( pObj == NULL )
+        if( pObj == nullptr )
         {
             lua_pushnil( pL );
             return;
@@ -280,10 +280,10 @@ namespace XS
 		if( pInfo && IsLightData( pInfo ) && nTotalSize > pInfo->nDataSize )
 		{
 			luaL_error( pL, "can not write data to native buffer over nDataSize" );
-			return NULL;
+			return nullptr;
 		}
 
-		if( pInfo == NULL || pInfo->pBuffer == NULL || nTotalSize > pInfo->nCapacity )
+		if( pInfo == nullptr || pInfo->pBuffer == nullptr || nTotalSize > pInfo->nCapacity )
 		{
 			lua_pushstring( pL, s_szLuaBufferInfo );
 			uint32 nLen = std::max<uint32>( nTotalSize, 16 );
@@ -574,11 +574,11 @@ namespace XS
 				return 0;
 			}
 
-			pInfoSrc = pInfoSrc == pInfoDes ? NULL : pInfoSrc;
+			pInfoSrc = pInfoSrc == pInfoDes ? nullptr : pInfoSrc;
 			pInfoDes = CheckBufferSpace( pInfoDes, nOffset + nReadCount, pL, 2 );
 			lua_settop( pL, 0 );
 
-			pInfoSrc = pInfoSrc == NULL ? pInfoDes : pInfoSrc;
+			pInfoSrc = pInfoSrc == nullptr ? pInfoDes : pInfoSrc;
 			memmove( pInfoDes->pBuffer + nOffset, pInfoSrc->pBuffer + pInfoSrc->nPosition, nReadCount );
 			if( pInfoSrc->nPosition + nReadCount > pInfoSrc->nDataSize )
 			{
@@ -777,11 +777,11 @@ namespace XS
 				return 0;
 			}
 
-			pInfoSrc = pInfoSrc == pInfoDes ? NULL : pInfoSrc;
+			pInfoSrc = pInfoSrc == pInfoDes ? nullptr : pInfoSrc;
 			pInfoDes = CheckBufferSpace( pInfoDes, ( pInfoDes ? pInfoDes->nPosition : 0 ) + nWriteCount, pL, 1 );
 			lua_settop( pL, 0 );
 
-			pInfoSrc = pInfoSrc == NULL ? pInfoDes : pInfoSrc;
+			pInfoSrc = pInfoSrc == nullptr ? pInfoDes : pInfoSrc;
 			memmove( pInfoDes->pBuffer + pInfoDes->nPosition, pInfoSrc->pBuffer + nOffset, nWriteCount );
 			if( nOffset + nWriteCount > pInfoSrc->nDataSize )
 			{
@@ -977,7 +977,7 @@ namespace XS
 			{
 				SBufferInfo* pInfo = (SBufferInfo*)lua_touserdata( pL, -1 );
 				lua_pop( pL, 1 );
-				return pInfo ? pInfo->pBuffer : NULL;
+				return pInfo ? pInfo->pBuffer : nullptr;
 			}
 			else
 			{
@@ -993,7 +993,7 @@ namespace XS
 
 	void PushPointerToLua( lua_State* pL, void* pBuffer )
 	{
-		if( pBuffer == NULL )
+		if( pBuffer == nullptr )
 		{
 			lua_pushnil( pL );
 			return;

@@ -32,7 +32,7 @@ namespace XS
 			friend class TTinyList<CNode>;
 
 		public:
-			CTinyListNode() : m_ppPreNode(NULL), m_pNextNode(NULL)
+			CTinyListNode() : m_ppPreNode(nullptr), m_pNextNode(nullptr)
 			{
 			}
 
@@ -43,7 +43,7 @@ namespace XS
 
 			bool IsInList()
 			{ 
-				return m_ppPreNode != NULL; 
+				return m_ppPreNode != nullptr; 
 			}
 
 			void Remove()
@@ -52,8 +52,8 @@ namespace XS
 					*m_ppPreNode = m_pNextNode;
 				if( m_pNextNode )
 					static_cast<CTinyListNode*>( m_pNextNode )->m_ppPreNode = m_ppPreNode;
-				m_ppPreNode = NULL;
-				m_pNextNode = NULL;
+				m_ppPreNode = nullptr;
+				m_pNextNode = nullptr;
 			}
 
 			CNode* GetNext() const
@@ -80,7 +80,7 @@ namespace XS
 		{
 			CNode* m_pNode;
 		public:
-			iterator() : m_pNode( NULL ){}
+			iterator() : m_pNode( nullptr ){}
 			iterator( CNode* pNode ) : m_pNode( pNode ){}
 			iterator( const iterator& rhs ) : m_pNode( rhs.m_pNode ){}
 			iterator operator= ( CNode* pNode ) { m_pNode = pNode; return *this; }
@@ -89,12 +89,12 @@ namespace XS
 			bool operator == ( const iterator& rhs ) const { return m_pNode == rhs.m_pNode; }
 			bool operator != ( CNode* pNode ) const { return m_pNode != pNode; }
 			bool operator != ( const iterator& rhs ) const { return m_pNode != rhs.m_pNode; }
-			iterator& operator++() { m_pNode = m_pNode ? m_pNode->CTinyListNode::GetNext() : NULL; return *this; }
+			iterator& operator++() { m_pNode = m_pNode ? m_pNode->CTinyListNode::GetNext() : nullptr; return *this; }
 			iterator operator++( int ) { iterator i = *this; ++*this; return i; }
 			CNode& operator* () const { return *m_pNode; }
 		};
 
-		TTinyList() : m_pNodeHead(NULL)
+		TTinyList() : m_pNodeHead(nullptr)
 		{
 		}
 
@@ -110,7 +110,7 @@ namespace XS
 
 		void PushFront( CNode& Node )
 		{
-			_InsertAfter( Node, NULL );
+			_InsertAfter( Node, nullptr );
 		}
 
 		CNode* GetFirst() const
@@ -121,7 +121,7 @@ namespace XS
 		CNode* GetPreNode( CTinyListNode* pNode ) const
 		{
 			if( pNode == m_pNodeHead )
-				return NULL;
+				return nullptr;
 			void* pPreNode = pNode->m_ppPreNode - 1;
 			return static_cast<CNode*>( (CTinyListNode*)pPreNode );
 		}

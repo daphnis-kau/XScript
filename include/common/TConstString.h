@@ -22,20 +22,20 @@ namespace XS
 		int32			m_nSize;
 
 	public:
-		TConstString() : m_szString(NULL), m_nSize(0)
+		TConstString() : m_szString(nullptr), m_nSize(0)
 		{
 		}
 
 		TConstString( const _Elem* szString, bool bRefrence = false )
 			: m_nSize( 0 )
-			, m_szString( NULL )
+			, m_szString( nullptr )
 		{
 			assign( szString, bRefrence );
 		}
 
 		TConstString( const _Elem* szString, uint32 nLen, bool bRefrence = false )
 			: m_nSize( nLen )
-			, m_szString( NULL )
+			, m_szString( nullptr )
 		{
 			assign( szString, nLen, bRefrence );
 		}
@@ -58,7 +58,7 @@ namespace XS
 		{
 			if( m_nSize >= 0 )
 			{
-				m_szString = NULL;
+				m_szString = nullptr;
 				m_nSize = 0;
 				return;
 			}
@@ -66,15 +66,15 @@ namespace XS
 			uint32* pRefCount = ( (uint32*)( m_szString ) ) - 1;
 			if( --( *pRefCount ) == 0 )
 				delete [] pRefCount;
-			m_szString = NULL;
+			m_szString = nullptr;
 			m_nSize = 0;
 		}
 
-		void assign( const _Elem* szString = NULL, bool bRefrence = false )
+		void assign( const _Elem* szString = nullptr, bool bRefrence = false )
 		{
 			clear();
 			bRefrence = !szString || !szString[0] || bRefrence;
-			m_szString = szString && szString[0] ? szString : NULL;
+			m_szString = szString && szString[0] ? szString : nullptr;
 			m_nSize = 0;
 			while( m_szString && m_szString[m_nSize] )
 				m_nSize++;
@@ -93,7 +93,7 @@ namespace XS
 		{
 			clear();
 			bRefrence = !szString || !nLen || bRefrence;
-			m_szString = szString && nLen ? szString : NULL;
+			m_szString = szString && nLen ? szString : nullptr;
 			m_nSize = m_szString ? nLen : 0;
 			if( bRefrence )
 				return;
@@ -114,7 +114,7 @@ namespace XS
 
 		bool empty() const
 		{
-			return m_szString == NULL || m_szString[0] == 0 || m_nSize == 0;
+			return m_szString == nullptr || m_szString[0] == 0 || m_nSize == 0;
 		}
 
 		uint32 size() const
@@ -212,7 +212,7 @@ namespace XS
 
 		uint32 find( const _Elem nChar, const uint32 nOffset = 0 ) const
 		{
-			if ( m_szString == NULL )
+			if ( m_szString == nullptr )
 				return INVALID_32BITID;
 			uint32 nPos = nOffset;
 			uint32 nLen = size();
@@ -224,7 +224,7 @@ namespace XS
 		uint32 rfind( const _Elem nChar, const uint32 nOffset = 0 ) const
 		{
 			uint32 nLen = size();
-			if ( m_szString == NULL || nOffset >= nLen )
+			if ( m_szString == nullptr || nOffset >= nLen )
 				return INVALID_32BITID;
 			int32 nCurPos = (int32)( nLen - nOffset - 1 );
 			while ( nCurPos >= 0 && m_szString[nCurPos] != nChar )

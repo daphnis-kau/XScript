@@ -88,7 +88,7 @@ int main( int argc, const char* argv[] )
 
 	while( true )
 	{
-		pScript->RunFunction( NULL, "StartApplication", "sampler", 12345 );
+		pScript->RunFunction( nullptr, "StartApplication", "sampler", 12345 );
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 

@@ -376,7 +376,7 @@ namespace XS
 		{
 			static void OnCall( uint32 nCallBackIndex, void** pArgArray )
 			{
-				CScriptBase::CallBack( nCallBackIndex, NULL, pArgArray );
+				CScriptBase::CallBack( nCallBackIndex, nullptr, pArgArray );
 			}
 		};
 
@@ -394,7 +394,7 @@ namespace XS
 			RetType WrapAddress( ParamPtr ... p )
 			{
 				TCallBackWrap* pThis = this;
-				void* pCallArray[] = { &pThis, ArgFetcher<Param>::CallBackArg( p )..., NULL };
+				void* pCallArray[] = { &pThis, ArgFetcher<Param>::CallBackArg( p )..., nullptr };
 				return TCallBack<RetType>::OnCall( GetCallBackIndex(), pCallArray );
 			}
 
@@ -529,7 +529,7 @@ namespace XS
 		void Wrap(uint32 p0)
 		{
 			void* pArg[] = { this, &p0 };
-			CScriptBase::CallBack( GetCallBackIndex(), NULL, pArg );
+			CScriptBase::CallBack( GetCallBackIndex(), nullptr, pArg );
 		}
 
 		typedef decltype(&TDestructorWrap::Wrap) FunctionType;

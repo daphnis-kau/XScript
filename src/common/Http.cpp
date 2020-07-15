@@ -148,7 +148,7 @@ namespace XS
 		if( szMsg[nLinePos] != '2' )
 			return eHRS_Error;
 
-		const char* szTransferType = NULL;
+		const char* szTransferType = nullptr;
 		uint32 nContentLength = INVALID_32BITID;
 		while( true )
 		{
@@ -306,12 +306,12 @@ namespace XS
 	///< CHttpRequestState::CHttpRequestState
 	CHttpRequestState::CHttpRequestState()
 		: m_nKeepAlive( INVALID_32BITID )
-		, m_szDataStart( NULL )
+		, m_szDataStart( nullptr )
 		, m_nDataLength( INVALID_32BITID )
 		, m_bGetMethod( true )
-		, m_szPageStart( NULL )
+		, m_szPageStart( nullptr )
 		, m_nPageLength( 0 )
-		, m_szParamStart( NULL )
+		, m_szParamStart( nullptr )
 		, m_nParamLength( 0 )
 	{
 	}
@@ -345,7 +345,7 @@ namespace XS
 		if( nCurPos == nBufferSize )
 			return eHRS_NeedMore;
 		m_szPageStart = szBuffer + nNameStart;
-		if( m_szParamStart == NULL )
+		if( m_szParamStart == nullptr )
 		{
 			m_nPageLength = nCurPos - nNameStart;
 			m_szParamStart = "";
@@ -357,7 +357,7 @@ namespace XS
 		}
 
 		m_nDataLength = 0;
-		m_szDataStart = NULL;
+		m_szDataStart = nullptr;
 
 		///< get data length  
 		while( true )
@@ -382,9 +382,9 @@ namespace XS
 			{
 				///< get data length   
 				nCurPos += 15;
-				const char* szSizeStart = NULL;
+				const char* szSizeStart = nullptr;
 				while( nCurPos < nBufferSize && szBuffer[nCurPos] != '\r' )
-					if( IsNumber( szBuffer[nCurPos++] ) && szSizeStart == NULL )
+					if( IsNumber( szBuffer[nCurPos++] ) && szSizeStart == nullptr )
 						szSizeStart = szBuffer + nCurPos - 1;
 				///< need more data
 				if( nCurPos == nBufferSize )
@@ -415,9 +415,9 @@ namespace XS
 			{
 				///< get data length  
 				nCurPos += 11;
-				const char* szTimeoutStart = NULL;
+				const char* szTimeoutStart = nullptr;
 				while( nCurPos < nBufferSize && szBuffer[nCurPos] != '\r' )
-					if( IsNumber( szBuffer[nCurPos++] ) && szTimeoutStart == NULL )
+					if( IsNumber( szBuffer[nCurPos++] ) && szTimeoutStart == nullptr )
 						szTimeoutStart = szBuffer + nCurPos - 1;
 				///< need more data
 				if( nCurPos == nBufferSize )
@@ -434,11 +434,11 @@ namespace XS
 	void CHttpRequestState::Reset()
 	{
 		m_bGetMethod = true;
-		m_szDataStart = NULL;
+		m_szDataStart = nullptr;
 		m_nDataLength = 0;
-		m_szPageStart = NULL;
+		m_szPageStart = nullptr;
 		m_nPageLength = 0;
-		m_szParamStart = NULL;
+		m_szParamStart = nullptr;
 		m_nPageLength = 0;
 	}
 
@@ -515,7 +515,7 @@ namespace XS
 		uint32 nReadCount = 0;
 		uint32 nPreLineStart = 0;
 		uint32 nKeyCount = 0;
-		const char* szKeyStart = NULL;
+		const char* szKeyStart = nullptr;
 		bool bFinished = false;
 		while( nReadCount < nSize )
 		{
@@ -700,7 +700,7 @@ namespace XS
 		if (!Protocol.m_bMask)
 			return 0;
 
-		static int32 nRand = (int32)time( NULL );
+		static int32 nRand = (int32)time( nullptr );
 		char szMask[] =
 		{
 			(char)( ( ( nRand = nRand * 214013L + 2531011L ) >> 16 ) & 0xff ),

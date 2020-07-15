@@ -35,7 +35,7 @@ namespace XS
 	void* CScriptLua::ms_pClassInfoKey			= (void*)"__class_info";
 
     CScriptLua::CScriptLua( uint16 nDebugPort )
-        : m_pAllAllocBlock( NULL )
+        : m_pAllAllocBlock( nullptr )
 		, m_bPreventExeInRunBuffer( false )
 	{
 		memset( m_aryBlock, 0, sizeof(m_aryBlock) );
@@ -322,10 +322,10 @@ namespace XS
 		//s_mapSize[nOldSize] -= nOldSize;
 
 		CScriptLua* pThis = (CScriptLua*)pContex;
-		void* pNewBuf = NULL;
+		void* pNewBuf = nullptr;
 		const uint32 nMaxManage = eMaxManageMemoryCount*eMemoryStep;
 		if( nNewSize > nMaxManage )
-			pNewBuf = nNewSize ? new tbyte[nNewSize] : NULL;
+			pNewBuf = nNewSize ? new tbyte[nNewSize] : nullptr;
 		else if( nNewSize )
 		{
 			uint16 nIdx = (uint16)( ( nNewSize - 1 )/eMemoryStep );
@@ -340,7 +340,7 @@ namespace XS
 				tbyte* pBufferStart = (tbyte*)( pBlocksHead + 1 );
 				uint32 nBlockSize = ( nIdx + 1 ) * eMemoryStep;
 				uint32 nCount = nBufferSize/nBlockSize;
-				SMemoryBlock* pPreBlock = NULL;
+				SMemoryBlock* pPreBlock = nullptr;
 				for( uint32 i = 0; i < nCount; i++ )
 				{
 					SMemoryBlock* pBlock = (SMemoryBlock*)( pBufferStart + nBlockSize*i );
@@ -571,7 +571,7 @@ namespace XS
 
 	void CScriptLua::NewUnicodeString( lua_State* pL, const wchar_t* szStr )
 	{
-		if( szStr == NULL )
+		if( szStr == nullptr )
 			return lua_pushnil( pL );
 		CScriptLua* pScript = CScriptLua::GetScript( pL );
 		size_t nSize = wcslen( szStr );
@@ -749,7 +749,7 @@ namespace XS
 
 			if( pCallBase->GetFunctionIndex() == eCT_MemberFunction )
 			{
-				pCallBase->Call( nTop > 1 ? NULL : pResultBuf, pArgArray, *pScript );
+				pCallBase->Call( nTop > 1 ? nullptr : pResultBuf, pArgArray, *pScript );
 				if( nResultType && nTop <= 1 )
 				{
 					CLuaTypeBase* pReturnType = GetLuaTypeBase( nResultType );
@@ -882,14 +882,14 @@ namespace XS
 				if( lua_type( pL, 1 ) != LUA_TSTRING )
 					return 1;
 				const char* szFileName = luaL_checkstring( pL, 1 );
-				if( szFileName == NULL || szFileName[0] == 0 )
+				if( szFileName == nullptr || szFileName[0] == 0 )
 					return 1;
 				std::wstring_convert<std::codecvt_utf8<wchar_t>> _wstr;
 				std::wstring strName = _wstr.from_bytes( szFileName );
 				assert( strName.size() < 1024 );
 				char szAcsName[4096];
 				WideCharToMultiByte( CP_ACP, NULL, strName.c_str(), -1, 
-					szAcsName, ELEM_COUNT(szAcsName), NULL, FALSE );
+					szAcsName, ELEM_COUNT(szAcsName), nullptr, FALSE );
 				lua_settop( pL, 0 );
 				lua_pushstring( pL, szAcsName );
 				return 1;
@@ -908,7 +908,7 @@ namespace XS
 		lua_rawget( pL, LUA_REGISTRYINDEX ); //1
 		int32 nErrFunIndex = lua_gettop( pL );
 
-		if( lua_load( pL, &SIO_Replace::ReadString, &szStr, NULL ) )
+		if( lua_load( pL, &SIO_Replace::ReadString, &szStr, nullptr ) )
 			throw( "Invalid string!!!!" );
 		lua_pushcfunction( pL, &SIO_Replace::IO_Utf2A );
 		lua_pcall( pL, 1, 0, nErrFunIndex );
@@ -930,7 +930,7 @@ namespace XS
 			lua_call( pL, 1, 1 );
 			ToString( pL );
 			s = lua_tostring( pL, -1 );  /* get result */
-			if( s == NULL )
+			if( s == nullptr )
 				return luaL_error( pL, LUA_QL("tostring") 
 					" must return a string to " LUA_QL("print") );
 			if( i > 1 )
@@ -1030,7 +1030,7 @@ namespace XS
 	{
 		const char* szStr = *(const char**)pContext;
 		if( !szStr || !szStr[0] )
-			return NULL;
+			return nullptr;
 
 		*pSize = strlen( szStr );
 		*(const char**)pContext = szStr + *pSize;
@@ -1042,7 +1042,7 @@ namespace XS
 		SFileLoadInfo(const char* szFileName)
 		{
 			FILE* fp = fopen( szFileName, "rb" );
-			if( NULL == fp )
+			if( nullptr == fp )
 				return;
 			fseek( fp, 0, SEEK_END );
 			fileBuff.resize( ftell( fp ) );
@@ -1058,7 +1058,7 @@ namespace XS
 	{
 		SFileLoadInfo* pLoadInfo = (SFileLoadInfo*)pContext;
 		if( pLoadInfo->bFinished )
-			return NULL;
+			return nullptr;
 
 		pLoadInfo->bFinished = true;
 		uint32 nSize = (uint32)(pLoadInfo->fileBuff.size());
@@ -1084,7 +1084,7 @@ namespace XS
 	{
 		SReadWithPackage* pInfo = (SReadWithPackage*)pContext;
 		if( pInfo->bFinished )
-			return NULL;
+			return nullptr;
 
 		pInfo->bFinished = true;
 		*pSize = pInfo->pBuffer->size();
@@ -1110,7 +1110,7 @@ namespace XS
 
 	 int32 CScriptLua::DoFile( lua_State* pL )
 	 {
-		 const char* szFileName = luaL_optstring( pL, 1, NULL );
+		 const char* szFileName = luaL_optstring( pL, 1, nullptr );
 		 int n = lua_gettop( pL );
 		 CScriptLua* pScript = CScriptLua::GetScript( pL );
 		 pScript->PushLuaState( pL );
@@ -1169,7 +1169,7 @@ namespace XS
 				 for( size_t i = 0; i < pInfo->BaseRegist().size(); i++ )
 				 {
 					 auto pBaseInfo = pInfo->BaseRegist()[i].m_pBaseInfo;
-					 assert( pBaseInfo != NULL );
+					 assert( pBaseInfo != nullptr );
 					 lua_getglobal( pL, pBaseInfo->GetClassName().c_str() );
 					 assert( !lua_isnil( pL, -1 ) ); 
 				 }
@@ -1246,7 +1246,7 @@ namespace XS
 				auto pThis = (SReadContext*)pContext;
 				*pSize = pThis->m_nSize;
 				pThis->m_nSize = 0;
-				return *pSize ? (const char*)pThis->m_pBuffer : NULL;
+				return *pSize ? (const char*)pThis->m_pBuffer : nullptr;
 			}
 		};
 

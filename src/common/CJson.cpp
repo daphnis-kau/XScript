@@ -8,9 +8,9 @@ namespace XS
 	static char s_nObjectFlag = 0;
 
 	CJson::CJson( const char* szName, const char* szContent ) 
-		: m_pParent( NULL )
-		, m_szName( NULL )
-		, m_szContent( NULL )
+		: m_pParent( nullptr )
+		, m_szName( nullptr )
+		, m_szContent( nullptr )
 		, m_nLevel( 0 )
 		, m_nChildCount( 0 )
 		, m_nContentLen( 0 )
@@ -32,15 +32,15 @@ namespace XS
 			else
 			{
 				m_szName = m_ptrBuffer->c_str();
-				m_szContent = szContent ? "" : NULL;
+				m_szContent = szContent ? "" : nullptr;
 			}
 		}
 	}
 
 	CJson::CJson( const CJson& rhs )
-		: m_pParent( NULL )
-		, m_szName( NULL )
-		, m_szContent( NULL )
+		: m_pParent( nullptr )
+		, m_szName( nullptr )
+		, m_szContent( nullptr )
 		, m_nLevel( 0 )
 		, m_nChildCount( 0 )
 		, m_nContentLen( 0 )
@@ -62,10 +62,10 @@ namespace XS
 		if( m_pParent )
 		{
 			--m_pParent->m_nChildCount;
-			m_pParent = NULL;
+			m_pParent = nullptr;
 		}
 
-		m_ptrBuffer = NULL;
+		m_ptrBuffer = nullptr;
 	}
 
 	bool CJson::Load( const void* pBuffer, uint32 nCount )
@@ -197,7 +197,7 @@ namespace XS
 		os << '\"';
 		char c[32];
 		wchar_t u = 0;
-		const char* szNext = NULL;
+		const char* szNext = nullptr;
 		for( uint32 i = 0; i < nLen; i++ )
 		{
 			c[0] = szContent[i];
@@ -229,7 +229,7 @@ namespace XS
 				szOut = "\\0";
 			else
 			{
-				szNext = NULL;
+				szNext = nullptr;
 				wchar_t* szUcs = &u;
 				static std::codecvt_utf8<wchar_t> Utf8Cvt;
 				std::codecvt_utf8<wchar_t>::state_type CvtState{};
@@ -339,7 +339,7 @@ namespace XS
 					char* szNext = nullptr;
 					char szNum[] = { szBuffer[nCurPos], szBuffer[nCurPos + 1], 
 						szBuffer[nCurPos + 2], szBuffer[nCurPos + 3], 0 };
-					wchar_t nChar = (uint16)strtol( szNum, NULL, 16 );
+					wchar_t nChar = (uint16)strtol( szNum, nullptr, 16 );
 					const wchar_t* szUcs = &nChar;
 					static std::codecvt_utf8<wchar_t> Utf8Cvt;
 					std::codecvt_utf8<wchar_t>::state_type CvtState{};
@@ -352,7 +352,7 @@ namespace XS
 				else if( c == 'x' )
 				{
 					char szNum[] = { szBuffer[nCurPos], szBuffer[nCurPos + 1], 0 };
-					c = (char)strtol( szNum, NULL, 16 );
+					c = (char)strtol( szNum, nullptr, 16 );
 					nCurPos += 2;
 				}
 				else if( IsNumber( c ) && 
@@ -360,7 +360,7 @@ namespace XS
 					IsNumber( szBuffer[nCurPos + 1] ) )
 				{
 					char szNum[] = { c, szBuffer[nCurPos], szBuffer[nCurPos + 1], 0 };
-					c = (char)strtol( szNum, NULL, 8 );
+					c = (char)strtol( szNum, nullptr, 8 );
 					nCurPos += 2;
 				}
 				else if( c == '0' )
@@ -403,7 +403,7 @@ namespace XS
 			if( !bBlankEnd )
 				++nCurPos;
 			size_t nStringStart = nCurPos;
-			char cEndChar = GetString( nCurPos, bBlankEnd, NULL );
+			char cEndChar = GetString( nCurPos, bBlankEnd, nullptr );
 			if( !cEndChar )
 				return false;
 
@@ -421,7 +421,7 @@ namespace XS
 
 		if( !memcmp( szBuffer + nCurPos, "null", 4 ) )
 		{
-			m_szContent = NULL;
+			m_szContent = nullptr;
 			m_nContentLen = 0;
 			nCurPos += 4;
 			return true;
@@ -504,7 +504,7 @@ namespace XS
 	CJson* CJson::GetChild( const char* szChildName )
 	{
 		if( !szChildName || !szChildName[0] )
-			return NULL;
+			return nullptr;
 		CJson* pChild = TList<CJson>::GetFirst();
 		while( pChild && strcmp( pChild->GetName(), szChildName ) )
 			pChild = pChild->GetNext();
@@ -522,7 +522,7 @@ namespace XS
 	CJson* CJson::operator[]( const char* szChildName )
 	{
 		if( !szChildName || !szChildName[0] )
-			return NULL;
+			return nullptr;
 		CJson* pChild = TList<CJson>::GetFirst();
 		while( pChild && strcmp( pChild->GetName(), szChildName ) )
 			pChild = pChild->GetNext();
@@ -540,7 +540,7 @@ namespace XS
 	const CJson* CJson::GetChild( const char* szChildName ) const
 	{
 		if( !szChildName || !szChildName[0] )
-			return NULL;
+			return nullptr;
 		CJson* pChild = TList<CJson>::GetFirst();
 		while( pChild && strcmp( pChild->GetName(), szChildName ) )
 			pChild = pChild->GetNext();
@@ -558,7 +558,7 @@ namespace XS
 	const CJson* CJson::operator[]( const char* szChildName ) const
 	{
 		if( !szChildName || !szChildName[0] )
-			return NULL;
+			return nullptr;
 		CJson* pChild = TList<CJson>::GetFirst();
 		while( pChild && strcmp( pChild->GetName(), szChildName ) )
 			pChild = pChild->GetNext();
@@ -606,7 +606,7 @@ namespace XS
 		return pChild;
 	}
 
-	CJson* CJson::AddChild( const char* szName, CJson* pBefore /*= NULL */ )
+	CJson* CJson::AddChild( const char* szName, CJson* pBefore /*= nullptr */ )
 	{
 		return AddChild( new CJson( szName ), pBefore );
 	}

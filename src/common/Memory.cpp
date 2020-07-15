@@ -31,14 +31,14 @@ namespace XS
 		void* pReserve = (char*)mmap( pAddress, nSize, PROT_NONE, 
 			MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
 		if( pReserve == MAP_FAILED ) 
-			return NULL;
+			return nullptr;
 
 		if( pAddress && pAddress != pReserve ) 
 		{
 			///< If the address is different, release it.
 			///< This action guarantee the same behavior as windows
             FreeMemoryPage( pReserve, nSize );
-			return NULL;
+			return nullptr;
 		}
 		return pReserve;
 #endif // _WIN32
@@ -76,7 +76,7 @@ namespace XS
 		{
 			VirtualQuery( pAddress, &mbi, sizeof(MEMORY_BASIC_INFORMATION) );
 			size_t nCommitSize = nSize > mbi.RegionSize ? mbi.RegionSize : nSize;
-			bSuccess = VirtualAlloc( pAddress, nCommitSize, MEM_COMMIT, nProtectFlag ) != NULL;
+			bSuccess = VirtualAlloc( pAddress, nCommitSize, MEM_COMMIT, nProtectFlag ) != nullptr;
 			pAddress = (char*)pAddress + nCommitSize;
 			nSize -= nCommitSize;
 		} while( nSize > 0 && bSuccess );

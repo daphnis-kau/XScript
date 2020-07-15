@@ -126,8 +126,8 @@
 		{ \
 			org_class* c = (org_class*)0x4000000; \
 			IFunctionWrap* funGetSet[2];\
-			funGetSet[0] = _enableGetter ? XS::CreateMemberGetWrap( &c->_member ) : NULL;\
-			funGetSet[1] = _enableSetter ? XS::CreateMemberSetWrap( &c->_member ) : NULL;\
+			funGetSet[0] = _enableGetter ? XS::CreateMemberGetWrap( &c->_member ) : nullptr;\
+			funGetSet[1] = _enableSetter ? XS::CreateMemberSetWrap( &c->_member ) : nullptr;\
 			ptrdiff_t offset = ((ptrdiff_t)&c->_member) - (ptrdiff_t)c;\
 			XS::CScriptBase::RegisterClassMember( funGetSet, offset,\
 				XS::MakeMemberArg( c, &c->_member ), #_new_name );\
@@ -164,7 +164,7 @@
 
 #define REGIST_GLOBALFUNCTION_IMPLEMENT( _fun_type, _function, _fun_name_lua ) \
     XS::SGlobalExe _fun_name_lua##_register( ( XS::CreateGlobalFunWrap( \
-		(_fun_type)(&_function), NULL, #_fun_name_lua ), true ) ); 
+		(_fun_type)(&_function), nullptr, #_fun_name_lua ), true ) ); 
 
 
 #define REGIST_ENUMTYPE_IMPLEMENT( EnumType ) \

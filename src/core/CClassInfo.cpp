@@ -140,7 +140,7 @@ namespace XS
 		// 不能重复注册
 		if( nIndex >= pInfo->m_vecOverridableFun.size() )
 			pInfo->m_vecOverridableFun.resize( nIndex + 1 );
-		assert( pInfo->m_vecOverridableFun[nIndex] == NULL );
+		assert( pInfo->m_vecOverridableFun[nIndex] == nullptr );
 		pInfo->m_vecOverridableFun[nIndex] = pCallScriptBase;
 
 		for( size_t i = 0; i < pInfo->m_vecChildRegist.size(); ++i )
@@ -165,7 +165,7 @@ namespace XS
 		: m_szTypeIDName( szTypeIDName )
         , m_nSizeOfClass( 0 )
 		, m_nAligenSizeOfClass( 0 )
-        , m_pObjectConstruct( NULL )
+        , m_pObjectConstruct( nullptr )
         , m_bIsEnum(false)
 		, m_nInheritDepth(0)
 	{
@@ -263,7 +263,7 @@ namespace XS
     {
         SVirtualObj* pVObj        = (SVirtualObj*)pObj;
         SFunctionTable* pOldTable = pVObj->m_pTable;
-        SFunctionTable* pNewTable = NULL;
+        SFunctionTable* pNewTable = nullptr;
 
 		if( !m_vecOverridableFun.empty() )
 		{
@@ -292,7 +292,7 @@ namespace XS
 
     void CClassInfo::RecoverVirtualTable( CScriptBase* pScript, void* pObj ) const
     {
-        SFunctionTable* pOrgTable = NULL;
+        SFunctionTable* pOrgTable = nullptr;
         if( !m_vecOverridableFun.empty() )
             pOrgTable = pScript->GetOrgVirtualTable( pObj );
 

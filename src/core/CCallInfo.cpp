@@ -20,7 +20,7 @@ namespace XS
 		, m_nFunIndex( nFunIndex )
 		, m_sFunName( szFunName )
 	{
-		if( CClassInfo::GetClassInfo(szTypeInfoName) == NULL )
+		if( CClassInfo::GetClassInfo(szTypeInfoName) == nullptr )
 			throw( "register function on a unregister class." );
 		CClassInfo::RegisterFunction( szTypeInfoName, this );
 
@@ -93,7 +93,7 @@ namespace XS
 	{
 		if( !pObject->m_pTable || !pObject->m_pTable->m_pFun[m_nFunIndex] )
 			return 0;
-		m_funWrap->Call( NULL, (void**)&pObject, 0 );
+		m_funWrap->Call( nullptr, (void**)&pObject, 0 );
 		return 0;
 	}
 }

@@ -81,11 +81,11 @@ namespace XS
 	const char* SV8Context::StringToUtf8(LocalValue obj)
 	{
 		if (obj == v8::Null(m_pIsolate))
-			return NULL;
+			return nullptr;
 		v8::Local<v8::Context> context = m_pIsolate->GetCurrentContext();
 		v8::MaybeLocal<v8::String> v = obj->ToString(context);
 		if (v.IsEmpty())
-			return NULL;
+			return nullptr;
 		v8::Local<v8::String> StringObject = v.ToLocalChecked();
 		size_t nStrLen = StringObject->Utf8Length(m_pIsolate);
 		if (nStrLen == 0)
@@ -117,18 +117,18 @@ namespace XS
 	const wchar_t* SV8Context::StringToUcs(LocalValue obj)
 	{
 		if (obj == v8::Null(m_pIsolate))
-			return NULL;
+			return nullptr;
 		v8::Local<v8::Context> context = m_pIsolate->GetCurrentContext();
 		v8::MaybeLocal<v8::String> v = obj->ToString(context);
 		if (v.IsEmpty())
-			return NULL;
+			return nullptr;
 		v8::Local<v8::String> StringObject = v.ToLocalChecked();
 		size_t nStrLen = StringObject->Utf8Length(m_pIsolate);
 		if (nStrLen == 0)
 			return L"";
 
 		uint32 nAllocSize = AligenUp(uint32(nStrLen + 1) * sizeof(wchar_t), sizeof(void*));
-		wchar_t* szUcs2 = NULL;
+		wchar_t* szUcs2 = nullptr;
 		if (nAllocSize + m_nCurUseSize < MAX_STRING_BUFFER_SIZE)
 		{
 			szUcs2 = (wchar_t*)(m_pTempStrBuffer64K + m_nCurUseSize);
@@ -298,14 +298,14 @@ namespace XS
 	void SV8Context::NewObject( const v8::FunctionCallbackInfo<v8::Value>& args )
 	{
 		SJSClassInfo* pInfo = (SJSClassInfo*)v8::External::Cast( *args.Data() )->Value();
-		if( pInfo == NULL )
+		if( pInfo == nullptr )
 			return;
 
 		CScriptJS& Script = *static_cast<CScriptJS*>( pInfo->m_pScript );
 		SV8Context& Context = Script.GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
 		v8::Local<v8::Object> ScriptObj = args.This();
-		v8::External* pCppBind = NULL;
+		v8::External* pCppBind = nullptr;
 		if( ScriptObj->InternalFieldCount() )
 			pCppBind = v8::External::Cast( *ScriptObj->GetInternalField( 0 ) );
 		else
@@ -359,7 +359,7 @@ namespace XS
 		SV8Context& Context = Script.GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
 		v8::Object* pScriptObject = v8::Object::Cast( *args.This() );
-		v8::External* pCppBind = NULL;
+		v8::External* pCppBind = nullptr;
 		if( pScriptObject->InternalFieldCount() )
 			pCppBind = v8::External::Cast( *pScriptObject->GetInternalField( 0 ) );
 		else
@@ -397,10 +397,10 @@ namespace XS
 
 		try
 		{
-			void* pObject = NULL;
+			void* pObject = nullptr;
 			DataType nThisType = pCallBase->GetParamList()[0];
 			CJSObject::GetInst().FromVMValue( nThisType, Script, (char*)&pObject, info.This() );
-			if( pObject == NULL )
+			if( pObject == nullptr )
 				return;
 
 			DataType nResultType = pCallBase->GetResultType();
@@ -436,10 +436,10 @@ namespace XS
 		const CCallInfo* pCallBase = pCallInfo->m_pCallBase;
 		try
 		{
-			void* pObject = NULL;
+			void* pObject = nullptr;
 			DataType nThisType = pCallBase->GetParamList()[0];
 			CJSObject::GetInst().FromVMValue( nThisType, Script, (char*)&pObject, info.This() );
-			if (pObject == NULL)
+			if (pObject == nullptr)
 				return;
 
 			DataType nType = pCallBase->GetParamList()[1];
@@ -452,7 +452,7 @@ namespace XS
 			pParamType->FromVMValue( nType, Script, pDataBuf, value );
 			void* pArg = IsValueClass( nType ) ? *(void**)pDataBuf : pDataBuf;
 			void* aryArg[] = { &pObject, pArg, nullptr };
-			pCallBase->Call( NULL, aryArg, Script );
+			pCallBase->Call( nullptr, aryArg, Script );
 		}
 		catch (...)
 		{
@@ -504,7 +504,7 @@ namespace XS
 		}
 
 		pObjectInfo->Remove();
-		pObjectInfo->m_pObject = NULL;
+		pObjectInfo->m_pObject = nullptr;
 		pObjectInfo->m_Object.Reset();
 
 		m_pScript->FreeObjectInfo( pObjectInfo );

@@ -203,7 +203,7 @@ namespace XS
 		else if (obj->IsArrayBuffer())
 			*(void**)(pDataBuf) = v8::ArrayBuffer::Cast(*obj)->GetContents().Data();
 		else
-			*(void**)(pDataBuf) = NULL;
+			*(void**)(pDataBuf) = nullptr;
 	}
 
 	template<> inline LocalValue TJSValue<void*>::ToVMValue(

@@ -108,18 +108,18 @@ namespace XS
 				pNode->m_pRightChild = pRightChild;
 				m_bRootNode = false;
 				m_nNodeColor = eBlack;
-				m_pParent = NULL;
-				m_pLeftChild = NULL;
-				m_pRightChild = NULL;
+				m_pParent = nullptr;
+				m_pLeftChild = nullptr;
+				m_pRightChild = nullptr;
 			}
 
 		public:
 			CRBTreeNode() 
 				: m_bRootNode( false )
 				, m_nNodeColor( eBlack )
-				, m_pParent( NULL )
-				, m_pLeftChild( NULL )
-				, m_pRightChild( NULL )
+				, m_pParent( nullptr )
+				, m_pLeftChild( nullptr )
+				, m_pRightChild( nullptr )
 			{
 			}
 
@@ -135,7 +135,7 @@ namespace XS
 
 			bool IsInTree() const
 			{ 
-				return m_pParent != NULL; 
+				return m_pParent != nullptr; 
 			}
 
 			void Remove()
@@ -154,12 +154,12 @@ namespace XS
 						assert( m_nNodeColor == eBlack );
 						assert( !m_pLeftChild && !m_pRightChild );
 						if( m_bRootNode )
-							m_pTree->m_pRootNode = NULL;
+							m_pTree->m_pRootNode = nullptr;
 						else if( m_pParent->m_pLeftChild == pCurNode )
-							m_pParent->m_pLeftChild = NULL;
+							m_pParent->m_pLeftChild = nullptr;
 						else if( m_pParent->m_pRightChild == pCurNode )
-							m_pParent->m_pRightChild = NULL;
-						m_pParent = NULL;
+							m_pParent->m_pRightChild = nullptr;
+						m_pParent = nullptr;
 					}
 				};
 
@@ -200,9 +200,9 @@ namespace XS
 				pNode->m_bRootNode = m_bRootNode;
 				pNode->m_pParent = pParent;
 
-				m_pParent = NULL;
-				m_pLeftChild = NULL;
-				m_pRightChild = NULL;
+				m_pParent = nullptr;
+				m_pLeftChild = nullptr;
+				m_pRightChild = nullptr;
 
 				// Loop while the node color is double black
 				while( !pNode->m_bRootNode && pNode->m_nNodeColor == eDoubleBlack )
@@ -324,7 +324,7 @@ namespace XS
 
 			CNode* GetParent() const
 			{
-				return m_bRootNode ? NULL : static_cast<CNode*>( m_pParent );
+				return m_bRootNode ? nullptr : static_cast<CNode*>( m_pParent );
 			}
 
 			CNode* GetLeftChild() const
@@ -383,7 +383,7 @@ namespace XS
 		{
 			CRBTreeNode* m_pNode;
 		public:
-			iterator() : m_pNode( NULL ){}
+			iterator() : m_pNode( nullptr ){}
 			iterator( CRBTreeNode* pNode ) : m_pNode( pNode ){}
 			iterator( const iterator& rhs ) : m_pNode( rhs.m_pNode ){}
 			iterator operator= ( CRBTreeNode* pNode ) { m_pNode = pNode; return *this; }
@@ -392,15 +392,15 @@ namespace XS
 			bool operator == ( const iterator& rhs ) const { return m_pNode == rhs.m_pNode; }
 			bool operator != ( CRBTreeNode* pNode ) const { return m_pNode != pNode; }
 			bool operator != ( const iterator& rhs ) const { return m_pNode != rhs.m_pNode; }
-			iterator& operator++() { m_pNode = m_pNode ? m_pNode->GetNext() : NULL; return *this; }
+			iterator& operator++() { m_pNode = m_pNode ? m_pNode->GetNext() : nullptr; return *this; }
 			iterator operator++( int ) { iterator i = *this; ++*this; return i; }
-			iterator& operator--() { m_pNode = m_pNode ? m_pNode->GetPre() : NULL; return *this; }
+			iterator& operator--() { m_pNode = m_pNode ? m_pNode->GetPre() : nullptr; return *this; }
 			iterator operator--( int ) { iterator i = *this; ++*this; return i; }
 			CNode& operator* () const { return *static_cast<CNode*>( m_pNode ); }
 		};
 
 		TRBTree()
-			: m_pRootNode( NULL )
+			: m_pRootNode( nullptr )
 		{
 		}
 
@@ -425,11 +425,11 @@ namespace XS
 		CNode& Insert( CNode& Node )
 		{
 			assert( !static_cast<CRBTreeNode&>( Node ).IsInTree() );
-			Node.m_pLeftChild = NULL;
-			Node.m_pRightChild = NULL;
+			Node.m_pLeftChild = nullptr;
+			Node.m_pRightChild = nullptr;
 
 			// Insert root node
-			if( m_pRootNode == NULL )
+			if( m_pRootNode == nullptr )
 			{
 				m_pRootNode = &Node;
 				Node.m_pTree = this;
@@ -553,7 +553,7 @@ namespace XS
 		CNode* GetFirst() const
 		{
 			if( !m_pRootNode )
-				return NULL;
+				return nullptr;
 			CRBTreeNode* pNode = m_pRootNode;
 			while( pNode->m_pLeftChild )
 				pNode = pNode->m_pLeftChild;
@@ -563,7 +563,7 @@ namespace XS
 		CNode* GetLast() const
 		{
 			if( !m_pRootNode )
-				return NULL;
+				return nullptr;
 			CRBTreeNode* pNode = m_pRootNode;
 			while( pNode->m_pRightChild )
 				pNode = pNode->m_pRightChild;
@@ -579,7 +579,7 @@ namespace XS
 		CNode* LowerBound( const KeyType& key ) const
 		{
 			if( !m_pRootNode )
-				return NULL;
+				return nullptr;
 
 			CRBTreeNode* pNode = m_pRootNode;
 			while( true )
@@ -609,7 +609,7 @@ namespace XS
 		CNode* UpperBound( const KeyType& key ) const
 		{
 			if( !m_pRootNode )
-				return NULL;
+				return nullptr;
 
 			CNode* pNode = static_cast<CNode*>( m_pRootNode );
 			while( true )
@@ -635,7 +635,7 @@ namespace XS
 		CNode* Find( const KeyType& key ) const
 		{
 			CNode* pNode = LowerBound( key );
-			return !pNode || key < (KeyType)*pNode ? NULL : pNode;
+			return !pNode || key < (KeyType)*pNode ? nullptr : pNode;
 		}
 
 		bool empty() const

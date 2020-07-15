@@ -45,7 +45,7 @@ namespace XS
     // CScriptJS
 	//====================================================================================
     CScriptJS::CScriptJS( uint16 nDebugPort )
-		: m_pFreeObjectInfo( NULL )
+		: m_pFreeObjectInfo( nullptr )
 		, m_pV8Context( new SV8Context( this ) )
 	{
 		struct SV8Init
@@ -224,7 +224,7 @@ namespace XS
 		m_pV8Context->m_Context.Reset();
 		m_pV8Context->m_pIsolate->Exit();
 		m_pV8Context->m_pIsolate->Dispose();
-		m_pV8Context->m_pIsolate = NULL;
+		m_pV8Context->m_pIsolate = nullptr;
 
 		while( m_mapClassInfo.GetFirst() )
 			delete m_mapClassInfo.GetFirst();
@@ -262,7 +262,7 @@ namespace XS
 				aryObjectInfo->m_pObject = aryObjectInfo + 1;
 				aryObjectInfo->m_bFirstAddress = false;
 			}
-			aryObjectInfo->m_pObject = NULL;
+			aryObjectInfo->m_pObject = nullptr;
 			aryObjectInfo->m_bFirstAddress = false;
 		}
 		SObjInfo* pObjectInfo = m_pFreeObjectInfo;
@@ -397,19 +397,19 @@ namespace XS
 
 	SObjInfo* CScriptJS::FindExistObjInfo( void* pObj )
 	{
-		if( pObj == NULL )
-			return NULL;
+		if( pObj == nullptr )
+			return nullptr;
 
 		SObjInfo* pRight = m_mapObjInfo.UpperBound( pObj );
 		if( pRight == m_mapObjInfo.GetFirst() )
-			return NULL;
+			return nullptr;
 
 		SObjInfo* pLeft = pRight ? pRight->GetPre() : m_mapObjInfo.GetLast();
 		if( !pLeft )
-			return NULL;
+			return nullptr;
 		ptrdiff_t nDiff = ( (const char*)pObj ) - ( (const char*)pLeft->m_pObject );
 		if( nDiff >= (ptrdiff_t)( pLeft->m_pClassInfo->m_pClassInfo->GetClassSize() ) )
-			return NULL;
+			return nullptr;
 		return pLeft;
 	}
 
@@ -665,7 +665,7 @@ namespace XS
 			return;
 		// 这里仅仅解除绑定
 		pObjInfo->Remove();
-		pObjInfo->m_pObject = NULL;
+		pObjInfo->m_pObject = nullptr;
 	}
 
 	void CScriptJS::GC()

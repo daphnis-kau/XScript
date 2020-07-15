@@ -16,14 +16,14 @@ namespace XS
 		while( i < 128 && szStr[i] )
 			szBuf[i] = (char)std::min<uint32>( szStr[i], 0x7f );
 		szBuf[i] = 0;
-		return (int32)strtol( szBuf, NULL, 0 );
+		return (int32)strtol( szBuf, nullptr, 0 );
 	}
 
 	int32 ToInt32( const char* szStr )
 	{
 		if( !szStr )
 			return 0;
-		return (int32)strtol( szStr, NULL, 0 );
+		return (int32)strtol( szStr, nullptr, 0 );
 	}
 
 	int64 ToInt64( const wchar_t* szStr )
@@ -43,9 +43,9 @@ namespace XS
 		if( !szStr )
 			return 0;
 #ifdef _WIN32 
-		int64 nVal = _strtoi64( szStr, NULL, 0 );
+		int64 nVal = _strtoi64( szStr, nullptr, 0 );
 #else
-		int64 nVal = strtoll( szStr, NULL, 0 );
+		int64 nVal = strtoll( szStr, nullptr, 0 );
 #endif
 		return nVal;
 	}

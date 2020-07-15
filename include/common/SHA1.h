@@ -65,7 +65,7 @@ namespace XS
 		uint32 nTemp = nSize + ( ( nSize % 64 > 56 ) 
 			? ( 128 - nSize % 64 ) : ( 64 - nSize % 64 ) );
 
-		tbyte* pTemp = NULL;
+		tbyte* pTemp = nullptr;
 		if( nTemp <= MAX_STACK_ALLOC_SIZE )
 			pTemp = (tbyte*)alloca( nTemp );
 		else 

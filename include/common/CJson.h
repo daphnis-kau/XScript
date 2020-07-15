@@ -41,7 +41,7 @@ namespace XS
 		bool ParseObject( CSharePtr& DomXmlBuffer, size_t& nCurPos );
 		bool Parse( CSharePtr& DomXmlBuffer, size_t& nCurPos, bool bWithName );
 	public:
-		CJson( const char* szName = NULL, const char* szContent = NULL );
+		CJson( const char* szName = nullptr, const char* szContent = nullptr );
 		CJson( const CJson& rhs );
 		~CJson();
 
@@ -52,10 +52,10 @@ namespace XS
 		void Clear();
 
 		uint32 GetChildCount() const;
-		CJson* AddChild( CJson* pChild, CJson* pBefore = NULL );
-		CJson* AddChild( const char* szName, CJson* pBefore = NULL );
+		CJson* AddChild( CJson* pChild, CJson* pBefore = nullptr );
+		CJson* AddChild( const char* szName, CJson* pBefore = nullptr );
 		template <typename ValueType>
-		CJson* AddChild( const char* szName, ValueType Value, CJson* pBefore = NULL );
+		CJson* AddChild( const char* szName, ValueType Value, CJson* pBefore = nullptr );
 
 		CJson* GetChild( uint32 nChildIndex );
 		CJson* GetChild( const char* szChildName );
@@ -187,7 +187,7 @@ namespace XS
 	}
 
 	template<typename ValueType>
-	inline CJson* CJson::AddChild( const char* szName, ValueType Value, CJson* pBefore /*= NULL */ )
+	inline CJson* CJson::AddChild( const char* szName, ValueType Value, CJson* pBefore /*= nullptr */ )
 	{
 		std::stringstream ss; ss << Value;
 		return AddChild( szName, ss.str().c_str(), pBefore );
