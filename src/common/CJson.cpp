@@ -1,5 +1,6 @@
 ﻿#include "common/CJson.h"
 #include <stdlib.h>
+#include <memory.h>
 #include <codecvt>
 
 namespace XS
