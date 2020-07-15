@@ -239,7 +239,11 @@ namespace XS
 				if( nResult == std::codecvt_base::ok && szNext != szCur + 1 )
 				{
 					i += (uint32)( szNext - szContent - 1 );
+#ifdef _WIN32
 					sprintf_s( c, ELEM_COUNT( c ) - 1, "\\u%x", u );
+#else
+					sprintf( c, "\\u%x", u );
+#endif
 				}
 				else
 					c[1] = 0;
