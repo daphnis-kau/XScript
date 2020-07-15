@@ -12,7 +12,7 @@
 #include "common/TTinyList.h"
 #include <string>
 #include <memory>
-#include <iosfwd>
+#include <sstream>
 
 namespace XS
 {
