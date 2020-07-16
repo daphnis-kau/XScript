@@ -158,7 +158,7 @@ namespace XS
 	*	INVALID_32BITID:error, szWebSocketKey output message; 
 	*	other:succeeded, used size of szBuffer
 	*/
-	uint32 WebSocketShakeHandCheck( const char* pBuffer, size_t nSize, 
+	uint32 WebSocketShakeHandCheck( const char* pBuffer, uint32 nSize, 
 		bool bServer, const char*& szWebSocketKey, uint32& nWebSocketKeyLen );
 
 	/**

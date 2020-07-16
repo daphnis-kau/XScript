@@ -509,7 +509,7 @@ namespace XS
 		return (uint32)ssShakeHand.GetCurPos();
 	}
 
-	uint32 WebSocketShakeHandCheck( const char* pBuffer, size_t nSize, 
+	uint32 WebSocketShakeHandCheck( const char* pBuffer, uint32 nSize, 
 		bool bServer, const char*& szWebSocketKey, uint32& nWebSocketKeyLen )
 	{
 		uint32 nReadCount = 0;
