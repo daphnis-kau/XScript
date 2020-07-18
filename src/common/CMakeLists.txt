@@ -2,6 +2,7 @@ include_directories ("${PROJECT_SOURCE_DIR}/include")
 set(ProjectName common)
 
 set(head_files
+	${PROJECT_SOURCE_DIR}/include/common/CodeCvs.h
 	${PROJECT_SOURCE_DIR}/include/common/CJson.h
 	${PROJECT_SOURCE_DIR}/include/common/CommonType.h
 	${PROJECT_SOURCE_DIR}/include/common/CppTypeParser.h
@@ -18,6 +19,7 @@ set(head_files
 source_group("include" FILES ${head_files})
 
 set(source_files
+	CodeCvs.cpp 
 	CJson.cpp 
 	CVirtualFun.cpp 
 	Help.cpp 

@@ -1,7 +1,7 @@
 ﻿#include "common/CJson.h"
+#include "common/CodeCvs.h"
 #include <stdlib.h>
 #include <memory.h>
-#include <codecvt>
 
 namespace XS
 {
@@ -197,7 +197,7 @@ namespace XS
 		
 		os << '\"';
 		char c[32];
-		wchar_t u = 0;
+		uint32 u = 0;
 		const char* szNext = nullptr;
 		for( uint32 i = 0; i < nLen; i++ )
 		{
@@ -228,26 +228,18 @@ namespace XS
 				szOut = "\\v";
 			else if( c[0]  == 0 )
 				szOut = "\\0";
-			else
+			else if( ( ( szNext = GetUnicode( u, szCur ) ) != nullptr ) && 
+				szNext != szCur + 1 )
 			{
-				szNext = nullptr;
-				wchar_t* szUcs = &u;
-				static std::codecvt_utf8<wchar_t> Utf8Cvt;
-				std::codecvt_utf8<wchar_t>::state_type CvtState{};
-				auto nResult = Utf8Cvt.in( CvtState,
-					szCur, szCur + 6, szNext, szUcs, szUcs + 1, szUcs );
-				if( nResult == std::codecvt_base::ok && szNext != szCur + 1 )
-				{
-					i += (uint32)( szNext - szContent - 1 );
+				i += (uint32)( szNext - szContent - 1 );
 #ifdef _WIN32
 					sprintf_s( c, ELEM_COUNT( c ) - 1, "\\u%x", u );
 #else
 					sprintf( c, "\\u%x", u );
 #endif
-				}
-				else
-					c[1] = 0;
 			}
+			else
+				c[1] = 0;
 			os << szOut;
 		}
 		os << '\"';
@@ -341,16 +333,10 @@ namespace XS
 					c = '\v';
 				else if( c == 'u' )
 				{
-					char* szNext = nullptr;
 					char szNum[] = { szBuffer[nCurPos], szBuffer[nCurPos + 1], 
 						szBuffer[nCurPos + 2], szBuffer[nCurPos + 3], 0 };
 					wchar_t nChar = (uint16)strtol( szNum, nullptr, 16 );
-					const wchar_t* szUcs = &nChar;
-					static std::codecvt_utf8<wchar_t> Utf8Cvt;
-					std::codecvt_utf8<wchar_t>::state_type CvtState{};
-					Utf8Cvt.out( CvtState, szUcs, szUcs + 1, szUcs,
-						szBuffer + nStrStart, szBuffer + nStrStart + 4, szNext );
-					nStrPos += szNext - szBuffer;
+					nStrPos += UcsToUtf8( szBuffer + nStrPos, 4, &nChar, 1 );
 					nCurPos += 4;
 					c = szBuffer[--nStrPos];
 				}
