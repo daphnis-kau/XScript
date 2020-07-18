@@ -12,7 +12,6 @@ set(head_files
 	${PROJECT_SOURCE_DIR}/include/core/CCallInfo.h
 	${PROJECT_SOURCE_DIR}/include/core/CClassInfo.h
 	${PROJECT_SOURCE_DIR}/include/core/CDebugBase.h
-	${PROJECT_SOURCE_DIR}/include/core/CScript.h
 	${PROJECT_SOURCE_DIR}/include/core/CScriptBase.h
 	${PROJECT_SOURCE_DIR}/include/core/CTypeBase.h)
 source_group("include" FILES ${head_files})
