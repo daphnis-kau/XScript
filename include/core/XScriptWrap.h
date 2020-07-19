@@ -287,54 +287,60 @@ namespace XS
 		}
 	};
 
+	template< typename Type > struct TFetchResult
+	{
+		template<typename FunctionType, typename... Param>
+		TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
+		{ new( pRetBuf ) Type( funCall( p... ) ); }
+	};
+
+	template< typename Type > struct TFetchResult<Type&>
+	{
+		template<typename FunctionType, typename... Param>
+		TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
+		{ *(Type**)pRetBuf = &( funCall( p... ) ); }
+	};
+
+	template<> struct TFetchResult<void>
+	{
+		template<typename FunctionType, typename... Param>
+		TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
+		{ funCall( p... ); }
+	};
+
+	template<typename RetType, typename... RemainParam> 
+	struct TFunctionCaller {};
+	template<typename RetType> struct TFunctionCaller<RetType>
+	{
+		template<typename FunctionType, typename... FetchParam>
+		static void CallFun( size_t nIndex, FunctionType funCall, 
+			void* pRetBuf, void** pArgArray, FetchParam&...p )
+		{ TFetchResult<RetType> Temp( funCall, pRetBuf, p... ); }
+	};
+
+	template<typename RetType, typename FirstParam, typename... RemainParam>
+	struct TFunctionCaller<typename RetType, FirstParam, RemainParam...>
+	{
+		template<typename FunctionType, typename... FetchParam>
+		static void CallFun( size_t nIndex, FunctionType funCall,
+			void* pRetBuf, void** pArgArray, FetchParam&...p )
+		{ 
+			FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( pArgArray[nIndex] );
+			typedef TFunctionCaller<RetType, RemainParam...> NextFunCaller;
+			NextFunCaller::CallFun( nIndex + 1, funCall, pRetBuf, pArgArray, p..., f );
+		}
+	};
+
 	template<typename RetType, typename... Param >
 	class TFunctionWrap : public IFunctionWrap
 	{
 		typedef RetType( *FunctionType )( Param... );
-
-		template< typename Type > struct TFetchResult
-		{
-			TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
-			{ new( pRetBuf ) Type( funCall( p... ) ); }
-		};
-
-		template< typename Type > struct TFetchResult<Type&>
-		{
-			TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
-			{ *(Type**)pRetBuf = &( funCall( p... ) ); }
-		};
-
-		template<> struct TFetchResult<void>
-		{
-			TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
-			{ funCall( p... ); }
-		};
-
-		template<typename... RemainParam> struct TFetchParam {};
-		template<> struct TFetchParam<>
-		{
-			template<typename... FetchParam>
-			static void CallFun( size_t nIndex, FunctionType funCall, 
-				void* pRetBuf, void** pArgArray, FetchParam&...p )
-			{ TFetchResult<RetType> Temp( funCall, pRetBuf, p... ); }
-		};
-
-		template<typename FirstParam, typename... RemainParam>
-		struct TFetchParam<FirstParam, RemainParam...>
-		{
-			template<typename... FetchParam>
-			static void CallFun( size_t nIndex, FunctionType funCall,
-				void* pRetBuf, void** pArgArray, FetchParam&...p )
-			{ 
-				FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( pArgArray[nIndex] );
-				TFetchParam<RemainParam...>::CallFun( nIndex + 1, funCall, pRetBuf, pArgArray, p..., f );
-			}
-		};
+		typedef TFunctionCaller<RetType, Param...> FunctionCaller;
 
 	public:
 		void Call( void* pRetBuf, void** pArgArray, uintptr_t funRaw )
 		{
-			TFetchParam<Param...>::CallFun( 0, *(FunctionType*)&funRaw, pRetBuf, pArgArray );
+			FunctionCaller::CallFun( 0, *(FunctionType*)&funRaw, pRetBuf, pArgArray );
 		}
 
 		static TFunctionWrap* GetInst()
