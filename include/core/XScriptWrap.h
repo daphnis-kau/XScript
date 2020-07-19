@@ -515,19 +515,20 @@ namespace XS
 		static void Bind( bool bPureVirtual, const char* szFunName,
 			RetType(ClassType::*pFun)(Param...) )
 		{
-			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;	
+			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;
+			typedef typename CallBackWrap::FunctionType FunctionType;
 
 			/**
 			* @note If compile error occur, it is mean the size of FunctionType 
 			* and uintptr_t are not equal. It is dependence to compiler, but 
 			* most compile will work well.
 			*/
-			typedef TClassSizeEqual<CallBackWrap::FunctionType, uintptr_t> SizeCheck;
+			typedef TClassSizeEqual<FunctionType, uintptr_t> SizeCheck;
 			typedef typename SizeCheck::Succeeded Succeeded;
 
 			IFunctionWrap* pWrap = CallBackWrap::GetInst();
 			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
-			CallBackWrap::FunctionType funBoot = &CallBackWrap::BootFunction;
+			FunctionType funBoot = &CallBackWrap::BootFunction;
 			CallBackWrap::GetCallBackIndex() = GetVirtualFunIndex(pFun);
 			CScriptBase::RegisterClassCallback( pWrap, *(uintptr_t*)&funBoot,
 				CallBackWrap::GetCallBackIndex(), bPureVirtual, InfoArray, szFunName );
