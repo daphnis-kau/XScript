@@ -129,37 +129,38 @@ namespace XS
 		}
 	};
 
+	template<typename ClassType, typename... RemainParam> struct TFetchParam {};
+	template<typename ClassType> struct TFetchParam<ClassType>
+	{
+		template<typename... FetchParam>
+		static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam&...p )
+		{
+			return new( pObj )ClassType( p... );
+		}
+	};
+
+	template<typename ClassType, typename FirstParam, typename... RemainParam>
+	struct TFetchParam<ClassType, FirstParam, RemainParam...>
+	{
+		template<typename... FetchParam>
+		static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam&...p )
+		{
+			FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( aryArg[nIndex] );
+			return TFetchParam<ClassType, RemainParam...>::Construct( nIndex + 1, pObj, aryArg, p..., f );
+		}
+	};
+
 	///< Construct the object
 	template<typename... Param> class TConstructParams;
 	template<typename OrgClass, typename ClassType,
 		typename ConstructParamsType, EConstructType eType>
 	class TConstruct : public IObjectConstruct
 	{
-		template<typename... RemainParam> struct TFetchParam {};
-		template<> struct TFetchParam<>
-		{
-			template<typename... FetchParam>
-			static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam&...p )
-			{
-				return new( pObj )ClassType( p... );
-			}
-		};
-
-		template<typename FirstParam, typename... RemainParam>
-		struct TFetchParam<FirstParam, RemainParam...>
-		{
-			template<typename... FetchParam>
-			static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam&...p )
-			{
-				FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( aryArg[nIndex] );
-				return TFetchParam<RemainParam...>::Construct( nIndex + 1, pObj, aryArg, p..., f );
-			}
-		};
 
 		template<typename... Param>
 		ClassType* PlacementNew( TConstructParams<Param...>*, void* pObj, void** aryArg )
 		{
-			return TFetchParam<Param...>::Construct( 0, pObj, aryArg );
+			return TFetchParam<ClassType, Param...>::Construct( 0, pObj, aryArg );
 		}
 
 		template<typename... Param>
