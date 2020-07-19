@@ -45,9 +45,9 @@
 * @brief  Register normal function member
 */
 #define REGIST_CLASSFUNCTION( _function ) \
-	REGIST_CLASSFUNCTION_IMPLEMENT( decltype( &org_class::##_function ), _function, _function )
+	REGIST_CLASSFUNCTION_IMPLEMENT( decltype( &org_class::_function ), _function, _function )
 #define REGIST_CLASSFUNCTION_WITHNAME( _function, _fun_name ) \
-	REGIST_CLASSFUNCTION_IMPLEMENT( decltype( &org_class::##_function ), _function, _fun_name )
+	REGIST_CLASSFUNCTION_IMPLEMENT( decltype( &org_class::_function ), _function, _fun_name )
 #define REGIST_CLASSFUNCTION_OVERLOAD( _function_type, _function, _fun_name ) \
 	REGIST_CLASSFUNCTION_IMPLEMENT( _function_type, _function, _fun_name )
 
@@ -55,9 +55,9 @@
 * @brief  Register static function member
 */
 #define REGIST_STATICFUNCTION( _function ) \
-	REGIST_STATICFUNCTION_IMPLEMENT( decltype( &org_class::##_function ), _function, _function )
+	REGIST_STATICFUNCTION_IMPLEMENT( decltype( &org_class::_function ), _function, _function )
 #define REGIST_STATICFUNCTION_WITHNAME( _function, _fun_name ) \
-	REGIST_STATICFUNCTION_IMPLEMENT( decltype( &org_class::##_function ), _function, _fun_name )
+	REGIST_STATICFUNCTION_IMPLEMENT( decltype( &org_class::_function ), _function, _fun_name )
 #define REGIST_STATICFUNCTION_OVERLOAD( _function_type, _function, _fun_name ) \
 	REGIST_STATICFUNCTION_IMPLEMENT( _function_type, _function, _fun_name )
 
@@ -96,9 +96,9 @@
 * @note	Callback function mean can override by class defined in script
 */
 #define REGIST_CALLBACKFUNCTION( _function ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, decltype( &org_class::##_function ), _function, _function )
+	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, decltype( &org_class::_function ), _function, _function )
 #define REGIST_CALLBACKFUNCTION_WITHNAME( _function, _fun_name ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, decltype( &org_class::##_function ), _function, _fun_name )
+	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, decltype( &org_class::_function ), _function, _fun_name )
 #define REGIST_CALLBACKFUNCTION_OVERLOAD( _function, _fun_type, _fun_name ) \
 	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, _function, _fun_type, _fun_name )
 
@@ -107,9 +107,9 @@
 * @note	Callback function mean can override by class defined in script
 */
 #define REGIST_PUREVIRTUALFUNCTION( _function ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, decltype( &org_class::##_function ), _function, _function )
+	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, decltype( &org_class::_function ), _function, _function )
 #define REGIST_PUREVIRTUALFUNCTION_WITHNAME( _function, _fun_name ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, decltype( &org_class::##_function ), _function, _fun_name )
+	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, decltype( &org_class::_function ), _function, _fun_name )
 #define REGIST_PUREVIRTUALFUNCTION_OVERLOAD( _function, _fun_type, _fun_name ) \
 	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, _function, _fun_type, _fun_name )
 
