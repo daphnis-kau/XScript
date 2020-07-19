@@ -243,14 +243,23 @@ namespace XS
 
 	template<typename Derive, typename...Base> struct TBaseClassOffset {};
 	template<typename Derive> struct TBaseClassOffset<Derive> 
-	{ static void Get( ptrdiff_t* ary ) {} };
+	{
+		static void GetOffset( ptrdiff_t* ary ) {}
+		static void GetTypes( const char** ary ) {}
+	};
 
 	template<typename Derive, typename First, typename...Base>
 	struct TBaseClassOffset<Derive, First, Base...>
 	{
-		static void Get( ptrdiff_t* ary )
+		static void GetOffset( ptrdiff_t* ary )
 		{
 			*ary = ( (ptrdiff_t)(First*)(Derive*)0x40000000 ) - 0x40000000;
+			TBaseClassOffset<Derive, Base...>::Get( ++ary );
+		}
+
+		static void GetTypes( const char** ary )
+		{
+			*ary = typeid( First ).name();
 			TBaseClassOffset<Derive, Base...>::Get( ++ary );
 		}
 	};
@@ -264,13 +273,15 @@ namespace XS
 		static std::array<ptrdiff_t, size + 1> Values()
 		{
 			std::array<ptrdiff_t, size + 1> result = { sizeof( _Derive ) };
-			TBaseClassOffset<_Derive, _Base...>::Get( &result[1] );
+			TBaseClassOffset<_Derive, _Base...>::GetOffset( &result[1] );
 			return result;
 		}
 
 		static std::array<const char*, size + 1> Types()
 		{
-			return { typeid( _Derive ).name(), typeid( _Base... ).name()... };
+			std::array<const char*, size + 1> result = { typeid( _Derive ).name() };
+			TBaseClassOffset<_Derive, _Base...>::GetTypes( &result[1] );
+			return result;
 		}
 	};
 
