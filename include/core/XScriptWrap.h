@@ -241,28 +241,30 @@ namespace XS
 	typedef TList<CScriptRegisterNode> CScriptRegisterList;
 	struct SGlobalExe { SGlobalExe( bool b = false ) {} };
 
+	template<typename Derive, typename...Base> struct TBaseClassOffset {};
+	template<typename Derive> struct TBaseClassOffset<Derive> 
+	{ static void Get( ptrdiff_t* ary ) {} };
+
+	template<typename Derive, typename First, typename...Base>
+	struct TBaseClassOffset<Derive, First, Base...>
+	{
+		static void Get( ptrdiff_t* ary )
+		{
+			*ary = ( (ptrdiff_t)(First*)(Derive*)0x40000000 ) - 0x40000000;
+			TBaseClassOffset<Derive, Base...>::Get( ++ary );
+		}
+	};
+
 	template<typename _Derive, typename ... _Base>
 	class TInheritInfo
 	{
 	public:
 		enum { size = sizeof...( _Base ) + 1 };
-		template<typename...Param> struct TOffset {};
-		template<> struct TOffset<> { static void Get( ptrdiff_t* ary ) {} };
-
-		template<typename First, typename...Param>
-		struct TOffset<First, Param...>
-		{
-			static void Get( ptrdiff_t* ary )
-			{
-				*ary = ( (ptrdiff_t)(First*)(_Derive*)0x40000000 ) - 0x40000000;
-				TOffset<Param...>::Get( ++ary );
-			}
-		};
 
 		static std::array<ptrdiff_t, size + 1> Values()
 		{
 			std::array<ptrdiff_t, size + 1> result = { sizeof( _Derive ) };
-			TOffset<_Base...>::Get( &result[1] );
+			TBaseClassOffset<_Derive, _Base...>::Get( &result[1] );
 			return result;
 		}
 
