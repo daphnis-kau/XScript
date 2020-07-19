@@ -41,7 +41,7 @@ namespace XS
 	{
 		uint32 nIndex = (uint32)m_vecStringInfo.size();
 		while (nIndex && m_vecStringInfo[nIndex - 1].m_pStack < pStack)
-			delete[] m_vecStringInfo[--nIndex].m_pBuffer;
+			delete[] (char*)m_vecStringInfo[--nIndex].m_pBuffer;
 		if (nIndex < m_vecStringInfo.size())
 			m_vecStringInfo.erase(m_vecStringInfo.begin() + nIndex, m_vecStringInfo.end());
 
