@@ -349,7 +349,7 @@ namespace XS
 		SFileContext* pFileContext = (SFileContext*)pContext;
 		if (pFileContext->m_nCacheSize == INVALID_32BITID)
 			fclose((FILE*)(pFileContext->m_pFile));
-		delete pContext;
+		delete pFileContext;
 	}
 
 	bool CScriptBase::RunFile( const char* szFileName )
