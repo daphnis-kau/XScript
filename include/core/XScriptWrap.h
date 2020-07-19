@@ -398,6 +398,63 @@ namespace XS
 		}
 	};
 
+	template< typename Type > 
+	struct TOrgFunResult
+	{
+		template<typename CallBackWrap, typename FunctionType, typename... Param>
+		static void Call( FunctionType funCall, void* pRetBuf, CallBackWrap* pObj, Param...p )
+		{
+			Type result = ( pObj->*funCall )( p... );
+			new( pRetBuf ) Type( result );
+		}
+	};
+
+	template< typename Type > 
+	struct TOrgFunResult<Type&>
+	{
+		template<typename CallBackWrap, typename FunctionType, typename... Param>
+		static void Call( FunctionType funCall, void* pRetBuf, CallBackWrap* pObj, Param...p )
+		{
+			*(Type**)pRetBuf = &( ( pObj->*funCall )( p... ) );
+		}
+	};
+
+	template<> 
+	struct TOrgFunResult<void>
+	{
+		template<typename CallBackWrap, typename FunctionType, typename... Param>
+		static void Call( FunctionType funCall, void* pRetBuf, CallBackWrap* pObj, Param...p )
+		{
+			( pObj->*funCall )( p... );
+		}
+	};
+
+	template<typename RetType, typename... RemainParam>
+	struct TOrgFunParam {};
+
+	template<typename RetType>
+	struct TOrgFunParam<RetType>
+	{
+		template<typename CallBackWrap, typename FunctionType, typename... FetchParam>
+		static void CallFun( size_t nIndex, FunctionType funCall,
+			void* pRetBuf, CallBackWrap* pObj, void** pArgArray, FetchParam&...p )
+		{
+			TOrgFunResult<RetType>::Call( funCall, pRetBuf, pObj, p... );
+		}
+	};
+
+	template<typename RetType, typename FirstParam, typename... RemainParam>
+	struct TOrgFunParam<RetType, FirstParam, RemainParam...>
+	{
+		template<typename CallBackWrap, typename FunctionType, typename... FetchParam>
+		static void CallFun( size_t nIndex, FunctionType funCall,
+			void* pRetBuf, CallBackWrap* pObj, void** pArgArray, FetchParam&...p )
+		{
+			FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( pArgArray[nIndex] );
+			TOrgFunParam<RetType, RemainParam...>::CallFun( nIndex + 1, funCall, pRetBuf, pObj, pArgArray, p..., f );
+		}
+	};
+
 	///< Callback function access wrapper
 	template<typename ClassFunType>
 	class TCallBackBinder
@@ -427,60 +484,13 @@ namespace XS
 
 			typedef decltype( &TCallBackWrap::BootFunction ) FunctionType;
 
-		private:
-			template< typename Type > struct TFetchResult
-			{
-				TFetchResult( FunctionType funCall, void* pRetBuf, TCallBackWrap* pObj, Param...p )
-				{
-					Type result = (pObj->*funCall)( p... );
-					new( pRetBuf ) Type( result );
-				}
-			};
-
-			template< typename Type > struct TFetchResult<Type&>
-			{
-				TFetchResult( FunctionType funCall, void* pRetBuf, TCallBackWrap* pObj, Param...p )
-				{
-					*(Type**)pRetBuf = &( ( pObj->*funCall )( p... ) );
-				}
-			};
-
-			template<> struct TFetchResult<void>
-			{
-				TFetchResult( FunctionType funCall, void* pRetBuf, TCallBackWrap* pObj, Param...p )
-				{
-					( pObj->*funCall )( p... );
-				}
-			};
-
-			template<typename... RemainParam> struct TFetchParam {};
-			template<> struct TFetchParam<>
-			{
-				template<typename... FetchParam>
-				static void CallFun( size_t nIndex, FunctionType funCall,
-					void* pRetBuf, TCallBackWrap* pObj, void** pArgArray, FetchParam&...p )
-				{
-					TFetchResult<RetType> Temp( funCall, pRetBuf, pObj, p... );
-				}
-			};
-
-			template<typename FirstParam, typename... RemainParam>
-			struct TFetchParam<FirstParam, RemainParam...>
-			{
-				template<typename... FetchParam>
-				static void CallFun( size_t nIndex, FunctionType funCall,
-					void* pRetBuf, TCallBackWrap* pObj, void** pArgArray, FetchParam&...p )
-				{
-					FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( pArgArray[nIndex] );
-					TFetchParam<RemainParam...>::CallFun( nIndex + 1, funCall, pRetBuf, pObj, pArgArray, p..., f );
-				}
-			};
-
 		public:
 			void Call( void* pRetBuf, void** pArgArray, uintptr_t funRaw )
 			{
+				typedef TOrgFunParam<RetType, Param...> OrgFunctionCaller;
 				TCallBackWrap* pObj = *(TCallBackWrap**)pArgArray[0];
-				TFetchParam<Param...>::CallFun( 0, *(FunctionType*)&funRaw, pRetBuf, pObj, pArgArray + 1 );
+				FunctionType fun = *(FunctionType*)&funRaw;
+				OrgFunctionCaller::CallFun( 0, fun, pRetBuf, pObj, pArgArray + 1 );
 			}
 
 			static TCallBackWrap* GetInst()
