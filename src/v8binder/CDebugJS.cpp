@@ -1,11 +1,11 @@
 ﻿#include "common/Http.h"
+#include "common/CodeCvs.h"
 #include "common/TStrStream.h"
 #include "CDebugJS.h"
 #include "CScriptJS.h"
 #include "V8Context.h"
 #include <memory>
 #include <locale>
-#include <codecvt>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -388,13 +388,9 @@ namespace XS
 		m_strUtf8Buffer.assign( szBuffer, nSize );
 		if( !buffer.is8Bit() )
 		{
-			m_strUtf8Buffer.resize( nSize * 3 );
-			static std::codecvt_utf8<uint16_t> UtfCvt;
-			std::codecvt_utf8<uint16_t>::state_type State{};
+			m_strUtf8Buffer.resize( nSize * 6 + 1 );
 			const uint16_t* szUcs = buffer.characters16();
-			char* szUtf = &m_strUtf8Buffer[0];
-			UtfCvt.out( State, szUcs, szUcs + nSize, szUcs, szUtf, szUtf + nSize*3, szUtf );
-			nSize = (uint32)( szUtf - &m_strUtf8Buffer[0] );
+			nSize = Ucs2ToUtf8( &m_strUtf8Buffer[0], nSize*6 + 1, szUcs );
 			szBuffer = m_strUtf8Buffer.c_str();
 		}
 
@@ -413,13 +409,9 @@ namespace XS
 		uint32 nSize = (uint32)buffer.length();
 		if (!buffer.is8Bit())
 		{
-			m_strUtf8Buffer.resize( nSize * 3 );
-			static std::codecvt_utf8<uint16_t> UtfCvt;
-			std::codecvt_utf8<uint16_t>::state_type State{};
+			m_strUtf8Buffer.resize( nSize * 6 + 1 );
 			const uint16_t* szUcs = buffer.characters16();
-			char* szUtf = &m_strUtf8Buffer[0];
-			UtfCvt.out( State, szUcs, szUcs + nSize, szUcs, szUtf, szUtf + nSize * 3, szUtf );
-			nSize = (uint32)( szUtf - &m_strUtf8Buffer[0] );
+			nSize = Ucs2ToUtf8( &m_strUtf8Buffer[0], nSize*6 + 1, szUcs );
 			szBuffer = m_strUtf8Buffer.c_str();
 		}
 

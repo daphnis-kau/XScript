@@ -6,8 +6,8 @@
 // 2007-09-15
 //===============================================
 
-#ifndef __GAMMA_CODE_COVS_H__
-#define __GAMMA_CODE_COVS_H__
+#ifndef __XS_CODE_COVS_H__
+#define __XS_CODE_COVS_H__
 
 #include "common/CommonType.h"
 #include <string>

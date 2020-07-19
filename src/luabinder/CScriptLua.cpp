@@ -5,7 +5,6 @@
 #include <alloca.h>
 #endif
 #include <locale>
-#include <codecvt>
 
 #undef min
 #undef max
@@ -18,6 +17,7 @@ extern "C"
 	#include "lualib.h"
 }
 
+#include "common/CodeCvs.h"
 #include "CTypeLua.h"
 #include "CDebugLua.h"
 #include "CScriptLua.h"
@@ -574,13 +574,9 @@ namespace XS
 		if( szStr == nullptr )
 			return lua_pushnil( pL );
 		CScriptLua* pScript = CScriptLua::GetScript( pL );
-		size_t nSize = wcslen( szStr );
-		pScript->m_szTempUtf8.resize( nSize * 6 );
-		static std::codecvt_utf8<wchar_t> UtfCvt;
-		std::codecvt_utf8<wchar_t>::state_type State{};
-		char* szUtf = &pScript->m_szTempUtf8[0];
-		UtfCvt.out( State, szStr, szStr + nSize, szStr, szUtf, szUtf + nSize * 6, szUtf );
-		size_t nLen = (size_t)( szUtf - &pScript->m_szTempUtf8[0] );
+		uint32 nSize = (uint32)wcslen( szStr );
+		pScript->m_szTempUtf8.resize( nSize * 6 + 1 );
+		uint32 nLen = UcsToUtf8( &pScript->m_szTempUtf8[0], nSize*6 + 1, szStr );
 		lua_pushlstring( pL, pScript->m_szTempUtf8.c_str(), nLen );
 	}
 
@@ -594,13 +590,9 @@ namespace XS
 		if( szStr[0] == 0 )
 			return L"";
 		CScriptLua* pScript = CScriptLua::GetScript( pL );
-		size_t nSize = strlen( szStr );
+		uint32 nSize = (uint32)strlen( szStr );
 		pScript->m_szTempUcs2.resize( nSize + 1 );
-		static std::codecvt_utf8<wchar_t> UtfCvt;
-		std::codecvt_utf8<wchar_t>::state_type State{};
-		wchar_t* szUcs = &pScript->m_szTempUcs2[0];
-		UtfCvt.in( State, szStr, szStr + nSize, szStr, szUcs, szUcs + nSize, szUcs );
-		size_t nLen = (size_t)( szUcs - &pScript->m_szTempUcs2[0] );
+		uint32 nLen = Utf8ToUcs( &pScript->m_szTempUcs2[0], nSize + 1, szStr );
 		pScript->m_szTempUcs2.resize( nLen );
 		const char* szUcsBuffer = (const char*)&pScript->m_szTempUcs2[0];
 		lua_pushlstring( pL, szUcsBuffer, ( nLen + 1 )*sizeof(wchar_t) );
@@ -884,8 +876,9 @@ namespace XS
 				const char* szFileName = luaL_checkstring( pL, 1 );
 				if( szFileName == nullptr || szFileName[0] == 0 )
 					return 1;
-				std::wstring_convert<std::codecvt_utf8<wchar_t>> _wstr;
-				std::wstring strName = _wstr.from_bytes( szFileName );
+				std::wstring strName( strlen( szFileName ), wchar_t() );
+				uint32 nLen = Utf8ToUcs( &strName[0], (uint32)strName.size(), szFileName );
+				strName.resize( nLen );
 				assert( strName.size() < 1024 );
 				char szAcsName[4096];
 				WideCharToMultiByte( CP_ACP, NULL, strName.c_str(), -1, 

@@ -1,6 +1,5 @@
 ﻿#include <string>
 #include <locale>
-#include <codecvt>
 #include <algorithm>
 
 extern "C"
@@ -12,6 +11,7 @@ extern "C"
 }
 
 #include "common/Help.h"
+#include "common/CodeCvs.h"
 #include "common/TStrStream.h"
 #include "core/CClassInfo.h"
 #include "CTypeLua.h"
@@ -486,16 +486,8 @@ namespace XS
 		}
 		pInfo->nPosition += sizeof(uint16) + nLen*sizeof(uint16);
 		CScriptLua* pScript = CScriptLua::GetScript( pL );
-		pScript->m_szTempUcs2.resize( nLen );
-		for( uint32 i = 0; i < nLen; i++ )
-			pScript->m_szTempUcs2[i] = szUtf16[i];
-		pScript->m_szTempUtf8.resize( nLen*6 );
-		static std::codecvt_utf8<wchar_t> UtfCvt;
-		std::codecvt_utf8<wchar_t>::state_type State{};
-		const wchar_t* szUcs = pScript->m_szTempUcs2.c_str();
-		char* szUtf = &pScript->m_szTempUtf8[0];
-		UtfCvt.out( State, szUcs, szUcs + nLen, szUcs, szUtf, szUtf + nLen*6, szUtf );
-		nLen = (uint16)( szUtf - &pScript->m_szTempUtf8[0] );
+		pScript->m_szTempUtf8.resize( nLen*6 + 1 );
+		nLen = Ucs2ToUtf8( &pScript->m_szTempUtf8[0], nLen*6+1, szUtf16 );
 		lua_pushlstring( pL, pScript->m_szTempUtf8.c_str(), nLen );
 		return 1;
 	}
@@ -516,16 +508,8 @@ namespace XS
 		pInfo->nPosition += nLen*sizeof(uint16);
 
 		CScriptLua* pScript = CScriptLua::GetScript( pL );
-		pScript->m_szTempUcs2.resize( nLen );
-		for( uint32 i = 0; i < nLen; i++ )
-			pScript->m_szTempUcs2[i] = szUtf16[i];
-		pScript->m_szTempUtf8.resize( nLen*6 );
-		static std::codecvt_utf8<wchar_t> UtfCvt;
-		std::codecvt_utf8<wchar_t>::state_type State{};
-		const wchar_t* szUcs = pScript->m_szTempUcs2.c_str();
-		char* szUtf = &pScript->m_szTempUtf8[0];
-		UtfCvt.out( State, szUcs, szUcs + nLen, szUcs, szUtf, szUtf + nLen*6, szUtf );
-		nLen = (uint16)( szUtf - &pScript->m_szTempUtf8[0] );
+		pScript->m_szTempUtf8.resize( nLen*6 + 1 );
+		nLen = Ucs2ToUtf8( &pScript->m_szTempUtf8[0], nLen*6+1, szUtf16 );
 		lua_pushlstring( pL, pScript->m_szTempUtf8.c_str(), nLen );
 		return 1;
 	}
