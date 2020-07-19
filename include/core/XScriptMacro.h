@@ -19,9 +19,9 @@
 	namespace _class##_namespace { \
 	static XS::SGlobalExe _class##_register( \
 		XS::CScriptBase::RegisterClass( #_class, \
-		XS::TInheritInfo<_class, ##__VA_ARGS__>::size, \
-		XS::TInheritInfo<_class, ##__VA_ARGS__>::Types().data(), \
-		XS::TInheritInfo<_class, ##__VA_ARGS__>::Values().data() ) ); \
+		XS::TInheritInfo<_class, __VA_ARGS__>::size, \
+		XS::TInheritInfo<_class, __VA_ARGS__>::Types().data(), \
+		XS::TInheritInfo<_class, __VA_ARGS__>::Values().data() ) ); \
 	static XS::CScriptRegisterList listRegister; \
 	static const auto eConstructType = _type; \
 	typedef TConstructParams<> ConstructParamsType;\
@@ -39,8 +39,8 @@
 
 #define REGIST_CONSTRUCTOR( ... )\
 	abandon_##_Base_Class; \
-	typedef TConstructParams<##__VA_ARGS__> ConstructParamsType;  \
-	typedef TGetVTable<org_class, eConstructType, ##__VA_ARGS__>
+	typedef TConstructParams<__VA_ARGS__> ConstructParamsType;  \
+	typedef TGetVTable<org_class, eConstructType, __VA_ARGS__>
 
 
 #define REGIST_CLASSFUNCTION_IMPLEMENT( _function_type, _function, _function_name ) \
