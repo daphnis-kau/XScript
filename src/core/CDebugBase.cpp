@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <signal.h>
 #pragma comment( linker, "/defaultlib:ws2_32.lib" )
+#define StrCaseCmp stricmp
 #else
 #include <alloca.h>
 #include <sys/socket.h>
@@ -29,6 +30,7 @@ typedef int32				SOCKET;
 typedef struct linger		LINGER;
 #define SOCKET_ERROR		-1
 #define SD_SEND				SHUT_WR
+#define StrCaseCmp			strcasecmp
 #endif
 
 #undef min
@@ -331,7 +333,7 @@ namespace XS
 			const std::string& strResult = ss.str();
 			uint32 nLength = (uint32)strResult.size();
 			char szBuffer[256];
-			sprintf_s( szBuffer, ELEM_COUNT(szBuffer) - 1,"Content-Length:%d\r\n\r\n", nLength);
+			snprintf( szBuffer, ELEM_COUNT(szBuffer) - 1,"Content-Length:%d\r\n\r\n", nLength);
 			m_szStringSend.append( szBuffer );
 			m_szStringSend.append( strResult );
 		}
@@ -471,7 +473,7 @@ namespace XS
 		m_pBase->Output( "\n-----------------------process end-----------------------\n", -1 );
 #endif
 
-		if( !stricmp( szCommand, "initialize" ) )
+		if( !StrCaseCmp( szCommand, "initialize" ) )
 		{
 			CJson* pBody = new CJson( "body" );
 			pBody->AddChild( "supportsEvaluateForHovers", "true" );
@@ -481,7 +483,7 @@ namespace XS
 			SendEvent( nullptr, "initialized" );
 			return true;
 		}
-		else if( !stricmp( szCommand, "launch" ) )
+		else if( !StrCaseCmp( szCommand, "launch" ) )
 		{
 			CJson* pArg = pCmd->GetChild( "arguments" );
 			bool bNoDebug = pArg->At<bool>( "noDebug" );
@@ -489,13 +491,13 @@ namespace XS
 			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "attach" ) )
+		else if( !StrCaseCmp( szCommand, "attach" ) )
 		{
 			m_eAttachType = eAT_Attach;
 			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "loadedSources" ) )
+		else if( !StrCaseCmp( szCommand, "loadedSources" ) )
 		{
 			CJson* pBody = new CJson( "body" );
 			CJson* pSourceArray = pBody->AddChild( "sources" );
@@ -514,8 +516,8 @@ namespace XS
 			SendRespone( pBody, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "terminate" ) ||
-			!stricmp( szCommand, "disconnect" ) )
+		else if( !StrCaseCmp( szCommand, "terminate" ) ||
+			!StrCaseCmp( szCommand, "disconnect" ) )
 		{
 			uint8 nAttachType = m_eAttachType;
 			TeminateRemote( szSequence );
@@ -528,7 +530,7 @@ namespace XS
 #endif
 			return true;
 		}
-		else if( !stricmp( szCommand, "setBreakpoints" ) )
+		else if( !StrCaseCmp( szCommand, "setBreakpoints" ) )
 		{
 			CJson* pArg = pCmd->GetChild( "arguments" );
 			CJson* pSource = pArg->GetChild( "source" );
@@ -566,7 +568,7 @@ namespace XS
 			SendRespone( pBody, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "threads" ) )
+		else if( !StrCaseCmp( szCommand, "threads" ) )
 		{
 			CJson* pBody = new CJson( "body" );
 			CJson* pThreadArray = pBody->AddChild( "threads" );
@@ -576,14 +578,14 @@ namespace XS
 			SendRespone( pBody, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "pause" ) )
+		else if( !StrCaseCmp( szCommand, "pause" ) )
 		{
 			if( !m_bEnterDebug )
 				Stop();
 			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "setExceptionBreakpoints" ) )
+		else if( !StrCaseCmp( szCommand, "setExceptionBreakpoints" ) )
 		{
 			m_bAllExceptionsBreak = false;
 			m_bUncaughtExceptionsBreak = false;
@@ -593,9 +595,9 @@ namespace XS
 			while( pName )
 			{
 				const char* szName = pName->As<const char*>();
-				if( !stricmp( szName, "all" ) )
+				if( !StrCaseCmp( szName, "all" ) )
 					m_bAllExceptionsBreak = true;
-				else if( !stricmp( szName, "uncaught" ) )
+				else if( !StrCaseCmp( szName, "uncaught" ) )
 					m_bUncaughtExceptionsBreak = true;
 				pName = pName->GetNext();
 			}
@@ -603,7 +605,7 @@ namespace XS
 			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "_clearall" ) )
+		else if( !StrCaseCmp( szCommand, "_clearall" ) )
 		{
 			while( !m_setBreakPoint.empty() )
 				DelBreakPoint( m_setBreakPoint.begin()->GetBreakPointID() );
@@ -616,7 +618,7 @@ namespace XS
 			return true;
 		}
 
-		if( !stricmp( szCommand, "stackTrace" ) )
+		if( !StrCaseCmp( szCommand, "stackTrace" ) )
 		{
 			CJson* pArg = pCmd->GetChild( "arguments" );
 			int32 nStartFrame = pArg->At<int32>( "startFrame", -1 );
@@ -624,7 +626,7 @@ namespace XS
 			int32 nMaxFrameEnd = (int32)GetFrameCount() - 1;
 			int32 nEndFrame = std::min( nStartFrame + nFrameCount, nMaxFrameEnd );
 			nStartFrame = std::min( nStartFrame, nMaxFrameEnd );
-			sprintf_s( szBuf, ELEM_COUNT(szBuf) - 1, "%d", nMaxFrameEnd + 1);
+			snprintf( szBuf, ELEM_COUNT(szBuf) - 1, "%d", nMaxFrameEnd + 1);
 
 			CJson* pBody = new CJson( "body" );
 			pBody->AddChild( "totalFrames", szBuf );
@@ -654,7 +656,7 @@ namespace XS
 			SendRespone( pBody, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "scopes" ) )
+		else if( !StrCaseCmp( szCommand, "scopes" ) )
 		{
 			CJson* pArg = pCmd->GetChild( "arguments" );
 			int32 nFrame = pArg->At<int32>( "frameId", 0 );
@@ -677,7 +679,7 @@ namespace XS
 			SendRespone( pBody, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "evaluate" ) )
+		else if( !StrCaseCmp( szCommand, "evaluate" ) )
 		{
 			CJson* pArg = pCmd->GetChild( "arguments" );
 			int32 nFrame = pArg->At<int32>( "frameId", 0 );
@@ -698,7 +700,7 @@ namespace XS
 			SendRespone( pBody, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "variables" ) )
+		else if( !StrCaseCmp( szCommand, "variables" ) )
 		{
 			CJson* pArg = pCmd->GetChild( "arguments" );
 			uint32 nParentID = pArg->At<uint32>( "variablesReference" );
@@ -731,10 +733,10 @@ namespace XS
 			SendRespone( pBody, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "exceptionInfo" ) )
+		else if( !StrCaseCmp( szCommand, "exceptionInfo" ) )
 		{
 			CJson* pBody = new CJson( "body" );
-			sprintf_s( szBuf, ELEM_COUNT( szBuf ) - 1, "e%d", m_nExceptionID);
+			snprintf( szBuf, ELEM_COUNT( szBuf ) - 1, "e%d", m_nExceptionID);
 			pBody->AddChild( "exceptionId", szBuf );
 			pBody->AddChild( "description", m_szException.c_str() );
 			pBody->AddChild( "breakMode", "always" );
@@ -743,7 +745,7 @@ namespace XS
 			SendRespone( pBody, szSequence, true, szCommand );
 			return true;
 		}
-		else if( !stricmp( szCommand, "continue" ) ) 
+		else if( !StrCaseCmp( szCommand, "continue" ) ) 
 		{
 			Continue();
 			CJson* pBody = new CJson( "body" );
@@ -752,21 +754,21 @@ namespace XS
 			m_bExpectStep = false;
 			return false;
 		}
-		else if( !stricmp( szCommand, "stepIn" ) )
+		else if( !StrCaseCmp( szCommand, "stepIn" ) )
 		{
 			StepIn();
 			SendRespone( nullptr, szSequence, true, szCommand );
 			m_bExpectStep = true;
 			return false;
 		}
-		else if( !stricmp( szCommand, "stepOut" ) )
+		else if( !StrCaseCmp( szCommand, "stepOut" ) )
 		{
 			StepOut();
 			SendRespone( nullptr, szSequence, true, szCommand );
 			m_bExpectStep = true;
 			return false;
 		}
-		else if( !stricmp( szCommand, "next" ) )
+		else if( !StrCaseCmp( szCommand, "next" ) )
 		{
 			StepNext();
 			SendRespone( nullptr, szSequence, true, szCommand );
