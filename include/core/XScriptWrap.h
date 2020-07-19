@@ -319,7 +319,7 @@ namespace XS
 	};
 
 	template<typename RetType, typename FirstParam, typename... RemainParam>
-	struct TFunctionCaller<typename RetType, FirstParam, RemainParam...>
+	struct TFunctionCaller<RetType, FirstParam, RemainParam...>
 	{
 		template<typename FunctionType, typename... FetchParam>
 		static void CallFun( size_t nIndex, FunctionType funCall,
