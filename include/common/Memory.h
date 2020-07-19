@@ -8,6 +8,7 @@
 #ifndef __XS_MEMORY_H__
 #define __XS_MEMORY_H__
 
+#include <stdlib.h>
 #include "common/CommonType.h"
 
 namespace XS
