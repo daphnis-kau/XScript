@@ -103,10 +103,15 @@ namespace XS
 
 	///< Constant type
 	template<typename T>
-	struct TTypeInfo<const T> : public TTypeInfo<T>
+	struct TTypeInfo<const T>
 	{
+		typedef T Type;
+
 		enum
 		{
+			m_eSize = TTypeInfo<T>::m_eSize,
+			m_eType = TTypeInfo<T>::m_eType,
+			m_eTypeEx0 = TTypeInfo<T>::m_eTypeEx0,
 			m_eTypeEx1 = TTypeInfo<T>::m_eTypeEx1 ? TTypeInfo<T>::m_eTypeEx1 : eDTE_Const,
 			m_eTypeEx2 = TTypeInfo<T>::m_eTypeEx2 ? TTypeInfo<T>::m_eTypeEx2 : ( TTypeInfo<T>::m_eTypeEx1 ? eDTE_Const : 0 ),
 			m_eTypeEx3 = TTypeInfo<T>::m_eTypeEx3 ? TTypeInfo<T>::m_eTypeEx3 : ( TTypeInfo<T>::m_eTypeEx2 ? eDTE_Const : 0 ),
@@ -118,10 +123,15 @@ namespace XS
 
 	///< Pointer type
 	template<typename T>
-	struct TTypeInfo<T*> : public TTypeInfo<T>
+	struct TTypeInfo<T*>
 	{
+		typedef T Type;
+
 		enum
 		{
+			m_eSize = TTypeInfo<T>::m_eSize,
+			m_eType = TTypeInfo<T>::m_eType,
+			m_eTypeEx0 = TTypeInfo<T>::m_eTypeEx0,
 			m_eTypeEx1 = TTypeInfo<T>::m_eTypeEx1 ? TTypeInfo<T>::m_eTypeEx1 : eDTE_Pointer,
 			m_eTypeEx2 = TTypeInfo<T>::m_eTypeEx2 ? TTypeInfo<T>::m_eTypeEx2 : ( TTypeInfo<T>::m_eTypeEx1 ? eDTE_Pointer : 0 ),
 			m_eTypeEx3 = TTypeInfo<T>::m_eTypeEx3 ? TTypeInfo<T>::m_eTypeEx3 : ( TTypeInfo<T>::m_eTypeEx2 ? eDTE_Pointer : 0 ),
@@ -133,10 +143,15 @@ namespace XS
 
 	///< Constant pointer type
 	template<typename T>
-	struct TTypeInfo<T *const> : public TTypeInfo<T>
+	struct TTypeInfo<T *const>
 	{
+		typedef T Type;
+
 		enum
 		{
+			m_eSize = TTypeInfo<T>::m_eSize,
+			m_eType = TTypeInfo<T>::m_eType,
+			m_eTypeEx0 = TTypeInfo<T>::m_eTypeEx0,
 			m_eTypeEx1 = TTypeInfo<T>::m_eTypeEx1 ? TTypeInfo<T>::m_eTypeEx1 : eDTE_ConstPointer,
 			m_eTypeEx2 = TTypeInfo<T>::m_eTypeEx2 ? TTypeInfo<T>::m_eTypeEx2 : ( TTypeInfo<T>::m_eTypeEx1 ? eDTE_ConstPointer : 0 ),
 			m_eTypeEx3 = TTypeInfo<T>::m_eTypeEx3 ? TTypeInfo<T>::m_eTypeEx3 : ( TTypeInfo<T>::m_eTypeEx2 ? eDTE_ConstPointer : 0 ),
@@ -148,10 +163,15 @@ namespace XS
 
 	///< Reference type
 	template<typename T>
-	struct TTypeInfo<T&> : public TTypeInfo<T>
+	struct TTypeInfo<T&>
 	{
+		typedef T Type;
+
 		enum
 		{
+			m_eSize = TTypeInfo<T>::m_eSize,
+			m_eType = TTypeInfo<T>::m_eType,
+			m_eTypeEx0 = TTypeInfo<T>::m_eTypeEx0,
 			m_eTypeEx1 = TTypeInfo<T>::m_eTypeEx1 ? TTypeInfo<T>::m_eTypeEx1 : eDTE_Reference,
 			m_eTypeEx2 = TTypeInfo<T>::m_eTypeEx2 ? TTypeInfo<T>::m_eTypeEx2 : ( TTypeInfo<T>::m_eTypeEx1 ? eDTE_Reference : 0 ),
 			m_eTypeEx3 = TTypeInfo<T>::m_eTypeEx3 ? TTypeInfo<T>::m_eTypeEx3 : ( TTypeInfo<T>::m_eTypeEx2 ? eDTE_Reference : 0 ),

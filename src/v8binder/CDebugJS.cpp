@@ -206,7 +206,7 @@ namespace XS
 			const char* szKey;
 			uint32 nKeyLen;
 			uint32 nReadCount = WebSocketShakeHandCheck(
-				strBuffer.c_str(), strBuffer.size(), true, szKey, nKeyLen );
+				strBuffer.c_str(), (uint32)strBuffer.size(), true, szKey, nKeyLen );
 			if( nReadCount == INVALID_32BITID )
 				return false;
 			if( !nReadCount )
