@@ -129,8 +129,10 @@ namespace XS
 		}
 	};
 
-	template<typename ClassType, typename... RemainParam> struct TFetchParam {};
-	template<typename ClassType> struct TFetchParam<ClassType>
+	template<typename ClassType, typename... RemainParam> 
+	struct TConstructFromParam {};
+	template<typename ClassType> 
+	struct TConstructFromParam<ClassType>
 	{
 		template<typename... FetchParam>
 		static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam&...p )
@@ -140,13 +142,14 @@ namespace XS
 	};
 
 	template<typename ClassType, typename FirstParam, typename... RemainParam>
-	struct TFetchParam<ClassType, FirstParam, RemainParam...>
+	struct TConstructFromParam<ClassType, FirstParam, RemainParam...>
 	{
 		template<typename... FetchParam>
 		static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam&...p )
 		{
 			FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( aryArg[nIndex] );
-			return TFetchParam<ClassType, RemainParam...>::Construct( nIndex + 1, pObj, aryArg, p..., f );
+			typedef TConstructFromParam<ClassType, RemainParam...> NextType;
+			return NextType::Construct( nIndex + 1, pObj, aryArg, p..., f );
 		}
 	};
 
@@ -156,11 +159,10 @@ namespace XS
 		typename ConstructParamsType, EConstructType eType>
 	class TConstruct : public IObjectConstruct
 	{
-
 		template<typename... Param>
 		ClassType* PlacementNew( TConstructParams<Param...>*, void* pObj, void** aryArg )
 		{
-			return TFetchParam<ClassType, Param...>::Construct( 0, pObj, aryArg );
+			return TConstructFromParam<ClassType, Param...>::Construct( 0, pObj, aryArg );
 		}
 
 		template<typename... Param>
