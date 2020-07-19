@@ -367,41 +367,41 @@ namespace XS
 		CScriptBase::RegisterClassFunction( pWrap, (uintptr_t)pFun, InfoArray, szName );
 	}
 
+	template< typename T >
+	struct TCallBack
+	{
+		static T OnCall( uint32 nCallBackIndex, void** pArgArray )
+		{
+			T ReturnValue;
+			CScriptBase::CallBack( nCallBackIndex, &ReturnValue, pArgArray );
+			return ReturnValue;
+		}
+	};
+
+	template<typename T>
+	struct TCallBack<T&>
+	{
+		static T& OnCall( uint32 nCallBackIndex, void** pArgArray )
+		{
+			T* pReturnValue;
+			CScriptBase::CallBack( nCallBackIndex, &pReturnValue, pArgArray );
+			return *pReturnValue;
+		}
+	};
+
+	template<>
+	struct TCallBack<void>
+	{
+		static void OnCall( uint32 nCallBackIndex, void** pArgArray )
+		{
+			CScriptBase::CallBack( nCallBackIndex, nullptr, pArgArray );
+		}
+	};
+
 	///< Callback function access wrapper
 	template<typename ClassFunType>
 	class TCallBackBinder
 	{
-		template< typename T >
-		struct TCallBack
-		{
-			static T OnCall( uint32 nCallBackIndex, void** pArgArray )
-			{
-				T ReturnValue;
-				CScriptBase::CallBack( nCallBackIndex, &ReturnValue, pArgArray );
-				return ReturnValue;
-			}
-		};
-
-		template<typename T>
-		struct TCallBack<T&>
-		{
-			static T& OnCall( uint32 nCallBackIndex, void** pArgArray )
-			{
-				T* pReturnValue;
-				CScriptBase::CallBack( nCallBackIndex, &pReturnValue, pArgArray );
-				return *pReturnValue;
-			}
-		};
-
-		template<>
-		struct TCallBack<void>
-		{
-			static void OnCall( uint32 nCallBackIndex, void** pArgArray )
-			{
-				CScriptBase::CallBack( nCallBackIndex, nullptr, pArgArray );
-			}
-		};
-
 		template<typename RetType, typename ClassType, typename... Param >
 		class TCallBackWrap : public IFunctionWrap
 		{
