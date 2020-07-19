@@ -266,12 +266,13 @@ namespace XS
 		}
 	};
 
-	template<typename _Derive, typename ... _Base>
+	template<typename ... _Base>
 	class TInheritInfo
 	{
 	public:
 		enum { size = sizeof...( _Base ) + 1 };
 
+		template<typename _Derive>
 		static std::array<ptrdiff_t, size + 1> Values()
 		{
 			std::array<ptrdiff_t, size + 1> result = { sizeof( _Derive ) };
@@ -279,6 +280,7 @@ namespace XS
 			return result;
 		}
 
+		template<typename _Derive>
 		static std::array<const char*, size + 1> Types()
 		{
 			std::array<const char*, size + 1> result = { typeid( _Derive ).name() };

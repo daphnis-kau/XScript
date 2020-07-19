@@ -19,9 +19,9 @@
 	namespace _class##_namespace { \
 	static XS::SGlobalExe _class##_register( \
 		XS::CScriptBase::RegisterClass( #_class, \
-		XS::TInheritInfo<_class, __VA_ARGS__>::size, \
-		XS::TInheritInfo<_class, __VA_ARGS__>::Types().data(), \
-		XS::TInheritInfo<_class, __VA_ARGS__>::Values().data() ) ); \
+		XS::TInheritInfo<__VA_ARGS__>::size, \
+		XS::TInheritInfo<__VA_ARGS__>::Types<_class>().data(), \
+		XS::TInheritInfo<__VA_ARGS__>::Values<_class>().data() ) ); \
 	static XS::CScriptRegisterList listRegister; \
 	static const auto eConstructType = _type; \
 	typedef TConstructParams<> ConstructParamsType;\
