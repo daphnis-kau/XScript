@@ -526,7 +526,7 @@ namespace XS
 			* most compile will work well.
 			*/
 			typedef TClassSizeEqual<FunctionType, uintptr_t> SizeCheck;
-			typedef typename SizeCheck::Succeeded Succeeded;
+			//typedef typename SizeCheck::Succeeded Succeeded;
 
 			IFunctionWrap* pWrap = CallBackWrap::GetInst();
 			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
@@ -577,7 +577,7 @@ namespace XS
 			* most compile will work well.
 			*/
 			typedef TClassSizeEqual<FunctionType, uintptr_t> SizeCheck;
-			typedef typename SizeCheck::Succeeded Succeeded;
+			//typedef typename SizeCheck::Succeeded Succeeded;
 
 			static TDestructorWrap s_instance;
 			GetCallBackIndex() = XS::GetDestructorFunIndex<ClassType>();
