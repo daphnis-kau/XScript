@@ -9,9 +9,10 @@
 #ifndef __XS_CONST_STRING_H__
 #define __XS_CONST_STRING_H__
 
-#include "common/Help.h"
-#include <algorithm>
+#include <memory.h>
 #include <string>
+#include <algorithm>
+#include "common/Help.h"
 
 namespace XS
 {
