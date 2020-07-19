@@ -8,8 +8,9 @@
 #ifndef __TYPE_BASE_H__
 #define __TYPE_BASE_H__
 
-#include "core/XScriptDef.h"
+#include <stddef.h>
 #include <vector>
+#include "core/XScriptDef.h"
 
 namespace XS
 {
