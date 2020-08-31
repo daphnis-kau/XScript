@@ -55,15 +55,16 @@ namespace XS
 	template<> struct ArgFetcher<const float	&> : public ArgFetcher<float	> {};
 	template<> struct ArgFetcher<const double	&> : public ArgFetcher<double	> {};
 
-	///< Capture compile error
-	template<bool bCompileSucceed> struct TCompileSucceed {};
-	template<> struct TCompileSucceed<true> { struct Succeeded {}; };
-
-	///< Check size of the giving class are equal
-	template<typename _T1, typename _T2> struct TClassSizeEqual
-	{ 
-		typedef TCompileSucceed<sizeof(_T1) == sizeof(_T2)> CCompileSucceed;
-		typedef typename CCompileSucceed::Succeeded Succeeded;
+	///< Convert function pointer to uintptr_t
+	template<typename FunctionType>
+	uintptr_t FuctionTypeToIntValue(FunctionType fun)
+	{
+		uintptr_t funValue = *(uintptr_t*)&fun;
+		FunctionType result = nullptr;
+		*(uintptr_t*)&result = funValue;
+		if (result != fun)
+			throw "the function can not covert to uintptr_t";
+		return funValue;
 	};
 
 	///< Fetch function type
@@ -135,7 +136,7 @@ namespace XS
 	struct TConstructFromParam<ClassType>
 	{
 		template<typename... FetchParam>
-		static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam&...p )
+		static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam...p )
 		{
 			return new( pObj )ClassType( p... );
 		}
@@ -145,7 +146,7 @@ namespace XS
 	struct TConstructFromParam<ClassType, FirstParam, RemainParam...>
 	{
 		template<typename... FetchParam>
-		static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam&...p )
+		static ClassType* Construct( size_t nIndex, void* pObj, void** aryArg, FetchParam...p )
 		{
 			FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( aryArg[nIndex] );
 			typedef TConstructFromParam<ClassType, RemainParam...> NextType;
@@ -292,21 +293,21 @@ namespace XS
 	template< typename Type > struct TFetchResult
 	{
 		template<typename FunctionType, typename... Param>
-		TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
+		static void Call( FunctionType funCall, void* pRetBuf, Param...p )
 		{ new( pRetBuf ) Type( funCall( p... ) ); }
 	};
 
 	template< typename Type > struct TFetchResult<Type&>
 	{
 		template<typename FunctionType, typename... Param>
-		TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
+		static void Call( FunctionType funCall, void* pRetBuf, Param...p )
 		{ *(Type**)pRetBuf = &( funCall( p... ) ); }
 	};
 
 	template<> struct TFetchResult<void>
 	{
 		template<typename FunctionType, typename... Param>
-		TFetchResult( FunctionType funCall, void* pRetBuf, Param...p )
+		static void Call( FunctionType funCall, void* pRetBuf, Param...p )
 		{ funCall( p... ); }
 	};
 
@@ -316,8 +317,9 @@ namespace XS
 	{
 		template<typename FunctionType, typename... FetchParam>
 		static void CallFun( size_t nIndex, FunctionType funCall, 
-			void* pRetBuf, void** pArgArray, FetchParam&...p )
-		{ TFetchResult<RetType> Temp( funCall, pRetBuf, p... ); }
+			void* pRetBuf, void** pArgArray, FetchParam...p )
+		{ TFetchResult<RetType>::Call<FunctionType, FetchParam...>
+			( funCall, pRetBuf, p... ); }
 	};
 
 	template<typename RetType, typename FirstParam, typename... RemainParam>
@@ -325,11 +327,12 @@ namespace XS
 	{
 		template<typename FunctionType, typename... FetchParam>
 		static void CallFun( size_t nIndex, FunctionType funCall,
-			void* pRetBuf, void** pArgArray, FetchParam&...p )
+			void* pRetBuf, void** pArgArray, FetchParam...p )
 		{ 
 			FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( pArgArray[nIndex] );
 			typedef TFunctionCaller<RetType, RemainParam...> NextFunCaller;
-			NextFunCaller::CallFun( nIndex + 1, funCall, pRetBuf, pArgArray, p..., f );
+			NextFunCaller::CallFun<FunctionType, FetchParam..., FirstParam>
+				( nIndex + 1, funCall, pRetBuf, pArgArray, p..., f );
 		}
 	};
 
@@ -439,9 +442,10 @@ namespace XS
 	{
 		template<typename CallBackWrap, typename FunctionType, typename... FetchParam>
 		static void CallFun( size_t nIndex, FunctionType funCall,
-			void* pRetBuf, CallBackWrap* pObj, void** pArgArray, FetchParam&...p )
+			void* pRetBuf, CallBackWrap* pObj, void** pArgArray, FetchParam...p )
 		{
-			TOrgFunResult<RetType>::Call( funCall, pRetBuf, pObj, p... );
+			TOrgFunResult<RetType>::Call<CallBackWrap, FunctionType, FetchParam...>
+				( funCall, pRetBuf, pObj, p... );
 		}
 	};
 
@@ -450,10 +454,11 @@ namespace XS
 	{
 		template<typename CallBackWrap, typename FunctionType, typename... FetchParam>
 		static void CallFun( size_t nIndex, FunctionType funCall,
-			void* pRetBuf, CallBackWrap* pObj, void** pArgArray, FetchParam&...p )
+			void* pRetBuf, CallBackWrap* pObj, void** pArgArray, FetchParam...p )
 		{
 			FirstParam f = ArgFetcher<FirstParam>::CallWrapArg( pArgArray[nIndex] );
-			TOrgFunParam<RetType, RemainParam...>::CallFun( nIndex + 1, funCall, pRetBuf, pObj, pArgArray, p..., f );
+			TOrgFunParam<RetType, RemainParam...>::CallFun<CallBackWrap, FunctionType, FetchParam..., FirstParam>
+				( nIndex + 1, funCall, pRetBuf, pObj, pArgArray, p..., f );
 		}
 	};
 
@@ -518,21 +523,11 @@ namespace XS
 			RetType(ClassType::*pFun)(Param...) )
 		{
 			typedef TCallBackWrap<RetType, ClassType, Param...> CallBackWrap;
-			typedef typename CallBackWrap::FunctionType FunctionType;
-
-			/**
-			* @note If compile error occur, it is mean the size of FunctionType 
-			* and uintptr_t are not equal. It is dependence to compiler, but 
-			* most compile will work well.
-			*/
-			typedef TClassSizeEqual<FunctionType, uintptr_t> SizeCheck;
-			//typedef typename SizeCheck::Succeeded Succeeded;
-
 			IFunctionWrap* pWrap = CallBackWrap::GetInst();
 			STypeInfoArray InfoArray = MakeFunArg<RetType, ClassType*, Param...>();
-			FunctionType funBoot = &CallBackWrap::BootFunction;
+			uintptr_t funBoot = FuctionTypeToIntValue( &CallBackWrap::BootFunction );
 			CallBackWrap::GetCallBackIndex() = GetVirtualFunIndex(pFun);
-			CScriptBase::RegisterClassCallback( pWrap, *(uintptr_t*)&funBoot,
+			CScriptBase::RegisterClassCallback( pWrap, funBoot,
 				CallBackWrap::GetCallBackIndex(), bPureVirtual, InfoArray, szFunName );
 		}
 
@@ -555,7 +550,7 @@ namespace XS
 			return s_nCallBackIndex;
 		}
 
-		void Call( void* pRetBuf, void** pArgArray, uintptr_t funContext)
+		void Call( void* pRetBuf, void** pArgArray, uintptr_t funContext )
 		{
 			class Derive : public ClassType { public: ~Derive() {}; };
 			( ( *(Derive**)pArgArray[0] ) )->~Derive();
@@ -571,21 +566,12 @@ namespace XS
 	public:
 		static void Bind()
 		{
-			/**
-			* @note If compile error occur, it is mean the size of FunctionType
-			* and uintptr_t are not equal. It is dependence to compiler, but
-			* most compile will work well.
-			*/
-			typedef TClassSizeEqual<FunctionType, uintptr_t> SizeCheck;
-			//typedef typename SizeCheck::Succeeded Succeeded;
-
 			static TDestructorWrap s_instance;
 			GetCallBackIndex() = XS::GetDestructorFunIndex<ClassType>();
-			FunctionType funBoot = &TDestructorWrap::Wrap;
+			uintptr_t funBoot = FuctionTypeToIntValue( &TDestructorWrap::Wrap );
 			STypeInfo aryInfo[2] = { GetTypeInfo<ClassType*>(), GetTypeInfo<void>() };
 			STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
-			XS::CScriptBase::RegisterDestructor(&s_instance, 
-				*(uintptr_t*)&funBoot, GetCallBackIndex(), TypeInfo );
+			XS::CScriptBase::RegisterDestructor(&s_instance, funBoot, GetCallBackIndex(), TypeInfo );
 		}
 	};
 
