@@ -73,6 +73,8 @@ set(source_files
 	CTypeLua.cpp)	
 source_group("source" FILES ${source_files})
 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/libs)
+SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/libs) 
 add_library(
 	${ProjectName} 
 	${lua_files} 

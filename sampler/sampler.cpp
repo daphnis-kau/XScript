@@ -69,12 +69,12 @@ int main( int argc, const char* argv[] )
 
 #ifdef _WIN32
 		printf( 
-			"Can not find the sampler scripte file. \n"
+			"Can not find the sampler script file. \n"
 			"Please enter the path of sampler folder.\n"
 			"Such as: C:\\XScript\\sampler\n" );
 #else
 		printf(
-			"Can not find the sampler scripte file. \n"
+			"Can not find the sampler script file. \n"
 			"Please enter the path of sampler folder.\n"
 			"Such as: /XScript/sampler\n" );
 #endif
