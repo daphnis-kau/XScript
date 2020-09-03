@@ -83,8 +83,8 @@ int main( int argc, const char* argv[] )
 		chdir( szDir );
 	}
 
-	//CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
-	CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
+	CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
+	//CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
 
 	while( true )
 	{

@@ -11,8 +11,6 @@
 
 namespace XS
 {
-#ifndef AS3_ALCHEMY_SWIG
-
 	#define MAX_VTABLE_SIZE        512
 
 	/**@struct Define virtual table
@@ -72,8 +70,6 @@ namespace XS
 		VirtualFunCallback funCallback = (VirtualFunCallback)&SFun::Call;
 		return FindVirtualFunction( sizeof( SFun ), funCallback, nullptr );
 	}
-
-#endif
 }
 
 #endif

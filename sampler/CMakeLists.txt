@@ -37,4 +37,4 @@ add_executable(
 	${ProjectName} 
 	${head_files} 
 	${source_files})
-target_link_libraries(sampler common core luabinder v8binder)
+target_link_libraries(sampler luabinder v8binder core common)
