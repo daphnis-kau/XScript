@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 2.6)
 project(XScript) 
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "-std=c++11 -pthread ${CMAKE_CXX_FLAGS}")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 add_subdirectory(src/common) 
