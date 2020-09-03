@@ -77,8 +77,15 @@ namespace XS
 		if( !pObjectConstruct )
 			return pInfo;
 		STypeInfoArray aryTypeInfo = pObjectConstruct->GetFunArg();
-		for( uint32 i = 0; i < aryTypeInfo.nSize - 1; i++ )
-			pInfo->m_vecParamType.push_back( ToDataType( aryTypeInfo.aryInfo[i] ) );
+
+		pInfo->m_vecParamType.resize(aryTypeInfo.nSize - 1);
+		pInfo->m_vecParamSize.resize(pInfo->m_vecParamType.size());
+		for (size_t i = 0; i < pInfo->m_vecParamType.size(); i++)
+		{
+			pInfo->m_vecParamType[i] = ToDataType(aryTypeInfo.aryInfo[i]);
+			pInfo->m_vecParamSize[i] = (uint32)GetAligenSizeOfType(pInfo->m_vecParamType[i]);
+			pInfo->m_nTotalParamSize += pInfo->m_vecParamSize[i];
+		}
 		return pInfo;
 	}
 
@@ -168,6 +175,7 @@ namespace XS
         , m_pObjectConstruct( nullptr )
         , m_bIsEnum(false)
 		, m_nInheritDepth(0)
+		, m_nTotalParamSize(0)
 	{
     }
 

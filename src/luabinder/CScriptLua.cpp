@@ -626,10 +626,9 @@ namespace XS
 		const CClassInfo* pInfo = (const CClassInfo*)pUpValue;
 
 		auto& listParam = pInfo->GetConstructorParamType();
+		auto& listParamSize = pInfo->GetConstructorParamSize();
+		uint32 nParamSize = pInfo->GetConstructorParamTotalSize();
 		uint32 nParamCount = (uint32)listParam.size();
-		const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
-		size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
-		size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
 		size_t nArgSize = nParamCount*sizeof( void* );
 		char* pDataBuf = (char*)alloca( nParamSize + nArgSize );
 		void** pArgArray = (void**)( pDataBuf + nParamSize );
@@ -641,11 +640,11 @@ namespace XS
 		//放在m_listParam的第一个成员中
 		for( size_t nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 		{
-			DataType nType = aryParam[nArgIndex];
+			DataType nType = listParam[nArgIndex];
 			CLuaTypeBase* pParamType = GetLuaTypeBase( nType );
 			pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
 			pArgArray[nArgIndex] = IsValueClass( nType ) ? *(void**)pDataBuf : pDataBuf;
-			pDataBuf += aryParamSize[nArgIndex];
+			pDataBuf += listParamSize[nArgIndex];
 		}
 
 		// 清掉除了table以外的参数
@@ -714,12 +713,11 @@ namespace XS
 		try
 		{
 			auto& listParam = pCallBase->GetParamList();
+			auto& listParamSize = pCallBase->GetParamSize();
+			uint32 nParamSize = pCallBase->GetParamTotalSize();
 			uint32 nParamCount = (uint32)listParam.size();
-			const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
-			size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
-			size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
 			DataType nResultType = pCallBase->GetResultType();
-			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
+			size_t nReturnSize = nResultType ? pCallBase->GetResultSize() : sizeof( int64 );
 			size_t nArgSize = nParamCount*sizeof( void* );
 			char* pDataBuf = (char*)alloca( nParamSize + nArgSize + nReturnSize );
 			void** pArgArray = (void**)( pDataBuf + nParamSize );
@@ -731,11 +729,11 @@ namespace XS
 			//放在m_listParam的第一个成员中
 			for( size_t nArgIndex = 0; nArgIndex < nParamCount; nArgIndex++ )
 			{
-				DataType nType = aryParam[nArgIndex];
+				DataType nType = listParam[nArgIndex];
 				CLuaTypeBase* pParamType = GetLuaTypeBase( nType );
 				pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
 				pArgArray[nArgIndex] = IsValueClass(nType) ? *(void**)pDataBuf : pDataBuf;
-				pDataBuf += aryParamSize[nArgIndex];
+				pDataBuf += listParamSize[nArgIndex];
 			}
 			lua_settop( pL, 0 );
 

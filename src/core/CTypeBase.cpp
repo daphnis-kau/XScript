@@ -3,52 +3,6 @@
 
 namespace XS
 {
-	static const size_t s_aryOrgSize[] =
-	{
-		0,
-		sizeof( char ),
-		sizeof( int8 ),
-		sizeof( int16 ),
-		sizeof( int32 ),
-		sizeof( int64 ),
-		sizeof( long ),
-		sizeof( uint8 ),
-		sizeof( uint16 ),
-		sizeof( uint32 ),
-		sizeof( uint64 ),
-		sizeof( ulong ),
-		sizeof( wchar_t ),
-		sizeof( bool ),
-		sizeof( float ),
-		sizeof( double ),
-		sizeof( const char* ),
-		sizeof( const wchar_t* ),
-		sizeof( void* )
-	};
-
-	static const size_t s_aryAligenSize[] =
-	{
-		0,
-		AligenUp(sizeof(char), sizeof(void*)),
-		AligenUp(sizeof(int8), sizeof(void*)),
-		AligenUp(sizeof(int16), sizeof(void*)),
-		AligenUp(sizeof(int32), sizeof(void*)),
-		AligenUp(sizeof(int64), sizeof(void*)),
-		AligenUp(sizeof(long), sizeof(void*)),
-		AligenUp(sizeof(uint8), sizeof(void*)),
-		AligenUp(sizeof(uint16), sizeof(void*)),
-		AligenUp(sizeof(uint32), sizeof(void*)),
-		AligenUp(sizeof(uint64), sizeof(void*)),
-		AligenUp(sizeof(ulong), sizeof(void*)),
-		AligenUp(sizeof(wchar_t), sizeof(void*)),
-		AligenUp(sizeof(bool), sizeof(void*)),
-		AligenUp(sizeof(float), sizeof(void*)),
-		AligenUp(sizeof(double), sizeof(void*)),
-		AligenUp(sizeof(const char*), sizeof(void*)),
-		AligenUp( sizeof( const wchar_t* ), sizeof( void* ) ),
-		AligenUp(sizeof(void*), sizeof(void*))
-	};
-
 	DataType ToDataType( const STypeInfo& argTypeInfo )
 	{
 		uint32 n = 5;
@@ -97,6 +51,29 @@ namespace XS
 
 	size_t GetSizeOfType( DataType nType )
 	{
+		static const size_t s_aryOrgSize[] =
+		{
+			0,
+			sizeof(char),
+			sizeof(int8),
+			sizeof(int16),
+			sizeof(int32),
+			sizeof(int64),
+			sizeof(long),
+			sizeof(uint8),
+			sizeof(uint16),
+			sizeof(uint32),
+			sizeof(uint64),
+			sizeof(ulong),
+			sizeof(wchar_t),
+			sizeof(bool),
+			sizeof(float),
+			sizeof(double),
+			sizeof(const char*),
+			sizeof(const wchar_t*),
+			sizeof(void*)
+		};
+
 		if( nType <= eDT_enum )
 			return s_aryOrgSize[nType];
 		if( nType&1 )
@@ -106,19 +83,34 @@ namespace XS
 
 	size_t GetAligenSizeOfType(DataType nType)
 	{
+		static const size_t s_aryAligenSize[] =
+		{
+			0,
+			AligenUp(sizeof(char), sizeof(void*)),
+			AligenUp(sizeof(int8), sizeof(void*)),
+			AligenUp(sizeof(int16), sizeof(void*)),
+			AligenUp(sizeof(int32), sizeof(void*)),
+			AligenUp(sizeof(int64), sizeof(void*)),
+			AligenUp(sizeof(long), sizeof(void*)),
+			AligenUp(sizeof(uint8), sizeof(void*)),
+			AligenUp(sizeof(uint16), sizeof(void*)),
+			AligenUp(sizeof(uint32), sizeof(void*)),
+			AligenUp(sizeof(uint64), sizeof(void*)),
+			AligenUp(sizeof(ulong), sizeof(void*)),
+			AligenUp(sizeof(wchar_t), sizeof(void*)),
+			AligenUp(sizeof(bool), sizeof(void*)),
+			AligenUp(sizeof(float), sizeof(void*)),
+			AligenUp(sizeof(double), sizeof(void*)),
+			AligenUp(sizeof(const char*), sizeof(void*)),
+			AligenUp(sizeof(const wchar_t*), sizeof(void*)),
+			AligenUp(sizeof(void*), sizeof(void*))
+		};
+
 		if( nType <= eDT_enum )
 			return s_aryAligenSize[nType];
 		if (nType & 1)
 			return sizeof(void*);
 		return ((const CClassInfo*)nType)->GetClassAligenSize();
-	}
-
-	size_t CalBufferSize(const DataType* aryParam, size_t nParamCount, size_t arySize[])
-	{
-		size_t nTotalSize = 0;
-		for (size_t i = 0; i < nParamCount; i++)
-			nTotalSize += (arySize[i] = GetAligenSizeOfType(aryParam[i]));
-		return nTotalSize;
 	}
 	
 	CGlobalTypes::CGlobalTypes(

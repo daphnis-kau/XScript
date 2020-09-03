@@ -19,14 +19,22 @@ namespace XS
 		, m_nResult( eDT_void )
 		, m_nFunIndex( nFunIndex )
 		, m_sFunName( szFunName )
+		, m_nTotalParamSize(0)
 	{
 		if( CClassInfo::GetClassInfo(szTypeInfoName) == nullptr )
 			throw( "register function on a unregister class." );
 		CClassInfo::RegisterFunction( szTypeInfoName, this );
 
-		for( uint32 i = 0; i < aryTypeInfo.nSize - 1; i++ )
-			m_listParam.push_back( ToDataType( aryTypeInfo.aryInfo[i] ) );
+		m_listParam.resize(aryTypeInfo.nSize - 1);
+		m_listParamSize.resize(m_listParam.size());
+		for (size_t i = 0; i < m_listParam.size(); i++)
+		{
+			m_listParam[i] = ToDataType(aryTypeInfo.aryInfo[i]);
+			m_listParamSize[i] = (uint32)GetAligenSizeOfType(m_listParam[i]);
+			m_nTotalParamSize += m_listParamSize[i];
+		}
 		m_nResult = ToDataType( aryTypeInfo.aryInfo[aryTypeInfo.nSize - 1] );
+		m_nReturnSize = (uint32)GetAligenSizeOfType(m_nResult);
 	}
 	
 	void CCallInfo::Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const
@@ -49,6 +57,8 @@ namespace XS
 	{
 		DataType nType = ToDataType( aryTypeInfo.aryInfo[1] );
 		m_listParam.push_back( nType );
+		m_listParamSize.push_back((uint32)GetAligenSizeOfType(nType));
+		m_nTotalParamSize += *m_listParamSize.rbegin();
 	}
 
 	void CMemberInfo::Call( void* pRetBuf, void** pArgArray, CScriptBase& Script) const

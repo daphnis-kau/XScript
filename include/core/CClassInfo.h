@@ -39,6 +39,8 @@ namespace XS
 		const_string					m_szClassName;		// Name of class
 		const_string					m_szTypeIDName;		// typeid of the class
 		std::vector<DataType>			m_vecParamType;		// Parameter of constructor
+		std::vector<uint32>				m_vecParamSize;		// Size of Parameters
+		uint32							m_nTotalParamSize;	// Total size of Parameters
 
 		std::vector<CCallbackInfo*>		m_vecOverridableFun;// Overridable function information
 		std::vector<SBaseInfo>			m_vecBaseRegist;    // All base classes' information
@@ -67,6 +69,8 @@ namespace XS
 		static const CTypeIDNameMap&	GetAllRegisterInfo();
 
 		const std::vector<DataType>&	GetConstructorParamType() const { return m_vecParamType; }
+		const std::vector<uint32>&		GetConstructorParamSize() const { return m_vecParamSize; }
+		uint32							GetConstructorParamTotalSize() const { return m_nTotalParamSize; }
 		void							Construct( CScriptBase* pScript, void* pObject, void** aryArg ) const;
 		void							CopyConstruct( CScriptBase* pScript, void* pDest, void* pSrc ) const;
 		void                        	Destruct( CScriptBase* pScript, void * pObject ) const;

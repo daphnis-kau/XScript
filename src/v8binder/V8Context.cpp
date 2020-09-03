@@ -247,12 +247,11 @@ namespace XS
 		try
 		{
 			auto& listParam = pCallBase->GetParamList();
+			auto& listParamSize = pCallBase->GetParamSize();
+			uint32 nParamSize = pCallBase->GetParamTotalSize();
 			uint32 nParamCount = (uint32)listParam.size();
-			const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
-			size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
-			size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
 			DataType nResultType = pCallBase->GetResultType();
-			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
+			size_t nReturnSize = nResultType ? pCallBase->GetResultSize() : sizeof( int64 );
 			size_t nArgSize = nParamCount*sizeof( void* );
 			char* pDataBuf = (char*)alloca( nParamSize + nArgSize + nReturnSize );
 			void** pArgArray = (void**)( pDataBuf + nParamSize );
@@ -266,7 +265,7 @@ namespace XS
 			int32 nArgIndex = nFunctionIndex >= eCT_ClassFunction ? -1 : 0;
 			for( uint32 nParamIndex = 0; nParamIndex < nParamCount; nParamIndex++, nArgIndex++ )
 			{
-				DataType nType = aryParam[nParamIndex];
+				DataType nType = listParam[nParamIndex];
 				CJSTypeBase* pParamType = GetJSTypeBase( nType );
 				LocalValue arg = undefined;
 				if( nArgIndex < 0 )
@@ -276,7 +275,7 @@ namespace XS
 				else
 					pParamType->FromVMValue( nType, Script, pDataBuf, undefined );
 				pArgArray[nParamIndex] = IsValueClass( nType ) ? *(void**)pDataBuf : pDataBuf;
-				pDataBuf += aryParamSize[nParamIndex];
+				pDataBuf += listParamSize[nParamIndex];
 			}
 
 			pCallBase->Call( pResultBuf, pArgArray, Script );
@@ -323,10 +322,9 @@ namespace XS
 		}
 
 		auto& listParam = pInfo->m_pClassInfo->GetConstructorParamType();
+		auto& listParamSize = pInfo->m_pClassInfo->GetConstructorParamSize();
+		uint32 nParamSize = pInfo->m_pClassInfo->GetConstructorParamTotalSize();
 		uint32 nParamCount = (uint32)listParam.size();
-		const DataType* aryParam = nParamCount ? &listParam[0] : nullptr;
-		size_t* aryParamSize = (size_t*)alloca( sizeof( size_t )*nParamCount );
-		size_t nParamSize = CalBufferSize( aryParam, nParamCount, aryParamSize );
 		size_t nArgSize = nParamCount*sizeof( void* );
 		char* pDataBuf = (char*)alloca( nParamSize + nArgSize );
 		void** pArgArray = (void**)( pDataBuf + nParamSize );
@@ -335,7 +333,7 @@ namespace XS
 		LocalValue undefined = Undefined( isolate );
 		for( uint32 nParamIndex = 0; nParamIndex < nParamCount; nParamIndex++ )
 		{
-			DataType nType = aryParam[nParamIndex];
+			DataType nType = listParam[nParamIndex];
 			CJSTypeBase* pParamType = GetJSTypeBase( nType );
 			LocalValue arg = undefined;
 			if( (int32)nParamIndex < nArgCount )
@@ -343,7 +341,7 @@ namespace XS
 			else
 				pParamType->FromVMValue( nType, Script, pDataBuf, undefined );
 			pArgArray[nParamIndex] = IsValueClass( nType ) ? *(void**)pDataBuf : pDataBuf;
-			pDataBuf += aryParamSize[nParamIndex];
+			pDataBuf += listParamSize[nParamIndex];
 		}
 
 		void* pObject = new tbyte[pInfo->m_pClassInfo->GetClassSize()];
@@ -404,7 +402,7 @@ namespace XS
 				return;
 
 			DataType nResultType = pCallBase->GetResultType();
-			size_t nReturnSize = nResultType ? GetAligenSizeOfType( nResultType ) : sizeof( int64 );
+			size_t nReturnSize = nResultType ? pCallBase->GetResultSize() : sizeof( int64 );
 			char* pResultBuf = (char*)alloca( nReturnSize );
 			void* aryArg[] = { &pObject, nullptr };
 			pCallBase->Call( pResultBuf, aryArg, Script );
@@ -443,7 +441,7 @@ namespace XS
 				return;
 
 			DataType nType = pCallBase->GetParamList()[1];
-			size_t nParamSize = GetAligenSizeOfType( nType );
+			size_t nParamSize = pCallBase->GetParamSize()[1];
 			char* pDataBuf = (char*)alloca( nParamSize );
 			SV8Context& Context = Script.GetV8Context();
 			v8::Isolate* isolate = Context.m_pIsolate;

@@ -21,7 +21,6 @@ namespace XS
 	DataType		ToDataType( const STypeInfo& argTypeInfo );
 	size_t			GetSizeOfType( DataType nType );
 	size_t			GetAligenSizeOfType( DataType nType );
-	size_t			CalBufferSize( const DataType* aryParam, size_t nParamCount, size_t arySize[] );
 
 	class CGlobalTypes
 	{

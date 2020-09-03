@@ -34,6 +34,7 @@ namespace XS
     class CCallInfo 
 		: public CCallBaseMap::CRBTreeNode
     {
+		typedef std::vector<uint32> DataTypeSize;
 		typedef std::vector<DataType> DataTypeArray;
 		const CCallInfo& operator= ( const CCallInfo& );
     public:
@@ -45,7 +46,10 @@ namespace XS
 		virtual void			Call(void* pRetBuf, void** pArgArray, CScriptBase& Script) const;
 		IFunctionWrap*			GetFunWrap()		const { return m_funWrap; }
 		const DataTypeArray&	GetParamList()		const { return m_listParam; }
+		const DataTypeSize&		GetParamSize()		const { return m_listParamSize; }
+		uint32					GetParamTotalSize()	const { return m_nTotalParamSize; }
 		DataType				GetResultType()		const { return m_nResult; }
+		uint32					GetResultSize()		const { return m_nReturnSize; }
 		int32					GetFunctionIndex()	const { return m_nFunIndex; }
 		const const_string&		GetFunctionName()	const { return m_sFunName; }
 
@@ -55,6 +59,9 @@ namespace XS
 		const_string			m_sFunName;
 		DataType				m_nResult;
 		DataTypeArray			m_listParam;
+		DataTypeSize			m_listParamSize;
+		uint32					m_nTotalParamSize;
+		uint32					m_nReturnSize;
 		int32					m_nFunIndex;
 	};
 
