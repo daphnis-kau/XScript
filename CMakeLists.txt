@@ -6,9 +6,10 @@ endif(WIN32)
 cmake_minimum_required(VERSION 2.6)
 project(XScript) 
 
-if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "-std=c++11 -pthread ${CMAKE_CXX_FLAGS}")
-endif(CMAKE_COMPILER_IS_GNUCXX)
+if(WIN32)
+else(WIN32)
+	set(CMAKE_CXX_FLAGS "-std=c++11 -pthread ${CMAKE_CXX_FLAGS}")
+endif(WIN32)
 
 add_subdirectory(src/common) 
 add_subdirectory(src/core) 
