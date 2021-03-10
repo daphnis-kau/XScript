@@ -8,7 +8,7 @@
 #include <chrono>
 #include <thread>
 
-#include "sampler.h"
+#include "SimpleTest.h"
 #include "CApplication.h"
 
 DEFINE_CLASS_BEGIN( SAddress )

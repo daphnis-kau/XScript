@@ -18,16 +18,12 @@ if(WIN32)
 	file(COPY ${v8_library_path}/release/v8_libplatform.dll DESTINATION ${PROJECT_BINARY_DIR}/bins/release)
 endif(WIN32)
 
-set(ProjectName sampler)
+set(ProjectName SimplerTest)
 
-set(head_files
-	CApplication.h 
-	sampler.h)
+file(GLOB head_files "*.h")
 source_group("include" FILES ${head_files})
 
-set(source_files
-	CApplication.cpp 
-	sampler.cpp)	
+file(GLOB source_files "*.cpp")	
 source_group("source" FILES ${source_files})
 
 link_directories(${PROJECT_BINARY_DIR}/libs)
@@ -37,4 +33,4 @@ add_executable(
 	${ProjectName} 
 	${head_files} 
 	${source_files})
-target_link_libraries(sampler luabinder v8binder core common)
+target_link_libraries(${ProjectName} luabinder v8binder core common)

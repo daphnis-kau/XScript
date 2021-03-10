@@ -2,6 +2,7 @@
 #define __V8CONTEXT_H__
 #include "v8/v8.h"
 #include "common/TRBTree.h"
+#include <string>
 #include <map>
 
 //=====================================================================
