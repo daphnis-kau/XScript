@@ -32,6 +32,11 @@ function CApplicationHandler:OnTestNoParamPureVirtual()
 	return "OK"
 end
 
+function CApplicationHandler:TestBuffer(buffer)
+	Test( buffer.value == 23456, "Test buffer to Script" );
+	return buffer;
+end
+
 g_handler = CApplicationHandler:new();
 g_App = CApplication.GetInst();
 
@@ -56,6 +61,9 @@ function g_App:TestVirtualObjectValue( Config )
 	return CApplication.TestVirtualObjectValue( self, Config )
 end
 
+local buffer = {};
+buffer.value = 23456;
+
 function StartApplication( name, id )
 	config:SetName( name );
 	config:nID( id );
@@ -69,6 +77,7 @@ function StartApplication( name, id )
 		12345678, 1234567891011, 123456789, 1234567, 123456789101112, "abcdefg", "abcdefg") == "OK",
 		"Test return string" );
 	Test( g_App:TestNoParamFunction() == "OK", "Test function without parameter" );
+	Test( g_App:TestBuffer( buffer ) == buffer, "Test TestBuffer return" );
 end
 
 print( "Test lua loaded" );

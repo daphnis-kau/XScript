@@ -19,6 +19,8 @@ if(WIN32)
 endif(WIN32)
 
 set(ProjectName XScriptDll)
+add_definitions(-D DLL_EXPORTS)
+option(ENABLE_V8 "Build using shared libraries" OFF)
 
 file(GLOB head_files "*.h")
 source_group("include" FILES ${head_files})

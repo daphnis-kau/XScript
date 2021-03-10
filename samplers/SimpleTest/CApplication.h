@@ -69,6 +69,7 @@ public:
 		float v10, double v11, const char* v12, const wchar_t* v13 ) const = 0;
 
 	virtual const char* OnTestNoParamPureVirtual() const = 0;
+	virtual void* TestBuffer(void* buffer) = 0;
 };
 
 class CApplication
@@ -99,4 +100,5 @@ public:
 		float v10, double v11, const char* v12, const wchar_t* v13 );
 
 	const char* TestNoParamFunction();
+	void* TestBuffer(void* buffer);
 };

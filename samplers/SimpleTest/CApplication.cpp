@@ -87,3 +87,8 @@ const char* CApplication::TestNoParamFunction()
 {
 	return m_pHandler->OnTestNoParamPureVirtual();
 }
+
+void* CApplication::TestBuffer(void* buffer)
+{
+	return m_pHandler->TestBuffer(buffer);
+}

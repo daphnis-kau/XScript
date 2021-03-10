@@ -8,6 +8,7 @@ extern "C"
 	#include "lauxlib.h"
 	#include "lstate.h"
 	#include "lualib.h"
+	#include "ltable.h"
 }
 
 #include "common/Help.h"
@@ -308,12 +309,43 @@ namespace XS
 
 	inline SBufferInfo* CLuaBuffer::GetBufferInfo( lua_State* pL, int32 nStkID )
 	{
-		nStkID = ToAbsStackIndex( pL, nStkID );
-		lua_pushstring( pL, s_szLuaBufferInfo );
-		lua_rawget( pL, nStkID );
-		SBufferInfo* pInfo = (SBufferInfo*)lua_touserdata( pL, -1 );
-		lua_pop( pL, 1 );
-		return pInfo;
+		nStkID = ToAbsStackIndex(pL, nStkID);
+		TValue* v = pL->base + (nStkID - 1);
+		if (v->tt != LUA_TTABLE)
+			return nullptr;
+
+		static unsigned int s_keyHash = 0;
+		static size_t s_keyLen = strlen(s_szLuaBufferInfo);
+		if (s_keyHash == 0)
+		{
+			lua_pushstring(pL, s_szLuaBufferInfo);
+			TString* key = rawtsvalue(pL->top - 1);
+			s_keyHash = key->tsv.hash;
+			lua_pop(pL, 1);
+		}
+
+		lua_lock(pL);
+		Table* t = hvalue(v);
+		Node* n = (gnode(t, lmod((s_keyHash), sizenode(t))));
+		for (; n; n = gnext(n))
+		{
+			if (!ttisstring(gkey(n)))
+				continue;
+			if ((gkey(n))->value.gc->ts.tsv.len != s_keyLen)
+				continue;
+			const char* key = (const char*)(&(gkey(n))->value.gc->ts + 1);
+			if (strcmp(key, s_szLuaBufferInfo))
+				continue;
+			break;
+		}
+		lua_unlock(pL);
+
+		if (n && n->i_val.tt == LUA_TLIGHTUSERDATA)
+			return (SBufferInfo*)n->i_val.value.p;
+		if (n && n->i_val.tt == LUA_TUSERDATA)
+			return (SBufferInfo*)&n->i_val.value.gc->u + 1;
+
+		return nullptr;
 	}
 
 	template<class Type>
@@ -949,30 +981,24 @@ namespace XS
 	void* GetPointerFromLua( lua_State* pL, int32 nStkId )
 	{
 		nStkId = ToAbsStackIndex( pL, nStkId );
-		int32 nType = lua_type( pL, nStkId );
-		if( nType == LUA_TNIL || nType == LUA_TNONE )
+		TValue* v = pL->base + (nStkId - 1);
+		if( v->tt == LUA_TNIL || v->tt == LUA_TNONE || v->tt == LUA_TNUMBER )
 			return nullptr;
-
-		if( nType == LUA_TTABLE )
-		{
-			lua_pushstring( pL, s_szLuaBufferInfo );
-			lua_rawget( pL, nStkId );
-			if( lua_islightuserdata( pL, -1 ) || lua_type( pL, -1 ) == LUA_TUSERDATA )
-			{
-				SBufferInfo* pInfo = (SBufferInfo*)lua_touserdata( pL, -1 );
-				lua_pop( pL, 1 );
-				return pInfo ? pInfo->pBuffer : nullptr;
-			}
-			else
-			{
-				lua_pop( pL, 1 );
-				return nullptr;
-			}
-		}
-
-		if( nType == LUA_TSTRING )
+		if( v->tt == LUA_TSTRING )
 			return (void*)lua_tostring( pL, nStkId );
-		return nullptr;
+
+		SBufferInfo* pInfo = nullptr;
+		if( v->tt == LUA_TTABLE &&
+			( pInfo = CLuaBuffer::GetBufferInfo( pL, nStkId ) ) )
+			return pInfo->pBuffer;
+
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_rawget( pL, LUA_REGISTRYINDEX );
+		lua_pushlightuserdata( pL, v->value.gc );
+		lua_pushvalue( pL, -3 );
+		lua_rawset( pL, -3 );
+		lua_pop( pL, 1 );
+		return v->value.gc;
 	}
 
 	void PushPointerToLua( lua_State* pL, void* pBuffer )
@@ -994,15 +1020,27 @@ namespace XS
 		lua_pushlightuserdata( pL, pBuffer );
 		lua_gettable( pL, -2 );
 
-		if( !lua_isnil( pL, -1 ) )
+		int32 type = lua_type( pL, -1 );
+		if( type != LUA_TNIL )
 		{
-			SBufferInfo* pInfo = CLuaBuffer::GetBufferInfo( pL, -1 );
-			if( pInfo && pInfo->pBuffer == pBuffer )
+			if( type == LUA_TTABLE )
+			{
+				SBufferInfo* pInfo = CLuaBuffer::GetBufferInfo( pL, -1 );
+				if( pInfo && pInfo->pBuffer == pBuffer )
+				{
+					lua_remove( pL, -2 );
+					pInfo->nDataSize = (uint32)INVALID_32BITID;
+					pInfo->nCapacity = (uint32)INVALID_32BITID;
+					pInfo->nPosition = 0;
+					return;
+				}
+			}
+
+			TValue* v = pL->top - 1;
+			if (type == LUA_TTABLE || type == LUA_TUSERDATA ||
+				type == LUA_TFUNCTION || type == LUA_TTHREAD)
 			{
 				lua_remove( pL, -2 );
-				pInfo->nDataSize = (uint32)INVALID_32BITID;
-				pInfo->nCapacity = (uint32)INVALID_32BITID;
-				pInfo->nPosition = 0;
 				return;
 			}
 

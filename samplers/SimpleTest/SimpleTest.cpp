@@ -28,6 +28,7 @@ DEFINE_CLASS_END();
 DEFINE_UNDUPLICATABLE_CLASS_BEGIN( IApplicationHandler )
 	REGIST_PUREVIRTUALFUNCTION( OnTestPureVirtual )
 	REGIST_PUREVIRTUALFUNCTION( OnTestNoParamPureVirtual )
+	REGIST_PUREVIRTUALFUNCTION( TestBuffer )
 DEFINE_CLASS_END();
 
 DEFINE_ABSTRACT_CLASS_BEGIN( CApplication )
@@ -40,6 +41,7 @@ DEFINE_ABSTRACT_CLASS_BEGIN( CApplication )
 	REGIST_CALLBACKFUNCTION( TestVirtualObjectValue )
 	REGIST_CLASSFUNCTION( TestCallPOD )
 	REGIST_CLASSFUNCTION( TestNoParamFunction )
+	REGIST_CLASSFUNCTION( TestBuffer )
 	REGIST_STATICFUNCTION( GetInst )
 DEFINE_CLASS_END();
 
@@ -71,12 +73,12 @@ int main( int argc, const char* argv[] )
 		printf( 
 			"Can not find the sampler script file. \n"
 			"Please enter the path of sampler folder.\n"
-			"Such as: C:\\XScript\\sampler\n" );
+			"Such as: C:\\XScript\\samplers\\SimpleTest\n" );
 #else
 		printf(
 			"Can not find the sampler script file. \n"
 			"Please enter the path of sampler folder.\n"
-			"Such as: /XScript/sampler\n" );
+			"Such as: /XScript/samplers/SimpleTest\n" );
 #endif
 		char szDir[256];
 		scanf( "%s", szDir );
