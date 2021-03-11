@@ -199,18 +199,36 @@ namespace XS
 			v8::ArrayBufferView* view = v8::ArrayBufferView::Cast(*obj);
 			char* data = (char*)view->Buffer()->GetContents().Data();
 			*(void**)(pDataBuf) = data + view->ByteOffset();
+			return;
 		}
-		else if (obj->IsArrayBuffer())
+
+		if (obj->IsArrayBuffer())
+		{
 			*(void**)(pDataBuf) = v8::ArrayBuffer::Cast(*obj)->GetContents().Data();
-		else
-			*(void**)(pDataBuf) = nullptr;
+			return;
+		}
+
+		SV8Context& Context = Script.GetV8Context();
+		Context.BindObj( *obj, obj.As<v8::Object>(), nullptr, false );
+		*(void**)(pDataBuf) = *obj;
 	}
 
 	template<> inline LocalValue TJSValue<void*>::ToVMValue(
-		DataType eType, CScriptJS& Script, char* pDataBuf)
+		DataType eType, CScriptJS& Script, char* pDataBuf )
 	{
+		void* pObj = *(void**)(pDataBuf);
+		SV8Context& Context = Script.GetV8Context();
+		v8::Isolate* isolate = Context.m_pIsolate;
+		if (pObj == nullptr)
+			return v8::Null(isolate);
+
+		const SObjInfo* pObjInfo = nullptr;
+		if ( (pObjInfo = Script.FindExistObjInfo(pObj)) != nullptr &&
+			pObjInfo->m_pClassInfo == nullptr )
+			return pObjInfo->m_Object.Get(isolate);
+
 		return v8::ArrayBuffer::New(Script.GetV8Context().m_pIsolate,
-			*(void**)(pDataBuf), MAX_UNKNOW_ARRAYBUFFER_SIZE);
+			pObj, MAX_UNKNOW_ARRAYBUFFER_SIZE);
 	}
 
 	template<> inline void TJSValue<const char*>::FromVMValue(

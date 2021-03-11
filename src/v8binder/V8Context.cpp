@@ -470,7 +470,7 @@ namespace XS
 		m_pScript->m_mapObjInfo.Insert( ObjectInfo );
 
 		// 注册回调函数
-		if( pInfo->IsCallBack() )
+		if( pInfo && pInfo->IsCallBack() )
 			pInfo->ReplaceVirtualTable( m_pScript, pObject, ObjectInfo.m_bRecycle, 0 );
 
 		v8::Local<v8::External> cppInfo = v8::External::New( m_pIsolate, &ObjectInfo );
@@ -486,7 +486,6 @@ namespace XS
 	{
 		void* pObject = pObjectInfo->m_pObject;
 		bool bRecycle = pObjectInfo->m_bRecycle;
-		const CClassInfo* pInfo = pObjectInfo->m_pClassInfo->m_pClassInfo;
 		v8::HandleScope handle_scope( m_pIsolate );
 		v8::TryCatch try_catch( m_pIsolate );
 
@@ -506,8 +505,9 @@ namespace XS
 		pObjectInfo->m_Object.Reset();
 
 		m_pScript->FreeObjectInfo( pObjectInfo );
-		if( !pObject )
+		if( !pObject || !pObjectInfo->m_pClassInfo )
 			return;
+		const CClassInfo* pInfo = pObjectInfo->m_pClassInfo->m_pClassInfo;
 		pInfo->RecoverVirtualTable( m_pScript, pObject );
 		if( !bRecycle )
 			return;

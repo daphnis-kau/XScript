@@ -408,6 +408,8 @@ namespace XS
 		if( !pLeft )
 			return nullptr;
 		ptrdiff_t nDiff = ( (const char*)pObj ) - ( (const char*)pLeft->m_pObject );
+		if (pLeft->m_pClassInfo == nullptr)
+			return nDiff ? nullptr : pLeft;
 		if( nDiff >= (ptrdiff_t)( pLeft->m_pClassInfo->m_pClassInfo->GetClassSize() ) )
 			return nullptr;
 		return pLeft;

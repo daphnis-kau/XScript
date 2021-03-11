@@ -44,6 +44,12 @@
         return "OK"
     }
 
+    __proto.TestBuffer = function(buffer)
+    {
+	    Test( buffer.value == 23456, "Test buffer to Script" );
+	    return buffer;
+    }
+
     g_handler = new CApplicationHandler();
     g_App = CApplication.GetInst();
 
@@ -70,6 +76,9 @@
         Test(config != Config, "Test object value to Script");
         return CApplication.prototype.TestVirtualObjectValue.call( this, Config );
     }
+    
+    var buffer = {};
+    buffer.value = 23456;
 
     window.StartApplication = function(name, id) 
     {
@@ -81,10 +90,11 @@
 	    Test( g_App.TestCallObjectPointer(g_handler) == g_handler, "Test return obj pointer" );
 	    Test( g_App.TestCallObjectReference(config) == config, "Test return obj reference" );
 	    Test( g_App.TestCallObjectValue(config) != config, "Test return obj value " );
-        Test(g_App.TestCallPOD(1234, -123, -12345, -12345678, -1234567891011, -123456789, 123, 12345,
+        Test( g_App.TestCallPOD(1234, -123, -12345, -12345678, -1234567891011, -123456789, 123, 12345,
             12345678, 1234567891011, 123456789, 1234567, 123456789101112, "abcdefg", "abcdefg") == "OK",
             "Test return string");
-        Test(g_App.TestNoParamFunction() == "OK", "Test function without parameter");
+        Test( g_App.TestNoParamFunction() == "OK", "Test function without parameter");
+	    Test( g_App.TestBuffer( buffer ) == buffer, "Test TestBuffer return" );
     }
 
     console.log("Test javascript loaded");
