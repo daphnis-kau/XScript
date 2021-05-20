@@ -52,7 +52,7 @@ CScriptBase* CreateScript(const char* szFilePath)
 {
 	char szWorkDir[2048];
 	getcwd(szWorkDir, ELEM_COUNT(szWorkDir));
-	CScriptBase* pScript = new ScriptType(5067);
+	CScriptBase* pScript = new ScriptType(nullptr, 5067);
 	pScript->AddSearchPath(szWorkDir);
 	pScript->RunFile(szFilePath);
 	return pScript;
@@ -85,8 +85,8 @@ int main( int argc, const char* argv[] )
 		chdir( szDir );
 	}
 
-	//CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
-	CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
+	CScriptBase* pScript = CreateScript<CScriptLua>("lua/test.lua");
+	//CScriptBase* pScript = CreateScript<CScriptJS>("js/test.js");
 
 	while( true )
 	{

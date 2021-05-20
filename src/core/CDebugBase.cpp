@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <cerrno>
 #include <netdb.h>
+#include <fcntl.h>
 #define INVALID_SOCKET		-1
 #define closesocket			close
 #define ioctlsocket			ioctl
@@ -74,7 +75,7 @@ namespace XS
 	//-----------------------------------------------------
 	// CBreakPoint
 	//-----------------------------------------------------
-    CDebugBase::CDebugBase( CScriptBase* pBase, uint16 nDebugPort )
+    CDebugBase::CDebugBase( CScriptBase* pBase, const char* strDebugHost, uint16 nDebugPort )
 		: m_pBase( pBase )
 		, m_nRemoteListener( INVALID_SOCKET )
 		, m_nRemoteConnecter( INVALID_SOCKET )
@@ -92,7 +93,7 @@ namespace XS
 		if( !nDebugPort )
 			return;
 		m_bAllExceptionsBreak = true;
-		ListenRemote( nDebugPort );
+		ListenRemote(strDebugHost, nDebugPort );
     }
 
     CDebugBase::~CDebugBase(void)
@@ -196,7 +197,7 @@ namespace XS
 	//=================================================================
 	// RemoteDebug
 	//=================================================================
-	void CDebugBase::ListenRemote( uint16 nDebugPort )
+	void CDebugBase::ListenRemote(const char* strDebugHost, uint16 nDebugPort )
 	{
 #ifdef _WIN32
 		WORD wVersion;
@@ -211,6 +212,24 @@ namespace XS
 		if( m_nRemoteListener == INVALID_SOCKET )
 			return;
 
+#ifdef _WIN32
+		u_long mode = 0;
+		if (0 != ioctlsocket(m_nRemoteListener, FIONBIO, &mode))
+			return;
+#else
+		int flags = fcntl(m_nRemoteListener, F_GETFL, 0);
+		if (-1 == flags)
+		{
+			return;
+		}
+		flags &= ~O_NONBLOCK;
+		if (-1 == fcntl(m_nRemoteListener, F_SETFL, flags))
+		{
+			return;
+		}
+#endif // !_WIN32
+
+
 		int32 nVal = 1;
 		if( SOCKET_ERROR == setsockopt( m_nRemoteListener, SOL_SOCKET, 
 			SO_REUSEADDR, (const char*)(&nVal), sizeof(nVal) ) )
@@ -222,7 +241,7 @@ namespace XS
 
 		sockaddr_in Address;
 		memset( &Address, 0, sizeof(Address) );
-		Address.sin_addr.s_addr = inet_addr( "0.0.0.0" );
+		Address.sin_addr.s_addr = strDebugHost ? inet_addr(strDebugHost) : 0;
 		Address.sin_port = htons( nDebugPort );
 		Address.sin_family = AF_INET;
 
@@ -370,17 +389,19 @@ namespace XS
 		pRespone->AddChild( "message", szMsg );
 		if( pBody )
 			pRespone->AddChild( pBody );
-		SendNetData( pRespone );
 
 #ifdef LOG_REMOTE_COMMAND
+		std::stringstream oss;
+		pRespone->Save(oss);
 		m_pBase->Output( "\n----------------------response begin----------------------\n", -1 );
 		m_pBase->Output( szCommand, -1 );
 		m_pBase->Output( ":", -1 );
 		m_pBase->Output( szSequence, -1 );
 		m_pBase->Output( ",", -1 );
-		m_pBase->Output( szMsg, -1 );
+		m_pBase->Output(oss.str().c_str(), -1 );
 		m_pBase->Output( "\n-----------------------response end-----------------------\n", -1 );
 #endif
+		SendNetData(pRespone);
 	}
 
 	void CDebugBase::OnNetData( CDebugCmd* pCmd )
@@ -452,7 +473,7 @@ namespace XS
 		{
 			if (!CheckRemoteCmd())
 				m_bLoopOnPause = false;
-			else while (!m_listDebugCmd.GetLast())
+			else
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
@@ -494,6 +515,12 @@ namespace XS
 		else if( !StrCaseCmp( szCommand, "attach" ) )
 		{
 			m_eAttachType = eAT_Attach;
+			CJson* pArg = pCmd->GetChild("arguments");
+			m_strCWD = pArg->At<std::string>("cwd");
+			if (m_strCWD == "local")
+			{
+				m_strCWD.clear();
+			}
 			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
 		}
@@ -505,7 +532,17 @@ namespace XS
 			for( ; it != m_mapFileBuffer.end(); ++it )
 			{
 				CJson* pSource = pSourceArray->AddChild( "" );
-				pSource->AddChild( "path", it->first.c_str() );
+				std::string strpath = it->first.c_str();
+				if (m_strCWD.length() > 0)
+				{
+					const char* pstr = strstr(strpath.c_str(), "/Lua/");
+					if (pstr)
+					{
+						strpath = pstr + 4;
+						strpath = m_strCWD + strpath;
+					}
+				}
+				pSource->AddChild( "path", strpath.c_str() );
 				pSource->AddChild( "name", GetFileNameFromPath( it->first.c_str() ) );
 				if( it->first.c_str()[0] != '/' && it->first.find(':') == INVALID_32BITID )
 				{
@@ -541,9 +578,13 @@ namespace XS
 			CJson* pBreakpoints = pArg->GetChild( "breakpoints" );
 			CBreakPoint bp( 0, szFileName, false, 0 );
 			CBreakPointList::iterator it = m_setBreakPoint.lower_bound( bp );
-			while( it != m_setBreakPoint.end() && 
-				!strcmp( (*it).GetModuleName(), szFileName ) )
-				DelBreakPoint( ( it++)->GetBreakPointID() );
+			while( it != m_setBreakPoint.end() )
+			{
+				if (!strcmp((*it).GetModuleName(), szFileName))
+					DelBreakPoint((it++)->GetBreakPointID());
+				else
+					it++;
+			}
 
 			CJson* pBody = new CJson( "body" );
 			CJson* pBreakPointArray = pBody->AddChild( "breakpoints" );
@@ -645,7 +686,17 @@ namespace XS
 				CJson* pSource = pFrame->AddChild( "source" );
 
 				szSource = szSource ? szSource : "<now valid source>";
-				pSource->AddChild( "path", szSource );
+				std::string strpath = szSource;
+				if (m_strCWD.length() > 0)
+				{
+					const char* pstr = strstr(strpath.c_str(), "/Lua/");
+					if (pstr)
+					{
+						strpath = pstr + 4;
+						strpath = m_strCWD + strpath;
+					}
+				}
+				pSource->AddChild( "path", strpath);
 				pSource->AddChild( "name", GetFileNameFromPath( szSource ) );
 				if( szSource[0] != '/' && !::strchr( szSource, ':' ) )
 				{
@@ -1111,5 +1162,14 @@ namespace XS
 		CBreakPoint bp( 0, szSource, true, nLine );
 		CBreakPointList::iterator it = m_setBreakPoint.find( bp );
         return it == m_setBreakPoint.end() ? nullptr : &*it;
+	}
+
+	bool CDebugBase::HasLoadFile(const char* szFile)
+	{
+		if (m_mapFileBuffer.find(szFile) != m_mapFileBuffer.end())
+		{
+			return true;
+		}
+		return false;
 	}
 }

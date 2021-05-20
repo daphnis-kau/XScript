@@ -119,7 +119,7 @@ namespace XS
             return;
         }
 
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTableKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		if( lua_isnil( pL, -1 ) )
 		{
@@ -243,6 +243,7 @@ namespace XS
 		static int32		ReadUCS( lua_State* pL );
 		static int32		ReadUCSCounts( lua_State* pL );
 		static int32		ReadBytes( lua_State* pL );
+		static int32		ReadObject( lua_State* pL );
 
 		static int32		SetBit( lua_State* pL );
 		static int32		WriteBoolean( lua_State* pL );
@@ -256,6 +257,7 @@ namespace XS
 		static int32		WriteUTF( lua_State* pL );
 		static int32		WriteUTFBytes( lua_State* pL );
 		static int32		WriteBytes( lua_State* pL );
+		static int32		WriteObject( lua_State* pL );
 
 		static int32		SetPosition( lua_State* pL );
 		static int32		GetPosition( lua_State* pL );
@@ -343,7 +345,7 @@ namespace XS
 		if (n && n->i_val.tt == LUA_TLIGHTUSERDATA)
 			return (SBufferInfo*)n->i_val.value.p;
 		if (n && n->i_val.tt == LUA_TUSERDATA)
-			return (SBufferInfo*)&n->i_val.value.gc->u + 1;
+			return (SBufferInfo*)(&n->i_val.value.gc->u + 1);
 
 		return nullptr;
 	}
@@ -607,6 +609,13 @@ namespace XS
 		}
 	}
 
+	int32 CLuaBuffer::ReadObject( lua_State* pL )
+	{
+		void* pObject = (void*)(ptrdiff_t)ReadData<int64>( pL );
+		PushPointerToLua( pL, pObject, false );
+		return 1;
+	}
+
 	template<class Type>
 	void CLuaBuffer::WriteData( lua_State* pL, Type v )
 	{
@@ -810,6 +819,12 @@ namespace XS
 		}
 	}
 
+	int32 CLuaBuffer::WriteObject( lua_State* pL )
+	{
+		WriteData( pL, (int64)(ptrdiff_t)GetPointerFromLua( pL, 2 ) );
+		return 0;
+	}
+
 	int32 CLuaBuffer::SetPosition( lua_State* pL )
 	{
 		uint32 nPosition = (uint32)(int64)GetNumFromLua( pL, 2 );
@@ -981,6 +996,8 @@ namespace XS
 	void* GetPointerFromLua( lua_State* pL, int32 nStkId )
 	{
 		nStkId = ToAbsStackIndex( pL, nStkId );
+		if (nStkId > lua_gettop(pL))
+			return nullptr;
 		TValue* v = pL->base + (nStkId - 1);
 		if( v->tt == LUA_TNIL || v->tt == LUA_TNONE || v->tt == LUA_TNUMBER )
 			return nullptr;
@@ -992,7 +1009,7 @@ namespace XS
 			( pInfo = CLuaBuffer::GetBufferInfo( pL, nStkId ) ) )
 			return pInfo->pBuffer;
 
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTableKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		lua_pushlightuserdata( pL, v->value.gc );
 		lua_pushvalue( pL, -3 );
@@ -1001,20 +1018,20 @@ namespace XS
 		return v->value.gc;
 	}
 
-	void PushPointerToLua( lua_State* pL, void* pBuffer )
+	bool PushPointerToLua( lua_State* pL, void* pBuffer, bool bCreateStreamBuff )
 	{
 		if( pBuffer == nullptr )
 		{
 			lua_pushnil( pL );
-			return;
+			return false;
 		}
 
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTableKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		if( lua_isnil( pL, -1 ) )
 		{
 			luaL_error( pL, "PushToVM error" );
-			return;
+			return false;
 		}
 
 		lua_pushlightuserdata( pL, pBuffer );
@@ -1032,7 +1049,7 @@ namespace XS
 					pInfo->nDataSize = (uint32)INVALID_32BITID;
 					pInfo->nCapacity = (uint32)INVALID_32BITID;
 					pInfo->nPosition = 0;
-					return;
+					return true;
 				}
 			}
 
@@ -1041,10 +1058,16 @@ namespace XS
 				type == LUA_TFUNCTION || type == LUA_TTHREAD)
 			{
 				lua_remove( pL, -2 );
-				return;
+				return true;
 			}
 
 			CScriptLua::GetScript( pL )->UnlinkCppObjFromScript( pBuffer );
+		}
+
+		if( !bCreateStreamBuff )
+		{
+			lua_remove( pL, -2 );
+			return false;
 		}
 
 		lua_pop( pL, 2 );
@@ -1056,7 +1079,7 @@ namespace XS
 		if( lua_isnil( pL, -1 ) )//szClass必须被注册
 		{
 			luaL_error( pL, "PushToVM Class:%s", s_szLuaBufferClass );
-			return;
+			return false;
 		}
 
 		lua_setmetatable( pL, nStkId );
@@ -1071,12 +1094,13 @@ namespace XS
 		lua_rawset( pL, nStkId );
 
 		// 挂到全局表上
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTableKey );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		lua_pushlightuserdata( pL, pBuffer );
 		lua_pushvalue( pL, nStkId );
 		lua_settable( pL, -3 );
 		lua_pop( pL, 1 );
+		return true;
 	}
 
 	//=====================================================================

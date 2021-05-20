@@ -200,5 +200,71 @@ namespace XS
 	int64 ToInt64( const char* szStr );
 	double ToFloat( const wchar_t* szStr );
 	double ToFloat( const char* szStr );
+
+	template<size_t...n>
+	struct TMin {};
+
+	template<size_t a>
+	class TMin<a>
+	{
+	public:
+		enum { eValue = a };
+	};
+
+	template<size_t a, size_t...n>
+	class TMin<a, n...>
+	{
+	public:
+		enum { eValue = a < TMin<n...>::eValue ? a : TMin<n...>::eValue };
+	};
+ 
+	template<size_t...n>
+	struct TMax {};
+
+	template<size_t a>
+	class TMax<a>
+	{
+	public:
+		enum { eValue = a };
+	};
+  
+	template<size_t a, size_t...n>
+	class TMax<a, n...>
+	{
+	public:
+		enum { eValue = a > TMax<n...>::eValue ? a : TMax<n...>::eValue };
+	};
+
+	template<uint32 n>
+	class TAligenUpTo2Power
+	{
+		template<uint32 v,uint32 l>	struct _A{ enum{ eValue = _A< v*2, l/2 >::eValue }; };
+		template<uint32 v>			struct _A<v, 0>{ enum{ eValue = v }; };
+	public:
+		enum { eValue = _A< 1, n - 1 >::eValue };
+	};
+	template<> class TAligenUpTo2Power<0> { public: enum { eValue = 0 }; };
+
+	template<uint32 n, uint32 nAligen>
+	class TAligenUp
+	{
+	public:
+		enum { eValue = n ? ( ( n - 1 )/nAligen + 1 )*nAligen : 0 };
+	};
+
+	template<uint32 n, uint32 nAligen>
+	class TAligenDown
+	{
+	public:
+		enum { eValue = ( n / nAligen )*nAligen };
+	};
+
+	template<uint32 n>
+	class TLog2
+	{
+	public:
+		enum { eValue = TLog2< n/2 >::eValue + 1 };
+	};
+	template<> class TLog2<1> { public: enum { eValue = 0 }; };
 }
 #endif

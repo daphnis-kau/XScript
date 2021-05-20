@@ -19,39 +19,44 @@ namespace XS
 
     class CScriptJS : public CScriptBase
 	{	
-		SV8Context*					m_pV8Context;
-		SObjInfo*					m_pFreeObjectInfo;
-		TRBTree<SObjInfo>			m_mapObjInfo;
-		TRBTree<SJSClassInfo>		m_mapClassInfo;
-		TRBTree<SCallInfo>			m_mapCallBase;
+		SV8Context*				m_pV8Context;
+		SObjInfo*				m_pFreeObjectInfo;
+		TRBTree<SObjInfo>		m_mapObjInfo;
+		TRBTree<SJSClassInfo>	m_mapClassInfo;
+		TRBTree<SCallInfo>		m_mapCallBase;
 		
-		void						BuildRegisterInfo();
+		void					BuildRegisterInfo();
 		
-		SCallInfo*					GetCallInfo( const CCallInfo* pCallBase );
-		SObjInfo*					AllocObjectInfo();
-		void						FreeObjectInfo(SObjInfo* pObjectInfo);
+		SCallInfo*				GetCallInfo( const CCallInfo* pCallBase );
+		SObjInfo*				AllocObjectInfo();
+		void					FreeObjectInfo(SObjInfo* pObjectInfo);
 
-		virtual bool				CallVM( const CCallbackInfo* pCallBase, void* pRetBuf, void** pArgArray );
-		virtual void				DestrucVM( const CCallbackInfo* pCallBase, SVirtualObj* pObject );
+		virtual bool			CallVM( const CCallbackInfo* pCallBase, void* pRetBuf, void** pArgArray );
+		virtual void			DestrucVM( const CCallbackInfo* pCallBase, SVirtualObj* pObject );
 
+		virtual bool			Set( void* pObject, int32 nIndex, void* pArgBuf, const STypeInfo& TypeInfo );
+		virtual bool			Get( void* pObject, int32 nIndex, void* pResultBuf, const STypeInfo& TypeInfo );
+		virtual bool			Set( void* pObject, const char* szName, void* pArgBuf, const STypeInfo& TypeInfo );
+		virtual bool			Get( void* pObject, const char* szName, void* pResultBuf, const STypeInfo& TypeInfo );
+		virtual bool        	Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg );
+		virtual bool			Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, void* pFunction, void** aryArg );
+		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForceBuild = false );
+    public:
+		CScriptJS( const char* strDebugHost, uint16 nDebugPort );
+		~CScriptJS( void );
 		friend class CJSObject;
 		friend struct SV8Context;
-    public:
-		CScriptJS( uint16 nDebugPort );
-		~CScriptJS(void);
 
-		SV8Context&					GetV8Context() { return *m_pV8Context; }
-		SObjInfo*					FindExistObjInfo( void* pObj );
-							
-		virtual bool        		RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName );
-		virtual bool        		RunFunction( const STypeInfoArray& aryTypeInfo, 
-										void* pResultBuf, const char* szFunction, void** aryArg );
+		SV8Context&				GetV8Context() { return *m_pV8Context; }
+		SObjInfo*				FindExistObjInfo( void* pObj );
 		
-		virtual int32				Compiler( int32 nArgc, char** szArgv );
-		virtual void				UnlinkCppObjFromScript( void* pObj );
-
-		virtual void        		GC();
-		virtual void        		GCAll();
+		virtual int32			Compiler( int32 nArgc, char** szArgv );
+		virtual int32			IncRef( void* pObj );
+		virtual int32			DecRef( void* pObj );
+		virtual void			UnlinkCppObjFromScript( void* pObj );
+		virtual bool			IsValid( void* pObject );
+		virtual void        	GC();
+		virtual void        	GCAll();
 	};
 }
 

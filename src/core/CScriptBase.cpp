@@ -167,9 +167,19 @@ namespace XS
 			false, aryTypeInfo.aryInfo[0].m_szTypeName, "" ) != nullptr;
 	}
 
-	bool CScriptBase::RegisterEnum( const char* szTypeIDName, const char* szEnumName, int32 nTypeSize )
+	bool CScriptBase::RegisterEnumType( const char* szTypeIDName, const char* szEnumType, int32 nTypeSize )
 	{
-		return CClassInfo::RegisterClass( szEnumName, szTypeIDName, nTypeSize, true ) != nullptr;
+		return CClassInfo::RegisterClass( szEnumType, szTypeIDName, nTypeSize, true ) != nullptr;
+	}
+
+	bool CScriptBase::RegisterEnumValue( const char* szTypeIDName, const char* szEnumValue, int32 nValue )
+	{
+		const CClassInfo* pClassInfo = CClassInfo::GetClassInfo( szTypeIDName );
+		const_string keyName( szEnumValue, true );
+		assert( pClassInfo && pClassInfo->GetRegistFunction().Find( keyName ) == nullptr );
+		STypeInfo TypeInfo = GetTypeInfo<int32>(); 
+		STypeInfoArray aryInfo = { &TypeInfo, 1 };
+		return new CCallInfo( nullptr, aryInfo, nValue, szTypeIDName, eCT_Value, szEnumValue ) != nullptr;
 	}
 
 	void CScriptBase::CheckDebugCmd()
@@ -352,7 +362,7 @@ namespace XS
 		delete pFileContext;
 	}
 
-	bool CScriptBase::RunFile( const char* szFileName )
+	bool CScriptBase::RunFile( const char* szFileName, bool bForce/* = false */)
 	{
 		CheckDebugCmd();
 		if( !szFileName )
@@ -363,7 +373,7 @@ namespace XS
 			std::string strFileContent = ReadEntirFile( szFileName );
 			if( strFileContent.empty() )
 				return false;
-			if( !RunBuffer( strFileContent.c_str(), strFileContent.size(), szFileName ) )
+			if( !RunBuffer( strFileContent.c_str(), strFileContent.size(), szFileName, bForce) )
 				return false;
 			if( GetDebugger() && GetDebugger()->RemoteDebugEnable() )
 				GetDebugger()->AddFileContent( szFileName, "" );
@@ -399,7 +409,7 @@ namespace XS
 		name << s_CacheTruckPrefix << (uintptr_t)(void*)( itPre->c_str() );
 		std::string strName = name.str();
 		const char* szName = strName.c_str();
-		if( !RunBuffer( itPre->c_str(), itPre->size(), szName ) )
+		if( !RunBuffer( itPre->c_str(), itPre->size(), szName, true ) )
 			return false;
 		if( GetDebugger() )
 			GetDebugger()->AddFileContent( szName, szString );

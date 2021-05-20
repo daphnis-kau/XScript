@@ -17,20 +17,24 @@ namespace XS
     class CDebugLua;
 	class CScriptLua : public CScriptBase
 	{
-		enum { eMemoryStep = 8, eMaxManageMemoryCount = 8 };
 		struct SMemoryBlock	{ SMemoryBlock* m_pNext; };
+		typedef std::vector<SMemoryBlock*> CMemoryBlockList;
 
 		std::vector<lua_State*>	m_vecLuaState;
 		std::wstring			m_szTempUcs2;
 		std::string				m_szTempUtf8;
 
-		SMemoryBlock*			m_pAllAllocBlock;
-		SMemoryBlock*			m_aryBlock[eMaxManageMemoryCount];
+		std::vector<void*>		m_pAllAllocBlock;
+		CMemoryBlockList		m_aryBlockByClass;
 		bool					m_bPreventExeInRunBuffer;
 
         //==============================================================================
         // aux function
-        //==============================================================================
+		//==============================================================================
+		static int32			GetIndexClosure( lua_State* pL );
+		static int32			GetNewIndexClosure( lua_State* pL );
+		static int32			GetInstanceField( lua_State* pL );
+		static int32			SetInstanceField( lua_State* pL );
 		static int32			ClassCast( lua_State* pL );
 		static int32			CallByLua( lua_State* pL );
 		static int32			ErrorHandler( lua_State* pState );
@@ -59,16 +63,25 @@ namespace XS
 		virtual bool			CallVM( const CCallbackInfo* pCallBase, void* pRetBuf, void** pArgArray );
 		virtual void			DestrucVM( const CCallbackInfo* pCallBase, SVirtualObj* pObject );
 
+		virtual bool			Set( void* pObject, int32 nIndex, void* pArgBuf, const STypeInfo& TypeInfo );
+		virtual bool			Get( void* pObject, int32 nIndex, void* pResultBuf, const STypeInfo& TypeInfo );
+		virtual bool			Set( void* pObject, const char* szName, void* pArgBuf, const STypeInfo& TypeInfo );
+		virtual bool			Get( void* pObject, const char* szName, void* pResultBuf, const STypeInfo& TypeInfo );
+		virtual bool        	Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg );
+		virtual bool        	Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, void* pFunction, void** aryArg );
+		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForceBuild = false );
+
 		friend class CDebugLua;
 		friend class CLuaBuffer;
 
     public:
-        CScriptLua( uint16 nDebugPort = 0 );
+        CScriptLua(const char* strDebugHost, uint16 nDebugPort = 0 );
 		~CScriptLua(void);
 
 		//==============================================================================
 		// built keys
 		//==============================================================================
+		static void*			ms_pGlobObjectWeakTableKey;
 		static void*			ms_pGlobObjectTableKey;
 		static void*			ms_pRegistScriptLuaKey;
 		static void*			ms_pErrorHandlerKey;
@@ -88,11 +101,12 @@ namespace XS
 		void					SetDebugLine();
 
         static  CScriptLua*     GetScript( lua_State* pL );
-		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName );
-		virtual bool        	RunFunction( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg );
+		virtual int32			IncRef( void* pObj );
+		virtual int32			DecRef( void* pObj );
 		virtual void            UnlinkCppObjFromScript( void* pObj );
 		virtual void        	GC();
 		virtual void        	GCAll();
+		virtual bool			IsValid( void* pObject );
 	};
 }
 

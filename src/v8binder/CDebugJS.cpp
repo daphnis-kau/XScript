@@ -91,8 +91,8 @@ namespace XS
 	//-----------------------------------------------------
 	// CDebugJS
 	//-----------------------------------------------------
-	CDebugJS::CDebugJS(CScriptBase* pBase, uint16 nDebugPort)
-		: CDebugBase(pBase, nDebugPort)
+	CDebugJS::CDebugJS(CScriptBase* pBase, const char* strDebugHost, uint16 nDebugPort )
+		: CDebugBase(pBase, strDebugHost, nDebugPort )
 		, m_nDebugPort(nDebugPort)
 		, m_eProtocol( ePT_Unknow )
 		, m_nMessageID( 1 )

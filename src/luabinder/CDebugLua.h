@@ -13,6 +13,7 @@
 
 struct lua_State;
 struct lua_Debug;
+struct lua_TValue;
 
 namespace XS
 {
@@ -47,6 +48,7 @@ namespace XS
 
 		uint32				m_nValueID;
 		CVariableMap		m_mapVariable;
+		std::string			m_szFunctionName;
 
         static void			DebugHook( lua_State *pState, lua_Debug* pDebug );
 		void				Debug( lua_State* pState );
@@ -54,8 +56,9 @@ namespace XS
 		void				ClearVariables();
 		uint32				TouchVariable( const char* szField, uint32 nParentID );
 		virtual uint32		GenBreakPointID( const char* szFileName, int32 nLine );
+		const char*			GetFuncName( void* pGC, lua_TValue* vTable, std::set<void*>& setReached );
     public:
-        CDebugLua( CScriptBase* pBase, uint16 nDebugPort );
+        CDebugLua( CScriptBase* pBase, const char* strDebugHost, uint16 nDebugPort );
         ~CDebugLua(void);
 
 		void				SetCurState( lua_State* pL );

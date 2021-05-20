@@ -1,10 +1,11 @@
-﻿#include "CDebugLua.h"
+﻿#include "common/Help.h"
+#include "common/TStrStream.h"
+#include "CDebugLua.h"
 #include "CScriptLua.h"
 #include <list>
 #include <vector>
 #include <sstream>
 #include <algorithm>
-#include "common/Help.h"
 
 extern "C"
 {
@@ -12,6 +13,7 @@ extern "C"
 	#include "lauxlib.h"
 	#include "lstate.h"
 	#include "lualib.h"
+	#include "lvm.h"
 }
 
 namespace XS
@@ -30,8 +32,8 @@ namespace XS
 	static void* s_szValue2ID = (void*)"v2i";
 	static void* s_szID2Value = ( void* )"i2v";
 
-    CDebugLua::CDebugLua( CScriptBase* pBase, uint16 nDebugPort )
-        : CDebugBase( pBase, nDebugPort )
+    CDebugLua::CDebugLua( CScriptBase* pBase, const char* strDebugHost, uint16 nDebugPort )
+        : CDebugBase( pBase, strDebugHost, nDebugPort )
 		, m_pState( nullptr )
 		, m_pPreState( nullptr )
         , m_nBreakFrame( -1 )
@@ -67,8 +69,29 @@ namespace XS
 
 		if( szFunction )
 		{
-			lua_getinfo ( m_pState, "n", &ld );
-			*szFunction = ld.name;
+			std::set<void*> setReached;
+			CallInfo* pCallInfo = m_pState->base_ci + ld.i_ci;
+			lua_pushlightuserdata( m_pState, s_szID2Value );
+			lua_rawget( m_pState, LUA_REGISTRYINDEX );				//1[ID2Value]
+			for( int32 i = ePDVID_Scopes; !*szFunction && i < ePDVID_Tempory; i++ )
+			{
+				if( !lua_istable( m_pState, -1 ) )
+					continue;
+				lua_pushnumber( m_pState, i );						//2[ID2Value,id]
+				lua_rawget( m_pState, -2 );   						//2[ID2Value,value]
+				void* pTarget = pCallInfo->func->value.gc;
+				int tableIndex = lua_gettop( m_pState );
+				TValue* vTable = m_pState->base + tableIndex - 1;
+				if( *szFunction = GetFuncName( pTarget, vTable, setReached ) )
+				{
+					if( !**szFunction )
+						*szFunction = nullptr;
+					lua_pop( m_pState, 1 );
+					break;
+				}
+				lua_pop( m_pState, 1 );
+			}
+			lua_pop( m_pState, 1 );
 		}
 
 		if( szSource )
@@ -92,7 +115,55 @@ namespace XS
 		return s_nBreakPointID++;
 	}
 
-	void CDebugLua::DebugHook( lua_State *pState, lua_Debug* pDebug )
+	const char* CDebugLua::GetFuncName( void* pGC, lua_TValue* vTable, std::set<void*>& setReached )
+	{		
+		if( ttype( vTable ) != LUA_TTABLE ||
+			setReached.find( vTable->value.gc ) != setReached.end() )
+			return nullptr;
+		setReached.insert( vTable->value.gc );
+		Table* pTable = hvalue( vTable );
+
+		const char* szName = nullptr;
+		for( int32 i = 0; !szName && i < pTable->sizearray; i++ )
+		{
+			if( ttisnil( &pTable->array[i] ) )
+				continue;
+			if( ttistable( &pTable->array[i] ) )
+				szName = GetFuncName( pGC, &pTable->array[i], setReached );
+			if( pTable->array[i].tt != LUA_TFUNCTION ||
+				pTable->array[i].value.gc != pGC )
+				continue;
+			char_stream( m_szFunctionName ) << i + 1;
+			return m_szFunctionName.c_str();
+		}
+
+		for( int32 i = 0; !szName && i < sizenode( pTable ); i++ )
+		{  
+			if( ttisnil( &pTable->node[i].i_val ) )
+				continue;
+			if( ttistable( &pTable->node[i].i_val ) )
+				szName = GetFuncName( pGC, &pTable->node[i].i_val, setReached );
+			if( pTable->node[i].i_val.tt != LUA_TFUNCTION ||
+				pTable->node[i].i_val.value.gc != pGC )
+				continue;
+			if( pTable->node[i].i_key.tvk.tt == LUA_TNUMBER )
+			{
+				char_stream( m_szFunctionName ) << pTable->node[i].i_key.tvk.value.n;
+				return m_szFunctionName.c_str();
+			}
+
+			if( pTable->node[i].i_key.tvk.tt == LUA_TSTRING )
+			{
+				char_stream( m_szFunctionName ) << pTable->node[i].i_key.tvk.value.n;
+				return svalue( &pTable->node[i].i_key.tvk );
+			}
+
+			return "";
+		}
+		return szName;
+	}
+
+	void CDebugLua::DebugHook( lua_State* pState, lua_Debug* pDebug )
     {
 		auto pScriptLua = CScriptLua::GetScript( pState );
 		auto pDebugger = static_cast<CDebugLua*>( pScriptLua->GetDebugger() );
@@ -350,7 +421,8 @@ namespace XS
 		}
 
 		SVariableInfo* pInfo = m_mapVariable.Find( nID );
-		assert( pInfo );
+		if (pInfo == nullptr)
+			return SValueInfo();
 
 		auto pNode = static_cast<SVariableNode*>( pInfo );
 		Info.strName = pNode->m_strField.c_str();
@@ -455,6 +527,8 @@ namespace XS
 			SVariableInfo* pInfo = m_mapVariable.Find(aryID[i]);
 			if (!pInfo)
 				continue;
+			GetChildrenID(aryID[i], false, 0);
+			GetChildrenID(aryID[i], true, 0);
 			SFieldInfo* pField = pInfo->m_mapFields[0].Find(strKey);
 			if (!pField)
 				continue;

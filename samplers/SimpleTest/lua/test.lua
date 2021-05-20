@@ -41,8 +41,8 @@ g_handler = CApplicationHandler:new();
 g_App = CApplication.GetInst();
 
 local address = SAddress:new(3, 5);
-address:nIP(123456789);
-address:nPort(1234);
+address.nIP = 123456789;
+address.nPort = 1234;
 
 local config = SApplicationConfig:new();
 
@@ -66,10 +66,10 @@ buffer.value = 23456;
 
 function StartApplication( name, id )
 	config:SetName( name );
-	config:nID( id );
-	config:Address( address );
+	config.nID = id;
+	config.Address = address;
 
-	Test( config:Address():nIP() == 123456789 and config:Address():nPort() == 1234, "Test object value member" );
+	Test( config.Address.nIP == 123456789 and config.Address.nPort == 1234, "Test object value member" );
 	Test( g_App:TestCallObjectPointer(g_handler) == g_handler, "Test return obj pointer" );
 	Test( g_App:TestCallObjectReference(config) == config, "Test return obj reference" );
 	Test( g_App:TestCallObjectValue(config) ~= config, "Test return obj value " );

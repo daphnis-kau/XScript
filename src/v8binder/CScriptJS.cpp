@@ -44,7 +44,7 @@ namespace XS
 	//====================================================================================
     // CScriptJS
 	//====================================================================================
-    CScriptJS::CScriptJS( uint16 nDebugPort )
+    CScriptJS::CScriptJS( const char* strDebugHost, uint16 nDebugPort )
 		: m_pFreeObjectInfo( nullptr )
 		, m_pV8Context( new SV8Context( this ) )
 	{
@@ -109,7 +109,7 @@ namespace XS
 			v8::Function::New(pIsolate, &SV8Context::Break, ScriptContext);
 		globalObj->Set( context, v8::String::NewFromUtf8(pIsolate, "gdb" ), funDebug );
 
-		m_pDebugger = new CDebugJS( this, nDebugPort );
+		m_pDebugger = new CDebugJS( this, strDebugHost, nDebugPort );
 
 		m_pV8Context->m_CppField.Reset(pIsolate, 
 			v8::String::NewFromUtf8(pIsolate, "__cpp_obj_info__" ) );
@@ -418,7 +418,7 @@ namespace XS
     //==================================================================================================================================//
     //                                                        对C++提供的功能性函数                                                     //
     //==================================================================================================================================//
-   	bool CScriptJS::RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName )
+   	bool CScriptJS::RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForceBuild )
 	{
 		std::string sFileName = szFileName;
 		if( sFileName[0] == '/' )
@@ -466,7 +466,27 @@ namespace XS
 		return true;
 	}
 
-	bool CScriptJS::RunFunction( const STypeInfoArray& aryTypeInfo, 
+	bool CScriptJS::Set( void* pObject, int32 nIndex, void* pArgBuf, const STypeInfo& TypeInfo )
+	{
+		return false;
+	}
+
+	bool CScriptJS::Set( void* pObject, const char* szName, void* pArgBuf, const STypeInfo& TypeInfo )
+	{
+		return false;
+	}
+
+	bool CScriptJS::Get( void* pObject, int32 nIndex, void* pResultBuf, const STypeInfo& TypeInfo )
+	{
+		return false;
+	}
+
+	bool CScriptJS::Get( void* pObject, const char* szName, void* pResultBuf, const STypeInfo& TypeInfo )
+	{
+		return false;
+	}
+
+	bool CScriptJS::Call( const STypeInfoArray& aryTypeInfo,
 		void* pResultBuf, const char* szFunction, void** aryArg )
 	{
 		SV8Context& Context = GetV8Context();
@@ -520,6 +540,11 @@ namespace XS
 			GetJSTypeBase( nResultType )->FromVMValue( nResultType, 
 				*this, (char*)pResultBuf, result.ToLocalChecked() );
 		return true;
+	}
+
+	bool CScriptJS::Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, void* pFunction, void** aryArg )
+	{
+		return false;
 	}
 
 	void CScriptJS::BuildRegisterInfo()
@@ -660,7 +685,17 @@ namespace XS
         return -1;
     }
 
-    void CScriptJS::UnlinkCppObjFromScript( void* pObj )
+	int32 CScriptJS::IncRef( void* pObj )
+	{
+		return false;
+	}
+
+	int32 CScriptJS::DecRef( void* pObj )
+	{
+		return false;
+	}
+
+	void CScriptJS::UnlinkCppObjFromScript( void* pObj )
 	{
 		SObjInfo* pObjInfo = FindExistObjInfo( pObj );
 		if( !pObjInfo )
@@ -668,6 +703,11 @@ namespace XS
 		// 这里仅仅解除绑定
 		pObjInfo->Remove();
 		pObjInfo->m_pObject = nullptr;
+	}
+
+	bool CScriptJS::IsValid( void* pObject )
+	{
+		return false;
 	}
 
 	void CScriptJS::GC()

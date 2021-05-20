@@ -21,7 +21,7 @@ namespace XS
 	//=====================================================================
 	double			GetNumFromLua( lua_State* pL, int32 nStkId );
 	void*			GetPointerFromLua( lua_State* pL, int32 nStkId );
-	void			PushPointerToLua( lua_State* pL, void* pBuffer );
+	bool			PushPointerToLua( lua_State* pL, void* pBuffer, bool bCreateStreamBuff = true );
 	void			RegisterPointerClass( CScriptLua* pScript );
 	CLuaTypeBase*	GetLuaTypeBase( DataType eType );
 

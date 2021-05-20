@@ -1,4 +1,4 @@
-#include "XScriptDll.h"
+﻿#include "XScriptDll.h"
 #include "core/XScript.h"
 #include "../include/common/CodeCvs.h"
 #include "../src/luabinder/CScriptLua.h"
@@ -28,7 +28,7 @@ extern "C" {
 
 	EXPORT_API HScript CreateLuaScript(unsigned short nDebugPort)
 	{
-		return new XS::CScriptLua(nDebugPort);
+		return new XS::CScriptLua(nullptr, nDebugPort);
 	}
 
 	EXPORT_API bool RunFile(HScript hScript, const wchar_t* szFileName)

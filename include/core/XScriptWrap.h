@@ -256,14 +256,15 @@ namespace XS
 	{
 		static void GetOffset( ptrdiff_t* ary )
 		{
-			*ary = ( (ptrdiff_t)(First*)(Derive*)0x40000000 ) - 0x40000000;
-			TBaseClassOffset<Derive, Base...>::Get( ++ary );
+			First* pBaseAddress = static_cast<First*>((Derive*)0x40000000);
+			*ary = ( (ptrdiff_t)pBaseAddress) - 0x40000000;
+			TBaseClassOffset<Derive, Base...>::GetOffset( ++ary );
 		}
 
 		static void GetTypes( const char** ary )
 		{
 			*ary = typeid( First ).name();
-			TBaseClassOffset<Derive, Base...>::Get( ++ary );
+			TBaseClassOffset<Derive, Base...>::GetTypes( ++ary );
 		}
 	};
 
@@ -707,5 +708,61 @@ namespace XS
 
 		STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
 		return TypeInfo;
-	}	
+	}
+
+	class CScriptObject
+	{
+		CScriptBase* m_pScript;
+		void* m_pScriptObject;
+	public:
+		CScriptObject(CScriptBase* pScript = nullptr, void* pScriptObject = nullptr)
+			: m_pScript(pScript)
+			, m_pScriptObject(pScriptObject)
+		{
+			assert( !m_pScript == !m_pScriptObject );
+			if( !m_pScript )
+				return;
+			m_pScript->IncRef( m_pScriptObject );
+		}
+
+		CScriptObject( const CScriptObject& rhs )
+			: m_pScript( rhs.m_pScript )
+			, m_pScriptObject( rhs.m_pScriptObject )
+		{
+			assert( !m_pScript == !m_pScriptObject );
+			if( !m_pScript )
+				return;
+			m_pScript->IncRef( m_pScriptObject );
+		}
+
+		const CScriptObject& operator = ( const CScriptObject& rhs )
+		{
+			Reset();
+			m_pScript = rhs.m_pScript;
+			m_pScriptObject = rhs.m_pScriptObject;
+			assert( !m_pScript == !m_pScriptObject );
+			if( m_pScript )
+				m_pScript->IncRef( m_pScriptObject );
+			return *this;
+		}
+
+		~CScriptObject()
+		{
+			Reset();
+		}
+
+		operator void* () const
+		{
+			return m_pScriptObject;
+		}
+
+		void Reset()
+		{
+			if( !m_pScript )
+				return;
+			m_pScript->DecRef( m_pScriptObject );
+			m_pScript = nullptr;
+			m_pScriptObject = nullptr;
+		}
+	};
 }

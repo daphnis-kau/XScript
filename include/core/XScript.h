@@ -14,7 +14,7 @@
 *	DEFINE_CLASS_END()\n
 */
 #define DEFINE_CLASS_BEGIN( _class, ... ) \
-	DEFINE_CLASS_BEGIN_IMPLEMENT( eConstructType_Normal, _class, __VA_ARGS__)
+	DEFINE_CLASS_BEGIN_IMPLEMENT( XS::eConstructType_Normal, _class, __VA_ARGS__)
 
 /**
 * @brief  Register the class which can not be duplicated
@@ -24,7 +24,7 @@
 *	DEFINE_CLASS_END()\n
 */
 #define DEFINE_UNDUPLICATABLE_CLASS_BEGIN( _class, ... ) \
-	DEFINE_CLASS_BEGIN_IMPLEMENT( eConstructType_Unduplicatable, _class, __VA_ARGS__)
+	DEFINE_CLASS_BEGIN_IMPLEMENT( XS::eConstructType_Unduplicatable, _class, __VA_ARGS__)
 
 /**
 * @brief  Register the class which can not be instantiated
@@ -34,7 +34,7 @@
 *	DEFINE_CLASS_END()\n
 */
 #define DEFINE_ABSTRACT_CLASS_BEGIN( _class, ... ) \
-	DEFINE_CLASS_BEGIN_IMPLEMENT( eConstructType_Abstract, _class, __VA_ARGS__)
+	DEFINE_CLASS_BEGIN_IMPLEMENT( XS::eConstructType_Abstract, _class, __VA_ARGS__)
 
 /**
 * @brief  Register the class's virtual destructor
@@ -96,20 +96,20 @@
 * @note	Callback function mean can override by class defined in script
 */
 #define REGIST_CALLBACKFUNCTION( _function ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, decltype( &org_class::_function ), _function, _function )
+	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, _function, _function )
 #define REGIST_CALLBACKFUNCTION_WITHNAME( _function, _fun_name ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, decltype( &org_class::_function ), _function, _fun_name )
+	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, _function, _fun_name )
 #define REGIST_CALLBACKFUNCTION_OVERLOAD( _function, _fun_type, _fun_name ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, _function, _fun_type, _fun_name )
+	REGIST_CALLBACKFUNCTION_IMPLEMENT_WITHTYPE( false, _function, _fun_type, _fun_name )
 
 /**
 * @brief  Register pure callback function
 * @note	Callback function mean can override by class defined in script
 */
 #define REGIST_PUREVIRTUALFUNCTION( _function ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, decltype( &org_class::_function ), _function, _function )
+	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, _function, _function )
 #define REGIST_PUREVIRTUALFUNCTION_WITHNAME( _function, _fun_name ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, decltype( &org_class::_function ), _function, _fun_name )
+	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, _function, _fun_name )
 #define REGIST_PUREVIRTUALFUNCTION_OVERLOAD( _function, _fun_type, _fun_name ) \
 	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, _function, _fun_type, _fun_name )
 
@@ -118,6 +118,7 @@
 * @note	Enum type will be register automatically when \n
 *	it appear in parameters of registered function
 */
-#define REGIST_ENUMTYPE( EnumType ) REGIST_ENUMTYPE_IMPLEMENT( EnumType )
+#define REGIST_ENUM_BEGIN( EnumType ) REGIST_ENUM_BEGIN_IMPLEMENT( EnumType, EnumType )
+#define REGIST_ENUM_BEGIN_WITH_NAME( EnumType, EnumName ) REGIST_ENUM_BEGIN_IMPLEMENT( EnumType, EnumName )
 
 #endif

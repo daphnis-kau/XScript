@@ -86,6 +86,7 @@ namespace XS
 
 		char*				m_pBuf;
 		char				m_szBuffer[1024];
+		std::string			m_strCWD;
 		CBreakPointList		m_setBreakPoint;
 		CFileMap			m_mapFileBuffer;
 
@@ -125,7 +126,7 @@ namespace XS
 		void				RemoteDebug( SException* pException );
 		void				CmdLock();
 		void				CmdUnLock();
-		void				ListenRemote( uint16 nDebugPort );
+		void				ListenRemote( const char* strDebugHost, uint16 nDebugPort );
 		void				TeminateRemote( const char* szSequence );
 		void				Run();
 
@@ -148,13 +149,14 @@ namespace XS
 		bool				HaveBreakPoint() const { return !m_setBreakPoint.empty(); }
 
     public:
-        CDebugBase( CScriptBase* pBase, uint16 nDebugPort );
+        CDebugBase( CScriptBase* pBase, const char* strDebugHost, uint16 nDebugPort );
 		virtual ~CDebugBase(void);
 
 		void				Debug();
 		bool				Error( const char* szException, bool bBeCaught );
 		void				BTrace( int32 nFrameCount );
 		void				AddFileContent( const char* szSource, const char* szData );
+		bool				HasLoadFile(const char* szFile);
 		bool				RemoteDebugEnable() const;
 		bool				RemoteCmdValid() const { return !m_listDebugCmd.IsEmpty(); }
 		void				CheckEnterRemoteDebug();

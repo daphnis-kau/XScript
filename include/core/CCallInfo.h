@@ -17,6 +17,7 @@ namespace XS
 {
 	enum ECallingType
 	{
+		eCT_Value				= -5,
 		eCT_GlobalFunction		= -4,
 		eCT_ClassStaticFunction	= -3,
 		eCT_ClassFunction		= -2,
@@ -52,6 +53,7 @@ namespace XS
 		uint32					GetResultSize()		const { return m_nReturnSize; }
 		int32					GetFunctionIndex()	const { return m_nFunIndex; }
 		const const_string&		GetFunctionName()	const { return m_sFunName; }
+		uintptr_t				GetFunctionOrg()	const { return m_funOrg; }
 
 	protected:
 		IFunctionWrap*			m_funWrap;
