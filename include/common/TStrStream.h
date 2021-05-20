@@ -18,8 +18,8 @@ namespace XS
 {
 	template<class _Elem, class _Traits = std::char_traits<_Elem> >
 	class TStrStream
-		: public std::basic_streambuf<_Elem>
-		, public std::basic_ostream<_Elem, _Traits >
+		: private std::basic_streambuf<_Elem>
+		, private std::basic_ostream<_Elem, _Traits >
 	{
 		typedef std::basic_streambuf<_Elem> Parent_t;
 		typedef typename Parent_t::int_type int_type;

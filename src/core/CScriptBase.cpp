@@ -403,7 +403,7 @@ namespace XS
 		const_string strKey( szString, true );
 		auto itPre = m_setRuningString.find( strKey );
 		if( itPre == m_setRuningString.end() )
-			itPre = m_setRuningString.insert( szString ).first;
+			itPre = m_setRuningString.insert( const_string( szString ) ).first;
 
 		std::stringstream name;
 		name << s_CacheTruckPrefix << (uintptr_t)(void*)( itPre->c_str() );

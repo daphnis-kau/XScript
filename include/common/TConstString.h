@@ -27,21 +27,21 @@ namespace XS
 		{
 		}
 
-		TConstString( const _Elem* szString, bool bRefrence = false )
+		explicit TConstString( const _Elem* szString, bool bRefrence = false )
 			: m_nSize( 0 )
 			, m_szString( nullptr )
 		{
 			assign( szString, bRefrence );
 		}
 
-		TConstString( const _Elem* szString, uint32 nLen, bool bRefrence = false )
+		explicit TConstString( const _Elem* szString, uint32 nLen, bool bRefrence = false )
 			: m_nSize( nLen )
 			, m_szString( nullptr )
 		{
 			assign( szString, nLen, bRefrence );
 		}
 
-		TConstString( const TConstString& str )
+		explicit TConstString( const TConstString& str )
 			: m_nSize( str.m_nSize )
 			, m_szString( str.m_szString )
 		{

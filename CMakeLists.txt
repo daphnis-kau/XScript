@@ -3,12 +3,12 @@ if(WIN32)
   set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "_Predefined")
 endif(WIN32)
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.10)
 project(XScript) 
 
 if(WIN32)
 else(WIN32)
-	set(CMAKE_CXX_FLAGS "-std=c++11 -pthread ${CMAKE_CXX_FLAGS}")
+	set(CMAKE_CXX_FLAGS "-std=c++11 -fPIC -pthread ${CMAKE_CXX_FLAGS}")
 endif(WIN32)
 
 add_subdirectory(src/common) 

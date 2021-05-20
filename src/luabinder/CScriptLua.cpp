@@ -1286,7 +1286,7 @@ namespace XS
 		for (int i = 0; i <= nLen; i++)
 			szNewBuffer[i] = szFileName[i] == '.' ? '/' : szFileName[i];
 		szFileName = szNewBuffer;
-		if (nLen < 3 || strnicmp(szNewBuffer + nLen - 3, "lua", 3))
+		if (nLen < 3 || XS::strnicmp(szNewBuffer + nLen - 3, "lua", 3))
 			memcpy(szNewBuffer + nLen, ".lua", 5);
 		
 		lua_pop(pL, 1);
@@ -1311,7 +1311,7 @@ namespace XS
 		for (int i = 0; i <= nLen; i++)
 			szNewBuffer[i] = szFileName[i] == '.' ? '/' : szFileName[i];
 		szFileName = szNewBuffer;
-		if (nLen < 3 || strnicmp(szNewBuffer + nLen - 3, "lua", 3))
+		if (nLen < 3 || XS::strnicmp(szNewBuffer + nLen - 3, "lua", 3))
 			memcpy(szNewBuffer + nLen, ".lua", 5);
 
 		int n = lua_gettop(pL);
@@ -1598,7 +1598,7 @@ namespace XS
 		if( !PushPointerToLua( pL, pFunction, false ) || !lua_isfunction( pL, -1 ) )
 		{
 			lua_pop( pL, 2 );
-			return nullptr;
+			return false;
 		}
 
 		uint32 nParamCount = aryTypeInfo.nSize - 1;

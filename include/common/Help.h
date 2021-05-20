@@ -266,5 +266,21 @@ namespace XS
 		enum { eValue = TLog2< n/2 >::eValue + 1 };
 	};
 	template<> class TLog2<1> { public: enum { eValue = 0 }; };
+
+	template<class _Type>
+	int32 strnicmp( const _Type* src, const _Type* dst, size_t nMaxLen )
+	{
+		int ret = 0;
+		size_t n = 0;
+		while( n < nMaxLen && 0 == ( ret = tolower(*src) - tolower(*dst) ) && *dst )
+			++src, ++dst, ++n;
+
+		if ( ret < 0 )
+			ret = -1 ;
+		else if ( ret > 0 )
+			ret = 1 ;
+
+		return ret;
+	}
 }
 #endif
