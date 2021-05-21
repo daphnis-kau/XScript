@@ -533,8 +533,9 @@ namespace XS
 		public:
 			void Call( void* pRetBuf, void** pArgArray, uintptr_t funRaw )
 			{
+				FunctionType fun = nullptr;
+				*(uintptr_t*)&fun = funRaw;
 				TCallBackWrap* pObj = *(TCallBackWrap**)pArgArray[0];
-				FunctionType fun = *(FunctionType*)&funRaw;
 				typedef TOrgFunParam<RetType, Param...> OrgFunctionCaller;
 				typedef typename OrgFunctionCaller::template TCaller<TCallBackWrap, FunctionType> Caller;
 				Caller::CallFun( 0, fun, pRetBuf, pObj, pArgArray + 1 );

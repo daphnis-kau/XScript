@@ -1,4 +1,4 @@
-include_directories (
+﻿include_directories (
 	"${PROJECT_SOURCE_DIR}/include" 
 	"${PROJECT_SOURCE_DIR}/third_party/lua-5.1.5/src")
 set(ProjectName luabinder)
@@ -57,7 +57,6 @@ set(lua_files
 	${PROJECT_SOURCE_DIR}/third_party/lua-5.1.5/src/lvm.h
 	${PROJECT_SOURCE_DIR}/third_party/lua-5.1.5/src/lzio.c
 	${PROJECT_SOURCE_DIR}/third_party/lua-5.1.5/src/lzio.h
-	${PROJECT_SOURCE_DIR}/third_party/lua-5.1.5/src/Makefile
 	${PROJECT_SOURCE_DIR}/third_party/lua-5.1.5/src/print.c)	
 source_group("third_party" FILES ${lua_files})
 
