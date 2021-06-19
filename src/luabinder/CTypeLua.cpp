@@ -6,7 +6,7 @@ extern "C"
 {
 	#include "lua.h"
 	#include "lauxlib.h"
-	//#include "lstate.h"
+	#include "lstate.h"
 }
 
 #include "common/Help.h"
