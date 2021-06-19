@@ -4,6 +4,8 @@
 #include "core/CScriptBase.h"
 #include "core/CCallInfo.h"
 #include "core/CDebugBase.h"
+#include "core/CDebugBase.h"
+#include "core/CClassInfo.h"
 
 namespace XS
 {
@@ -303,9 +305,12 @@ namespace XS
 		return nCount;
 	}
 
-	int CScriptBase::Output( const char* szBuffer, int nCount )
+	int CScriptBase::Output( const char* szBuffer, int nCount, bool bError )
 	{
-		std::cout << szBuffer;
+		if( bError )
+			std::cerr << ( szBuffer ? szBuffer : "(null c string)" );
+		else
+			std::cout << ( szBuffer ? szBuffer : "(null c string)" );
 		return nCount;
 	}
 
@@ -367,6 +372,20 @@ namespace XS
 		CheckDebugCmd();
 		if( !szFileName )
 			return false;
+
+		auto ReadEntirFile = [this]( const char* szFileName )
+		{
+			std::string strBuffer;
+			void* pContext = OpenFile( szFileName );
+			if( !pContext )
+				return strBuffer;
+			char szBuffer[1024];
+			int32 nReadSize = 0;
+			while( (nReadSize = ReadFile( pContext, szBuffer, 1024 )) > 0 )
+				strBuffer.append( szBuffer, nReadSize );
+			CloseFile( pContext );
+			return strBuffer;
+		};
 
 		if( szFileName[0] == '/' || ::strchr( szFileName, ':' ) )
 		{

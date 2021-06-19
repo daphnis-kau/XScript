@@ -99,8 +99,8 @@
 	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, _function, _function )
 #define REGIST_CALLBACKFUNCTION_WITHNAME( _function, _fun_name ) \
 	REGIST_CALLBACKFUNCTION_IMPLEMENT( false, _function, _fun_name )
-#define REGIST_CALLBACKFUNCTION_OVERLOAD( _function, _fun_type, _fun_name ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT_WITHTYPE( false, _function, _fun_type, _fun_name )
+#define REGIST_CALLBACKFUNCTION_OVERLOAD( _fun_type, _function, _fun_name ) \
+	REGIST_CALLBACKFUNCTION_IMPLEMENT_WITHTYPE( false, _fun_type, _function, _fun_name )
 
 /**
 * @brief  Register pure callback function
@@ -111,7 +111,7 @@
 #define REGIST_PUREVIRTUALFUNCTION_WITHNAME( _function, _fun_name ) \
 	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, _function, _fun_name )
 #define REGIST_PUREVIRTUALFUNCTION_OVERLOAD( _function, _fun_type, _fun_name ) \
-	REGIST_CALLBACKFUNCTION_IMPLEMENT( true, _function, _fun_type, _fun_name )
+	REGIST_CALLBACKFUNCTION_IMPLEMENT_WITHTYPE( true, _fun_type, _function, _fun_name )
 
 /**
 * @brief  Register enum type

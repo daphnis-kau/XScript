@@ -91,13 +91,13 @@ namespace XS
 	//-----------------------------------------------------
 	// CDebugJS
 	//-----------------------------------------------------
-	CDebugJS::CDebugJS(CScriptBase* pBase, const char* strDebugHost, uint16 nDebugPort )
-		: CDebugBase(pBase, strDebugHost, nDebugPort )
+	CDebugJS::CDebugJS(IDebugHandler* pHandler, const char* strDebugHost, uint16 nDebugPort )
+		: CDebugBase( pHandler, strDebugHost, nDebugPort )
 		, m_nDebugPort(nDebugPort)
 		, m_eProtocol( ePT_Unknow )
 		, m_nMessageID( 1 )
 	{
-		CScriptJS* pScript = (CScriptJS*)m_pBase;
+		CScriptJS* pScript = (CScriptJS*)GetDebugHandler();
 		SV8Context& Context = pScript->GetV8Context();
 		v8::Isolate* isolate = Context.m_pIsolate;
 		v8::HandleScope handle_scope(isolate);
@@ -368,14 +368,14 @@ namespace XS
 
 	v8::Local<v8::Context> CDebugJS::ensureDefaultContextInGroup(int context_group_id)
 	{
-		CScriptJS* pScript = (CScriptJS*)GetScriptBase();
+		CScriptJS* pScript = (CScriptJS*)GetDebugHandler();
 		SV8Context& Context = pScript->GetV8Context();
 		return Context.m_pIsolate->GetCurrentContext();
 	}
 
 	double CDebugJS::currentTimeMS()
 	{
-		CScriptJS* pScript = (CScriptJS*)GetScriptBase();
+		CScriptJS* pScript = (CScriptJS*)GetDebugHandler();
 		SV8Context& Context = pScript->GetV8Context();
 		return Context.m_platform->CurrentClockTimeMillis();
 	}

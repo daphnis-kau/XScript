@@ -11,10 +11,9 @@
 
 extern "C"
 {
-	#include "lua.h"
-	#include "lauxlib.h"
-	#include "lstate.h"
-	#include "lualib.h"
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
 }
 
 #include "common/CodeCvs.h"
@@ -27,6 +26,9 @@ extern "C"
 
 namespace XS
 {
+	//====================================================================================
+	// SReadContext
+	//====================================================================================
 	struct SReadContext
 	{
 		const void* m_pBuffer;
@@ -41,13 +43,15 @@ namespace XS
 		}
 	};
 
+	//====================================================================================
+	// SMemoryUnitInfo
+	//====================================================================================
 	enum
 	{
 		eMemDef_PageSize = 64 * 1024,
 		eMemDef_MaxSize = 16384,
 		eMemDef_UnitStep = sizeof( void* )
 	};
-
 	typedef TMemoryUnitInfo
 		<eMemDef_PageSize, eMemDef_UnitStep, eMemDef_MaxSize>
 		SMemoryUnitInfo;
@@ -64,13 +68,13 @@ namespace XS
 	//====================================================================================
 	// CScriptLua
 	//====================================================================================
-	void* CScriptLua::ms_pGlobObjectWeakTableKey = (void*)"__global_object_weaktable";
-	void* CScriptLua::ms_pGlobObjectTableKey = (void*)"__global_object_table";
-	void* CScriptLua::ms_pRegistScriptLuaKey = (void*)"__regist_cscript_lua";
-	void* CScriptLua::ms_pErrorHandlerKey = (void*)"__error_handler";
-	void* CScriptLua::ms_pClassInfoKey = (void*)"__class_info";
-	
-	CScriptLua::CScriptLua(const char* strDebugHost, uint16 nDebugPort)
+	void* CScriptLua::ms_pGlobObjectWeakTable = (void*)"__global_object_weakvalue";
+	void* CScriptLua::ms_pGlobObjectTable = (void*)"__global_object_table";
+	void* CScriptLua::ms_pRegistScriptLua = (void*)"__regist_cscript_lua";
+	void* CScriptLua::ms_pFirstClassInfo = (void*)"__first_class_info";
+	void* CScriptLua::ms_pErrorHandler = (void*)"__error_handler";
+
+	CScriptLua::CScriptLua( const char* strDebugHost, uint16 nDebugPort, bool bWaitForDebugger )
 		: m_bPreventExeInRunBuffer(false)
 	{
 		m_aryBlockByClass.resize(eMemoryConst_AllocateCount);
@@ -91,23 +95,26 @@ namespace XS
 		const char* szDefClass =
 			// 新加的类派生给子类
 			"local function __derive_to_child( child, key, value, orgFun )\n"
-			"	if rawget( rawget( child, \"__virtual_table\" ), key ) == orgFun then\n"
-			"		rawset( rawget( child, \"__virtual_table\" ), key, value )\n"
+			"	local child_vtable = rawget( child, \"__virtual_table\" )\n"
+			"	if rawget( child_vtable, key ) == orgFun then\n"
+			"		rawset( child_vtable, key, value )\n"
 			"	end\n"
-			"	for i = 1, #child.__derive_list do\n"
-			"		__derive_to_child( child.__derive_list[i], key, value, orgFun )\n"
+			"	for k, v in ipairs(child.__derive_list) do\n"
+			"		__derive_to_child( v, key, value, orgFun )\n"
 			"	end\n"
 			"end\n"
 
 			// child从base继承函数
 			"local function __inherit_from_base( child, base )\n"
-			"	for k, v in pairs( rawget( base, \"__virtual_table\" ) ) do\n"
-			"		if not rawget( rawget( child, \"__virtual_table\" ), k ) then\n"
-			"			rawset( rawget( child, \"__virtual_table\" ), k, v )\n"
+			"	local base_vtable = rawget( base, \"__virtual_table\" )\n"
+			"	local child_vtable = rawget( child, \"__virtual_table\" )\n"
+			"	for k, v in pairs( base_vtable ) do\n"
+			"		if rawget( child_vtable, k ) == nil then\n"
+			"			rawset( child_vtable, k, v )\n"
 			"		end\n"
 			"	end\n"
-			"	for i = 1, #base.__base_list do\n"
-			"		__inherit_from_base( child, base.__base_list[i] )\n"
+			"	for k, v in ipairs(base.__base_list) do\n"
+			"		__inherit_from_base( child, v )\n"
 			"	end\n"
 			"end\n"
 
@@ -118,8 +125,8 @@ namespace XS
 			"	end\n"
 
 			"	local base_list = rawget( cur_node, \"__base_list\")\n"
-			"	for i = 1, #base_list do\n"
-			"	    if( SearchClassNode( base_list[i], check_node ) ) then\n"
+			"	for k, v in pairs( base_list ) do\n"
+			"	    if( SearchClassNode( v, check_node ) ) then\n"
 			"	        return true\n"
 			"	    end\n"
 			"	end\n"
@@ -133,24 +140,14 @@ namespace XS
 			"function class( ... )\n"
 			"	local NewClass = {}\n"
 			"	local VirtualTable = {}\n"
-			"	NewClass.__base_list = {}\n"
+			"	NewClass.__base_list = { ... }\n"
 			"	NewClass.__derive_list = {}\n"
 			"	NewClass.__virtual_table = VirtualTable\n"
 			"	NewClass.__index = GetIndexClosure(VirtualTable)\n"
 			"	NewClass.__newindex = GetNewIndexClosure(VirtualTable)\n"
 
-			"	local nIndex = 1\n"
-			"	while true do\n"
-			"		local v = select( nIndex, ... );\n"
-			"		if not v then\n"
-			"			break;\n"
-			"		end\n"
-			"		table.insert( NewClass.__base_list, v )\n"
-			"		nIndex = nIndex + 1\n"
-			"	end\n"
-
 			"	NewClass.new = function( self, ... )\n"
-			"	    local NewInstance = {}\n"
+			"	    local NewInstance = { [\"(cppobjs)\"] = {} }\n"
 			"	    setmetatable( NewInstance, self )\n"
 			"	    if( self.construction )then\n"
 			"			self.construction( NewInstance, ... )\n"
@@ -170,9 +167,9 @@ namespace XS
 
 			"	VirtualTable.class = NewClass\n"
 
-			"	for i = 1, #NewClass.__base_list do\n"
-			"	    table.insert( NewClass.__base_list[i].__derive_list, NewClass )\n"
-			"		__inherit_from_base( NewClass, NewClass.__base_list[i] )\n"
+			"	for k, v in ipairs(NewClass.__base_list) do\n"
+			"	    table.insert( v.__derive_list, NewClass )\n"
+			"		__inherit_from_base( NewClass, v )\n"
 			"	end\n"
 
 			// class的metatable
@@ -199,14 +196,14 @@ namespace XS
 			"        return 1, nil\n"
 			"    end\n"
 
-			"    local IsCurCppClass = rawget( cur_node, \"_info\")\n"
+			"    local IsCurCppClass = rawget( cur_node, \"__class_info\")\n"
 			"    local BaseList = rawget( cur_node, \"__base_list\")\n"
 			"    local FoundCount = 0\n"
 			"    local BaseCppClass = nil\n"
 
-			"	for i = 1, #BaseList do\n"
-			"		local IsBaseCppClass = rawget( BaseList[i], \"_info\")\n"
-			"		local re, base = CheckClassNode( BaseList[i], check_node )\n"
+			"	for k, v in ipairs(BaseList) do\n"
+			"		local IsBaseCppClass = rawget( v, \"__class_info\")\n"
+			"		local re, base = CheckClassNode( v, check_node )\n"
 			//不能进行类型转换
 			"		if( re == -1 ) then\n"
 			"			return -1, nil\n"
@@ -281,25 +278,25 @@ namespace XS
 			"end\n";
 
 
-		lua_pushlightuserdata(pL, ms_pRegistScriptLuaKey);
+		lua_pushlightuserdata(pL, ms_pRegistScriptLua);
 		lua_pushlightuserdata(pL, this);
 		lua_rawset(pL, LUA_REGISTRYINDEX);
 
-		//生成 CScriptLua::ms_pGlobObjectWeakTableKey
-		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTableKey);
+		//生成 CScriptLua::ms_pGlobObjectWeakValue
+		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
 		lua_newtable(pL);
 		lua_newtable(pL);
 		lua_pushstring(pL, "v");
 		lua_setfield(pL, -2, "__mode");
 		lua_setmetatable(pL, -2);
-		lua_rawset(pL, LUA_REGISTRYINDEX);
+		lua_rawset( pL, LUA_REGISTRYINDEX );
 
 		//生成 CScriptLua::ms_pGlobObjectTableKey
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTable );
 		lua_newtable( pL );
 		lua_rawset( pL, LUA_REGISTRYINDEX );
 
-		lua_pushlightuserdata(pL, ms_pErrorHandlerKey);
+		lua_pushlightuserdata(pL, ms_pErrorHandler);
 		lua_pushcfunction(pL, &CScriptLua::ErrorHandler);
 		lua_rawset( pL, LUA_REGISTRYINDEX ); 
 
@@ -327,6 +324,10 @@ namespace XS
 		lua_register(pL, "tostring", &CScriptLua::ToString);
 
 		BuildRegisterInfo();
+
+		while( bWaitForDebugger && m_pDebugger && 
+			!m_pDebugger->CheckEnterRemoteDebug() )
+			std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 	}
 
 	CScriptLua::~CScriptLua(void)
@@ -336,7 +337,7 @@ namespace XS
 
 	lua_State* CScriptLua::GetLuaState()
 	{
-		assert( !m_vecLuaState.empty() );
+		assert(!m_vecLuaState.empty());
 		return *m_vecLuaState.rbegin();
 	}
 
@@ -413,7 +414,7 @@ namespace XS
 
 	CScriptLua* CScriptLua::GetScript(lua_State* pL)
 	{
-		lua_pushlightuserdata(pL, ms_pRegistScriptLuaKey);
+		lua_pushlightuserdata(pL, ms_pRegistScriptLua);
 		lua_rawget(pL, LUA_REGISTRYINDEX);
 		CScriptLua* pScriptLua = (CScriptLua*)lua_touserdata(pL, -1);
 		lua_pop(pL, 1);
@@ -424,7 +425,7 @@ namespace XS
 	{
 		assert( pObj );
 		lua_State* pL = GetLuaState();
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTable );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		assert( lua_istable( pL, -1 ) );
 		if( !PushPointerToLua( pL, pObj, false ) )
@@ -447,7 +448,7 @@ namespace XS
 	{
 		assert( pObj );
 		lua_State* pL = GetLuaState();
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTableKey );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTable );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		assert( lua_istable( pL, -1 ) );
 		if( !PushPointerToLua( pL, pObj, false ) )
@@ -471,11 +472,11 @@ namespace XS
 	{
 		lua_State* pL = GetLuaState();
 
-		lua_pushlightuserdata(pL, CScriptLua::ms_pErrorHandlerKey);
+		lua_pushlightuserdata(pL, CScriptLua::ms_pErrorHandler);
 		lua_rawget(pL, LUA_REGISTRYINDEX);
 		int32 nErrFunIndex = lua_gettop(pL);		// 1
 
-		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTableKey);
+		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
 		lua_rawget(pL, LUA_REGISTRYINDEX);		// 2	
 
 		lua_pushlightuserdata(pL, *(void**)pArgArray[0]);
@@ -539,11 +540,11 @@ namespace XS
 	{
 		lua_State* pL = GetLuaState();
 
-		lua_pushlightuserdata(pL, CScriptLua::ms_pErrorHandlerKey);
+		lua_pushlightuserdata(pL, CScriptLua::ms_pErrorHandler);
 		lua_rawget(pL, LUA_REGISTRYINDEX);
 		int32 nErrFunIndex = lua_gettop(pL);		// 1
 
-		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTableKey);
+		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
 		lua_rawget(pL, LUA_REGISTRYINDEX);		// 2	
 
 		lua_pushlightuserdata(pL, pObject);
@@ -585,76 +586,74 @@ namespace XS
 	// Lua stack 堆栈必须只有一个值，类（表,在栈底）.调用后， stack top = 1, 对象对应的表在栈顶
 	void* CScriptLua::NewLuaObj(lua_State* pL, const CClassInfo* pInfo)
 	{
-		lua_pushstring(pL, pInfo->GetObjectIndex().c_str());
-		void* pObj = lua_newuserdata(pL, pInfo->GetClassSize());
+		lua_pushstring( pL, "(cppobjs)" );
+		lua_rawget( pL, -2 );
+		assert( lua_istable( pL, -1 ) );
+		lua_pushlightuserdata( pL, (void*)pInfo );
+		void* pObj = lua_newuserdata( pL, pInfo->GetClassSize() );
 
 		//设置垃圾回收器
-		lua_newtable(pL);                    //mt压栈
-		lua_pushlightuserdata(pL, ms_pClassInfoKey);
-		lua_pushlightuserdata(pL, (void*)pInfo);
-		lua_rawset(pL, -3);
-		lua_pushcfunction(pL, ObjectGC);
-		lua_setfield(pL, -2, "__gc");
-		lua_setmetatable(pL, -2);            //setmetatable( userdata, mt )
+		lua_pushlightuserdata( pL, (void*)pInfo );
+		lua_rawget( pL, LUA_REGISTRYINDEX );
+		if( lua_isnil( pL, -1 ) )
+		{
+			lua_pop( pL, 1 );
+			lua_newtable(pL); 
+			lua_pushlightuserdata( pL, (void*)pInfo );
+			lua_pushvalue( pL, -2 );
+			lua_rawset( pL, LUA_REGISTRYINDEX );
+			lua_pushlightuserdata( pL, (void*)pInfo );
+			lua_pushcclosure( pL, CScriptLua::ObjectGC, 1 );
+			lua_setfield( pL, -2, "__gc" );
+		}
 
-		// Obj.ClassName_hObject = userdata;
-		lua_rawset(pL, -3);
+		//setmetatable( userdata, mt )
+		lua_setmetatable(pL, -2);    
+
+		// Obj.(cppobjs)[pInfo] = userdata;
+		lua_rawset( pL, -3 );
+		lua_pop( pL, 1 );
 		return pObj;
 	}
 
-	void CScriptLua::RegistToLua(lua_State* pL, const CClassInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj)
-	{                                            //__addTableOfUserdata, 把对象表，挂在 CScriptLua::ms_szGlobObjectTable
+	void CScriptLua::RegistToLua( lua_State* pL, const CClassInfo* pInfo,
+		void* pObj, int32 nObj, int32 nGlobalWeakTable, int32 nCppObjTable )
+	{                                            
+		//__addTableOfUserdata, 把对象表，挂在 CScriptLua::ms_pGlobObjectWeakTableKey
 		lua_pushlightuserdata(pL, pObj);
 		lua_pushvalue(pL, nObj);        //返回Obj在堆栈的栈底
-		lua_settable(pL, nObjTable);
+		lua_settable(pL, nGlobalWeakTable );
 
 		for (size_t i = 0; i < pInfo->BaseRegist().size(); i++)
 		{
 			void* pChild = ((char*)pObj) + pInfo->BaseRegist()[i].m_nBaseOff;
 			const CClassInfo* pChildInfo = pInfo->BaseRegist()[i].m_pBaseInfo;
-			RegistToLua(pL, pChildInfo, pChild, nObjTable, nObj);
+			RegistToLua(pL, pChildInfo, pChild, nObj, nGlobalWeakTable, nCppObjTable );
 
 			// 只能处理基类的ObjectIndex，因为最终实例有可能是userdata，
 			// 而不是lightuserdata，这里没法区分
-			lua_pushstring(pL, pChildInfo->GetObjectIndex().c_str());
-			lua_pushlightuserdata(pL, pChild);
-			lua_rawset(pL, nObj);
+			lua_pushlightuserdata( pL, (void*)pChildInfo );
+			lua_pushlightuserdata( pL, pChild );
+			lua_rawset( pL, nCppObjTable );
 		}
 	}
 
-	void CScriptLua::RemoveFromLua(lua_State* pL, const CClassInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj)
-	{
-		lua_pushlightuserdata(pL, pObj);
-		lua_pushnil(pL);
-		lua_settable(pL, nObjTable);
-
-		for (size_t i = 0; i < pInfo->BaseRegist().size(); i++)
-		{
-			void* pChild = ((char*)pObj) + pInfo->BaseRegist()[i].m_nBaseOff;
-			const CClassInfo* pChildInfo = pInfo->BaseRegist()[i].m_pBaseInfo;
-
-			RemoveFromLua(pL, pChildInfo, pChild, nObjTable, nObj);
-
-			// 只能处理基类的ObjectIndex，因为最终实例有可能是userdata，
-			// 而不是lightuserdata，这里没法区分
-			lua_pushstring(pL, pChildInfo->GetObjectIndex().c_str());
-			lua_pushnil(pL);
-			lua_rawset(pL, nObj);
-		}
-	}
-
-	void CScriptLua::RegisterObject(lua_State* L, const CClassInfo* pInfo, void* pObj, bool bGC)
+	void CScriptLua::RegisterObject(lua_State* pL, const CClassInfo* pInfo, void* pObj, bool bGC)
 	{
 		//In C++, stack top = 1, 返回Obj, 留在堆栈里
 		if (pInfo->IsCallBack())
-			pInfo->ReplaceVirtualTable(GetScript(L), pObj, bGC, 0);
+			pInfo->ReplaceVirtualTable(GetScript(pL), pObj, bGC, 0);
 
-		int32 nObj = lua_gettop(L);
-		//设置全局对象表 CScriptLua::ms_szGlobObjectTable    
-		lua_pushlightuserdata(L, CScriptLua::ms_pGlobObjectWeakTableKey);
-		lua_rawget(L, LUA_REGISTRYINDEX);
-		RegistToLua(L, pInfo, pObj, nObj + 1, nObj);
-		lua_pop(L, 1);        //弹出CScriptLua::ms_szGlobObjectTable    
+		int32 nObj = lua_gettop(pL);
+		//设置全局对象表 CScriptLua::ms_pGlobObjectWeakTableKey    
+		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
+		lua_rawget( pL, LUA_REGISTRYINDEX );
+		lua_pushstring( pL, "(cppobjs)" );
+		lua_rawget( pL, nObj );
+		assert( lua_istable( pL, -1 ) );
+		RegistToLua(pL, pInfo, pObj, nObj, nObj + 1, nObj + 2);
+		//弹出CScriptLua::ms_pGlobObjectWeakTableKey和nObj[(cppobjs)]
+		lua_pop( pL, 2 );        
 	}
 
 	void CScriptLua::NewUnicodeString(lua_State* pL, const wchar_t* szStr)
@@ -693,18 +692,16 @@ namespace XS
 	//=========================================================================
 	int32 CScriptLua::ObjectGC(lua_State* pL)
 	{
-		lua_getmetatable(pL, -1);
-		lua_pushlightuserdata(pL, ms_pClassInfoKey);
-		lua_rawget(pL, -2);
-		const CClassInfo* pInfo = (const CClassInfo*)lua_touserdata(pL, -1);
-		void* pObject = (void*)lua_touserdata(pL, -3);
+		void* pUpValue = lua_touserdata( pL, lua_upvalueindex( 1 ) );
+		const CClassInfo* pInfo = (const CClassInfo*)pUpValue;
+		void* pObject = (void*)lua_touserdata(pL, -1);
 		// 不需要调用UnRegisterObject，仅仅恢复虚表即可，
 		// 因为已经被回收，所以不存在还有任何地方会引用到此对象
 		// 调用UnRegisterObject反而会导致gc问题（table[obj] = nil 会crash）
 		CScriptLua* pScriptLua = GetScript(pL);
 		pInfo->RecoverVirtualTable(pScriptLua, pObject);
 		pInfo->Destruct(pScriptLua, pObject);
-		lua_pop(pL, 3);
+		lua_pop(pL, 2);
 		return 0;
 	}
 
@@ -714,13 +711,16 @@ namespace XS
 		const CClassInfo* pInfo = (const CClassInfo*)pUpValue;
 
 		// 如果c++对象已经构造则跳过（当将一个c++对象cast成lua对象时会有这种情况）
-		auto& sObjectIndex = pInfo->GetObjectIndex();
-		lua_getfield( pL, 1, sObjectIndex.c_str() );
+		lua_pushstring( pL, "(cppobjs)" );
+		lua_rawget( pL, 1 );
+		lua_pushlightuserdata( pL, (void*)pInfo );
+		lua_rawget( pL, -2 );
 		if( !lua_isnil( pL, -1 ) )
 		{
 			lua_settop( pL, 1 );
 			return 1;
 		}
+		lua_pop( pL, 2 );
 
 		auto& listParam = pInfo->GetConstructorParamType();
 		auto& listParamSize = pInfo->GetConstructorParamSize();
@@ -762,6 +762,7 @@ namespace XS
 	int CScriptLua::ErrorHandler(lua_State* pState)
 	{
 		const char* szWhat = lua_tostring(pState, -1);
+		szWhat = szWhat ? szWhat : "(unknown error)";
 		lua_pop(pState, 1);
 		CScriptLua* pScript = GetScript(pState);
 		CDebugBase* pDebugger = pScript->GetDebugger();
@@ -847,7 +848,7 @@ namespace XS
 				}
 			}
 			pScript->PopLuaState();
-			return 1;
+			return nResultType ? 1 : 0;
 		}
 		catch (std::exception& exp)
 		{
@@ -872,7 +873,6 @@ namespace XS
 	//=========================================================================
 	// 获取设置对象属性                                              
 	//=========================================================================
-
 	int32 CScriptLua::GetIndexClosure( lua_State* pL )
 	{
 		lua_pushcclosure( pL, CScriptLua::GetInstanceField, 1 );
@@ -889,7 +889,7 @@ namespace XS
 	{
 		// GetInstanceField( instance, key )
 		lua_pushvalue( pL, 2 );
-		lua_rawget( pL, lua_upvalueindex( 1 ) );
+		lua_rawget(pL, lua_upvalueindex(1));
 		if( lua_tocfunction( pL, 3 ) != &CScriptLua::CallByLua )
 			return 1;
 		lua_getupvalue( pL, -1, 1 );
@@ -990,21 +990,23 @@ namespace XS
 	//=========================================================================
 	int32 CScriptLua::ClassCast(lua_State* pL)
 	{
-		lua_getfield(pL, -1, "_info");
+		lua_getfield(pL, -1, "__class_info");
 		const CClassInfo* pNewInfo = (const CClassInfo*)lua_touserdata(pL, -1);
 		lua_pop(pL, 1);
 
-		const char* szNewName = pNewInfo->GetObjectIndex().c_str();
-		lua_getfield(pL, -2, szNewName);
+		lua_pushstring( pL, "(cppobjs)" );
+		lua_rawget( pL, -3 );
+		lua_pushlightuserdata( pL, (void*)pNewInfo );
+		lua_rawget( pL, -2 );
 		if (!lua_isnil(pL, -1))
 		{
-			lua_pop(pL, 2);
+			lua_pop(pL, 3);
 			return 1;
 		}
-		lua_pop(pL, 1);
+		lua_pop(pL, 2);
 
 		lua_getfield(pL, -2, "class");
-		lua_getfield(pL, -1, "_info");
+		lua_getfield(pL, -1, "__class_info");
 		const CClassInfo* pOrgInfo = (const CClassInfo*)lua_touserdata(pL, -1);
 		lua_pop(pL, 2);
 
@@ -1024,8 +1026,11 @@ namespace XS
 
 		lua_setmetatable(pL, -2);
 
-		const char* szOldName = pOrgInfo->GetObjectIndex().c_str();
-		lua_getfield(pL, -1, szOldName);
+		lua_pushstring( pL, "(cppobjs)" );
+		lua_rawget( pL, -2 );
+		lua_pushlightuserdata( pL, (void*)pNewInfo );
+		lua_pushlightuserdata( pL, (void*)pOrgInfo );
+		lua_rawget( pL, -3 );
 		void* pObj = (void*)lua_touserdata(pL, -1);
 
 		CScriptLua* pScriptLua = GetScript(pL);
@@ -1038,7 +1043,8 @@ namespace XS
 			lua_pushlightuserdata(pL, pObj);
 		}
 
-		lua_setfield(pL, -2, szNewName);
+		lua_rawset(pL, -3);
+		lua_pop( pL, 1 );
 		RegisterObject(pL, pNewInfo, pObj, false);
 		return 1;
 	}
@@ -1091,7 +1097,7 @@ namespace XS
 			}
 		};
 
-		lua_pushlightuserdata(pL, CScriptLua::ms_pErrorHandlerKey);
+		lua_pushlightuserdata(pL, CScriptLua::ms_pErrorHandler);
 		lua_rawget(pL, LUA_REGISTRYINDEX); //1
 		int32 nErrFunIndex = lua_gettop(pL);
 
@@ -1129,62 +1135,79 @@ namespace XS
 		return 0;
 	}
 
-	int32 CScriptLua::ToString(lua_State* pL)
+	int32 CScriptLua::ToString( lua_State* pL )
 	{
-		luaL_checkany(pL, -1);
-		if (luaL_callmeta(pL, -1, "__tostring"))
+		luaL_checkany( pL, -1 );
+		if( luaL_callmeta( pL, -1, "__tostring" ) )
+		{
+			lua_remove( pL, -2 );
 			return 1;
+		}
 
-		int type = lua_type(pL, -1);
+		char szDouble[256];
+		int type = lua_type( pL, -1 );
 		const char* s = nullptr;
-		if (type == LUA_TNUMBER)
-			s = lua_tostring(pL, -1);
-		else if (type == LUA_TSTRING)
+		if( type == LUA_TNUMBER )
+		{
+
+			double n = lua_tonumber( pL, -1 );
+			if( n != (double)((int64)n) )
+			{
+				sprintf( szDouble, "%lf", n );
+				s = szDouble;
+			}
+			else
+				s = lua_tostring( pL, -1 );
+		}
+		else if( type == LUA_TSTRING )
 			return 1;
-		else if (type == LUA_TBOOLEAN)
-			s = lua_toboolean(pL, -1) ? "true" : "false";
-		else if (type == LUA_TNIL)
+		else if( type == LUA_TBOOLEAN )
+			s = lua_toboolean( pL, -1 ) ? "true" : "false";
+		else if( type == LUA_TNIL )
 			s = "nil";
 
-		if (s)
+		if( s )
 		{
-			lua_pop(pL, 1);
-			lua_pushstring(pL, s);
+			lua_pop( pL, 1 );
+			lua_pushstring( pL, s );
 			return 1;
 		}
 
-		const void* ptr = lua_topointer(pL, -1);
-		const char* name = luaL_typename(pL, -1);
-		if (type != LUA_TTABLE)
+		const void* ptr = lua_topointer( pL, -1 );
+		const char* name = luaL_typename( pL, -1 );
+		if( type != LUA_TTABLE )
 		{
-			lua_pop(pL, 1);
-			lua_pushfstring(pL, "%s: %p", name, ptr);
+			lua_pop( pL, 1 );
+			lua_pushfstring( pL, "%s: %p", name, ptr );
 			return 1;
 		}
 
-		if (!lua_getmetatable(pL, -1))
+		if( !lua_getmetatable( pL, -1 ) )
 		{
-			lua_pop(pL, 1);
-			lua_pushfstring(pL, "table: %p", ptr);
+			lua_pop( pL, 1 );
+			lua_pushfstring( pL, "table: %p", ptr );
 			return 1;
 		}
 
-		lua_pushstring(pL, "_info");
-		lua_rawget(pL, -2);
-		if (lua_isnil(pL, -1))
+		lua_pushstring( pL, "__class_info" );
+		lua_rawget( pL, -2 );
+		if( lua_isnil( pL, -1 ) )
 		{
-			lua_pop(pL, 3);
-			lua_pushfstring(pL, "table: %p", ptr);
+			lua_pop( pL, 3 );
+			lua_pushfstring( pL, "table: %p", ptr );
 			return 1;
 		}
 
-		auto pInfo = (const CClassInfo*)lua_touserdata(pL, -1);
-		lua_pushstring(pL, pInfo->GetObjectIndex().c_str());
-		lua_rawget(pL, -4);
-		const void* pObject = lua_touserdata(pL, -1);
-		lua_pop(pL, 4);
-		lua_pushfstring(pL, "%s: %p->%p",
-			pInfo->GetClassName().c_str(), ptr, pObject);
+		auto pInfo = (const CClassInfo*)lua_touserdata( pL, -1 );
+		lua_pushstring( pL, "(cppobjs)" );
+		lua_rawget( pL, -4 );
+
+		lua_pushlightuserdata( pL, (void*)pInfo );
+		lua_rawget( pL, -2 );
+		const void* pObject = lua_touserdata( pL, -1 );
+		lua_pop( pL, 5 );
+		lua_pushfstring( pL, "%s: %p->%p",
+			pInfo->GetClassName().c_str(), ptr, pObject );
 		return 1;
 	}
 
@@ -1326,7 +1349,7 @@ namespace XS
 
 	bool CScriptLua::SetGlobObject(lua_State* pL, const char* szKey)
 	{
-		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTableKey);
+		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
 		lua_rawget(pL, LUA_REGISTRYINDEX);
 		lua_pushstring(pL, szKey);
 		lua_pushvalue(pL, -3);
@@ -1337,7 +1360,7 @@ namespace XS
 
 	bool CScriptLua::GetGlobObject(lua_State* pL, const char* szKey)
 	{
-		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTableKey);
+		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
 		lua_rawget(pL, LUA_REGISTRYINDEX);
 		lua_pushstring(pL, szKey);
 		lua_rawget(pL, -2);
@@ -1393,7 +1416,15 @@ namespace XS
 					lua_pushvalue(pL, -1);
 					lua_setglobal(pL, szClass);
 
-					lua_pushstring(pL, "_info");
+					// NewClass.__virtual_table._info = pInfo
+					lua_pushstring( pL, "__virtual_table" );
+					lua_rawget( pL, -2 );
+					lua_pushlightuserdata( pL, ms_pFirstClassInfo );
+					lua_pushlightuserdata( pL, (void*)pInfo );
+					lua_rawset( pL, -3 );
+					lua_pop( pL, 1 );
+
+					lua_pushstring(pL, "__class_info");
 					lua_pushlightuserdata(pL, (void*)pInfo);
 					lua_rawset(pL, nClassIdx);
 
@@ -1591,7 +1622,7 @@ namespace XS
 	bool CScriptLua::Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, void* pFunction, void** aryArg )
 	{
 		lua_State* pL = GetLuaState();
-		lua_pushlightuserdata( pL, ms_pErrorHandlerKey );
+		lua_pushlightuserdata( pL, ms_pErrorHandler );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		int32 nErrFunIndex = lua_gettop( pL );
 
@@ -1622,14 +1653,14 @@ namespace XS
 		return true;
 	}
 
-	bool CScriptLua::RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForceBuild/* = false*/ )
+	bool CScriptLua::RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForce/* = false*/ )
 	{
 		int32 nErrFunIndex = -1;
 		lua_State* pL = GetLuaState();
 
 		if( !m_bPreventExeInRunBuffer )
 		{
-			lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandlerKey );
+			lua_pushlightuserdata( pL, CScriptLua::ms_pErrorHandler );
 			lua_rawget( pL, LUA_REGISTRYINDEX ); //1
 			nErrFunIndex = lua_gettop( pL );
 		}
@@ -1638,7 +1669,7 @@ namespace XS
 		sprintf( szBuf, "@%s", szFileName );
 		SReadContext Context = { pBuffer, nSize };
 
-		if( (!bForceBuild && GetGlobObject( pL, szFileName )) ||
+		if( (!bForce && GetGlobObject( pL, szFileName )) ||
 			(!lua_load( pL, &SReadContext::Read, &Context, szBuf ) &&
 				SetGlobObject( pL, szFileName )) )
 		{
@@ -1663,17 +1694,29 @@ namespace XS
 		return false;
 	}
 
+	const char* CScriptLua::PresentValue( void* pValue, void* pContext )
+	{
+		lua_State* pL = (lua_State*)pContext;
+		lua_pushvalue( pL, (int32)(ptrdiff_t)pValue );
+		ToString( pL );
+		const char* szValue = lua_tostring( (lua_State*)pContext, -1 );
+		lua_pop( pL, 1 );
+		return szValue;
+	}
+
 	void CScriptLua::UnlinkCppObjFromScript( void* pObj )
 	{
 		lua_State* pL = GetLuaState();
 		int32 nTop = lua_gettop(pL);
 
-		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTableKey);
-		lua_rawget(pL, LUA_REGISTRYINDEX);
+		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
+		lua_rawget(pL, LUA_REGISTRYINDEX);			//[WeakTable]
 		assert(!lua_isnil(pL, -1));
+		int32 nWeakTable = lua_gettop( pL );
 
-		lua_pushlightuserdata(pL, pObj);
-		lua_gettable(pL, -2);
+		lua_pushlightuserdata(pL, pObj);	
+		lua_gettable( pL, -2 );						//[WeakTable,tblObj]
+		int32 nObjTable = lua_gettop( pL );
 
 		if (lua_isnil(pL, -1))
 		{
@@ -1681,58 +1724,22 @@ namespace XS
 			return;
 		}
 
-		lua_getmetatable(pL, -1);
-		if (!lua_isnil(pL, -1))
+		lua_getfield( pL, nObjTable, "(cppobjs)" );	//[WeakTable,tblObj,cppObjs]
+		if( !lua_istable( pL, -1 ) )
 		{
-			struct SClearClassInfo
-			{
-				static void Run(lua_State* pL, int32 nObj)
-				{
-					lua_getfield(pL, -1, "_info");
-					void* pData = lua_touserdata(pL, -1);
-					if (pData)
-					{
-						const CClassInfo* pInfo = (const CClassInfo*)pData;
-						lua_pushstring(pL, pInfo->GetObjectIndex().c_str());
-						lua_rawget(pL, nObj);
-						void* pObj = lua_touserdata(pL, -1);
-						if (pObj)
-						{
-							int32 nTop = lua_gettop(pL);
-							lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTableKey);
-							lua_rawget(pL, LUA_REGISTRYINDEX);
-							assert(!lua_isnil(pL, -1));
-
-							lua_pushlightuserdata(pL, pObj);
-							lua_gettable(pL, -2);
-
-							RemoveFromLua(pL, pInfo, pObj, nTop + 1, nTop + 2);
-
-							lua_pushnil(pL);
-							lua_setmetatable(pL, nTop + 2);
-							lua_settop(pL, nTop);
-						}
-						lua_pop(pL, 2);
-					}
-					else
-					{
-						lua_pop(pL, 1);
-						lua_pushstring(pL, "__base_list");
-						lua_rawget(pL, -2);
-						lua_rawgeti(pL, -1, 1);
-						for (int i = 1; !lua_isnil(pL, -1); lua_rawgeti(pL, -1, ++i))
-						{
-							SClearClassInfo::Run(pL, nObj);
-							lua_pop(pL, 1);
-						}
-						lua_pop(pL, 2);
-					}
-				}
-			};
-
-			SClearClassInfo::Run(pL, nTop + 2);
+			lua_settop( pL, nTop );
+			return;
 		}
 
+		lua_pushnil( pL );							//[WeakTable,tblObj,cppObjs,nil]
+		while( lua_next( pL, -2 ) )
+		{	
+			lua_pushnil( pL );						//[WeakTable,tblObj,cppObjs,key,value,nil]
+			lua_rawset( pL, nWeakTable );			//[WeakTable,tblObj,cppObjs,key]
+		}
+
+		lua_pushnil( pL );
+		lua_setfield( pL, nObjTable, "(cppobjs)" );
 		lua_settop(pL, nTop);
 	}
 
@@ -1754,5 +1761,10 @@ namespace XS
 		bool bIsValid = PushPointerToLua( pL, pObject, false );
 		lua_pop( pL, 1 );
 		return bIsValid;
+	}
+
+	void* CScriptLua::GetVM()
+	{
+		return GetLuaState();
 	}
 };

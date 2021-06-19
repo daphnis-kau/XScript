@@ -1,7 +1,6 @@
 ﻿#include "common/Help.h"
 #include "common/CJson.h"
 #include "core/CDebugBase.h"
-#include "core/CScriptBase.h"
 #include <algorithm>
 #include <sstream>
 #include <string>
@@ -75,8 +74,9 @@ namespace XS
 	//-----------------------------------------------------
 	// CBreakPoint
 	//-----------------------------------------------------
-    CDebugBase::CDebugBase( CScriptBase* pBase, const char* strDebugHost, uint16 nDebugPort )
-		: m_pBase( pBase )
+    CDebugBase::CDebugBase( IDebugHandler* pHandler,
+		const char* strDebugHost, uint16 nDebugPort )
+		: m_pHandler( pHandler )
 		, m_nRemoteListener( INVALID_SOCKET )
 		, m_nRemoteConnecter( INVALID_SOCKET )
 		, m_bAllExceptionsBreak( false )
@@ -88,22 +88,25 @@ namespace XS
 		, m_eAttachType( eAT_Detach )
 		, m_nExceptionID( 1 )
 		, m_bExpectStep( false )
+		, m_bQuit( false )
 		, m_nCurFrame( 0 )
     {
 		if( !nDebugPort )
 			return;
-		m_bAllExceptionsBreak = true;
 		ListenRemote(strDebugHost, nDebugPort );
     }
 
     CDebugBase::~CDebugBase(void)
-    {
+	{
+		m_bQuit = true;
 		if( m_hThread.joinable() )
 			m_hThread.join();
-		if( m_nRemoteListener != INVALID_SOCKET )
-			closesocket( m_nRemoteListener );
 		if( m_nRemoteConnecter != INVALID_SOCKET )
 			closesocket( m_nRemoteConnecter );
+		if( m_nRemoteListener != INVALID_SOCKET )
+			closesocket( m_nRemoteListener );
+		while( m_listDebugCmd.GetFirst() )
+			delete m_listDebugCmd.GetFirst();
 	}
 
 	bool CDebugBase::RemoteDebugEnable() const
@@ -113,6 +116,9 @@ namespace XS
 
 	bool CDebugBase::Error( const char* szException, bool bBeCaught )
 	{
+		m_pHandler->Output( "Error :", -1, true );
+		m_pHandler->Output( szException, -1, true );
+		m_pHandler->Output( "\n", -1, true );
 		if( !m_bAllExceptionsBreak &&
 			( bBeCaught || !m_bUncaughtExceptionsBreak ) )
 		{
@@ -121,8 +127,6 @@ namespace XS
 		}
 
 		m_bEnterDebug = true;
-		m_pBase->Output( szException, -1 );
-		m_pBase->Output( "\n", -1 );
 		SException Exception = { szException, bBeCaught };
 
 		if( m_nRemoteConnecter == INVALID_SOCKET )
@@ -179,12 +183,26 @@ namespace XS
 		vecLines.push_back( std::string( pStart, pCur - pStart ) );
 	}
 
+	std::string CDebugBase::ReadEntirFile( const char* szFileName )
+	{
+		std::string strBuffer;
+		void* pContext = m_pHandler->OpenFile( szFileName );
+		if( !pContext )
+			return strBuffer;
+		char szBuffer[1024];
+		int32 nReadSize = 0;
+		while( (nReadSize = m_pHandler->ReadFile( pContext, szBuffer, 1024 )) > 0 )
+			strBuffer.append( szBuffer, nReadSize );
+		m_pHandler->CloseFile( pContext );
+		return strBuffer;
+	}
+
 	const char* CDebugBase::ReadFileLine( const char* szSource, int32 nLine )
 	{
 		CFileMap::iterator it = m_mapFileBuffer.find( szSource );
 		if( m_mapFileBuffer.end() == it || it->second.empty() )
 		{
-			std::string strBuffer = m_pBase->ReadEntirFile( szSource );
+			std::string strBuffer = ReadEntirFile( szSource );
 			AddFileContent( szSource, strBuffer.c_str() );
 			it = m_mapFileBuffer.find( szSource );
 		}
@@ -275,8 +293,18 @@ namespace XS
 
 	void CDebugBase::Run()
 	{
-		while( true )
+		while( !m_bQuit )
 		{
+			fd_set fdValid;
+			FD_ZERO( &fdValid );
+			FD_SET( m_nRemoteListener, &fdValid );
+
+			struct timeval tv;
+			tv.tv_sec = 0;
+			tv.tv_usec = 100000;
+			if( !select( (int32)(m_nRemoteListener + 1), &fdValid, NULL, NULL, &tv ) )
+				continue;
+
 			sockaddr_in Address;
 			socklen_t nSize = sizeof( sockaddr_in );
 			m_nRemoteConnecter = accept( m_nRemoteListener, (sockaddr*)&Address, &nSize );
@@ -300,10 +328,10 @@ namespace XS
 	bool CDebugBase::ReciveRemoteData(char(&szBuffer)[2048], int32 nCurSize)
 	{
 		std::string strBuffer;
-		while (m_eAttachType && nCurSize > 0)
+		while ( m_eAttachType && nCurSize > 0 && !m_bQuit )
 		{
 			strBuffer.append(szBuffer, nCurSize);
-			while (true)
+			while ( !m_bQuit )
 			{
 				std::string::size_type nFlagPos = strBuffer.find("Content-Length");
 				if (nFlagPos == std::string::npos)
@@ -314,7 +342,8 @@ namespace XS
 				std::string::size_type nEndPos = strBuffer.find("\r\n\r\n", nStartPos);
 				if (nEndPos == std::string::npos)
 					break;
-				uint32 nDataSize = ToInt32(strBuffer.c_str() + nStartPos + 1);
+				const char* szStr = strBuffer.c_str() + nStartPos + 1;
+				uint32 nDataSize = (uint32)strtol( szStr, NULL, 0 );
 				if (strBuffer.size() < nEndPos + 4 + nDataSize)
 					break;
 				CDebugCmd* pCmd = new CDebugCmd;
@@ -322,7 +351,21 @@ namespace XS
 				OnNetData(pCmd);
 				strBuffer.erase(0, nEndPos + 4 + nDataSize);
 			}
-			nCurSize = (int32)recv(m_nRemoteConnecter, szBuffer, 2048, 0);
+
+			while( !m_bQuit )
+			{
+				fd_set fdValid;
+				FD_ZERO( &fdValid );
+				FD_SET( m_nRemoteConnecter, &fdValid );
+
+				struct timeval tv;
+				tv.tv_sec = 0;
+				tv.tv_usec = 100000;
+				if( !select( (int32)(m_nRemoteConnecter + 1), &fdValid, NULL, NULL, &tv ) )
+					continue;
+				nCurSize = (int32)recv( m_nRemoteConnecter, szBuffer, 2048, 0 );
+				break;
+			}
 		}
 		return true;
 	}
@@ -370,10 +413,10 @@ namespace XS
 #ifdef LOG_REMOTE_COMMAND
 		std::stringstream oss;
 		pEvent->Save(oss);
-		m_pBase->Output( "\n----------------------event begin----------------------\n", -1 );		
-		m_pBase->Output( szEvent, -1 ); m_pBase->Output( "\n", -1 );
-		m_pBase->Output( oss.str().c_str(), -1 );
-		m_pBase->Output( "\n-----------------------event end-----------------------\n", -1 );
+		m_pHandler->Output( "\n----------------------event begin----------------------\n", -1 );		
+		m_pHandler->Output( szEvent, -1 ); m_pHandler->Output( "\n", -1 );
+		m_pHandler->Output( oss.str().c_str(), -1 );
+		m_pHandler->Output( "\n-----------------------event end-----------------------\n", -1 );
 #endif
 		SendNetData( pEvent );
 	}
@@ -393,13 +436,13 @@ namespace XS
 #ifdef LOG_REMOTE_COMMAND
 		std::stringstream oss;
 		pRespone->Save(oss);
-		m_pBase->Output( "\n----------------------response begin----------------------\n", -1 );
-		m_pBase->Output( szCommand, -1 );
-		m_pBase->Output( ":", -1 );
-		m_pBase->Output( szSequence, -1 );
-		m_pBase->Output( ",", -1 );
-		m_pBase->Output(oss.str().c_str(), -1 );
-		m_pBase->Output( "\n-----------------------response end-----------------------\n", -1 );
+		m_pHandler->Output( "\n----------------------response begin----------------------\n", -1 );
+		m_pHandler->Output( szCommand, -1 );
+		m_pHandler->Output( ":", -1 );
+		m_pHandler->Output( szSequence, -1 );
+		m_pHandler->Output( ",", -1 );
+		m_pHandler->Output(oss.str().c_str(), -1 );
+		m_pHandler->Output( "\n-----------------------response end-----------------------\n", -1 );
 #endif
 		SendNetData(pRespone);
 	}
@@ -411,13 +454,25 @@ namespace XS
 		CmdUnLock();
 	}
 
-	void CDebugBase::CheckEnterRemoteDebug()
+	bool CDebugBase::CheckEnterRemoteDebug()
 	{
 		if( m_nRemoteConnecter == -1 )
-			return;
+			return false;
 		if( m_bEnterDebug )
-			return;
+			return false;
 		CheckRemoteCmd();
+		return true;
+	}
+
+	int32 CDebugBase::GetDebuggerState()
+	{
+		if( m_nRemoteListener == INVALID_SOCKET )
+			return 1;
+		if( !m_hThread.joinable() )
+			return 2;
+		if( m_nRemoteConnecter == INVALID_SOCKET )
+			return 3;
+		return 0;
 	}
 
 	bool CDebugBase::CheckRemoteCmd()
@@ -486,12 +541,12 @@ namespace XS
 #ifdef LOG_REMOTE_COMMAND
 		std::stringstream oss;
 		pCmd->Save(oss);
-		m_pBase->Output( "\n----------------------process begin----------------------\n", -1 );
-		m_pBase->Output( szCommand, -1 );
-		m_pBase->Output( ":", -1 );
-		m_pBase->Output( szSequence, -1 ); m_pBase->Output( "\n", -1 );
-		m_pBase->Output( oss.str().c_str(), -1 );
-		m_pBase->Output( "\n-----------------------process end-----------------------\n", -1 );
+		m_pHandler->Output( "\n----------------------process begin----------------------\n", -1 );
+		m_pHandler->Output( szCommand, -1 );
+		m_pHandler->Output( ":", -1 );
+		m_pHandler->Output( szSequence, -1 ); m_pHandler->Output( "\n", -1 );
+		m_pHandler->Output( oss.str().c_str(), -1 );
+		m_pHandler->Output( "\n-----------------------process end-----------------------\n", -1 );
 #endif
 
 		if( !StrCaseCmp( szCommand, "initialize" ) )
@@ -844,9 +899,9 @@ namespace XS
 			if( !bNewLine )
 				return nullptr;
 
-			m_pBase->Output( "(gdb) ", -1 );
+			m_pHandler->Output( "(gdb) ", -1 );
 			char szBuf[ sizeof(m_szBuffer) ];
-			if( m_pBase->Input( szBuf, sizeof(szBuf) ) && szBuf[0] != '\n' )
+			if( m_pHandler->Input( szBuf, sizeof(szBuf) ) && szBuf[0] != '\n' )
 				memcpy( m_szBuffer, szBuf, sizeof(szBuf) );
 			m_pBuf = m_szBuffer;
 		}
@@ -878,7 +933,7 @@ namespace XS
 	{
 		if( nLine <= 0 || szSource == nullptr )
 		{
-			m_pBase->Output( "Source not available.\n", -1 );
+			m_pHandler->Output( "Source not available.\n", -1 );
 			return false;
 		}
 
@@ -890,9 +945,9 @@ namespace XS
 		char szLineNumber[32];
 		sprintf( szLineNumber, "%d %s%s\t", nLine,
 			( bIsBreakLine ? "B" : " " ), ( bIsCurLine ? ">>" : "" ) );
-		m_pBase->Output( szLineNumber, -1 );
-		m_pBase->Output( szLine, -1 );
-		m_pBase->Output( "\n", -1 );
+		m_pHandler->Output( szLineNumber, -1 );
+		m_pHandler->Output( szLine, -1 );
+		m_pHandler->Output( "\n", -1 );
 		return true;
 	}
 
@@ -901,10 +956,10 @@ namespace XS
 	{
 		char szFrameInfo[1024];
 		sprintf( szFrameInfo, "#%d  %s ", nFrame, ( szFun ? szFun : "(unknown)" ) );
-		m_pBase->Output( szFrameInfo, -1 );
-		m_pBase->Output( szSource ? szSource : "(no source)", -1 );
+		m_pHandler->Output( szFrameInfo, -1 );
+		m_pHandler->Output( szSource ? szSource : "(no source)", -1 );
 		sprintf( szFrameInfo, ":%d\n", nLine );
-		m_pBase->Output( szFrameInfo, -1 );
+		m_pHandler->Output( szFrameInfo, -1 );
 	}
 
 	void CDebugBase::ConsoleDebug( SException* pException )
@@ -914,9 +969,9 @@ namespace XS
 		const char* szCurSource = nullptr;
 		if( pException )
 		{
-			m_pBase->Output( "Exception : ", -1 );
-			m_pBase->Output( pException->szException, -1 );
-			m_pBase->Output( "\n", -1 );
+			m_pHandler->Output( "Exception : ", -1 );
+			m_pHandler->Output( pException->szException, -1 );
+			m_pHandler->Output( "\n", -1 );
 		}
 
 		GetFrameInfo( m_nCurFrame, &m_nCurLine, &szCurFunction, &szCurSource );
@@ -952,7 +1007,7 @@ namespace XS
 					"print/p v                         print valur of expression\n"
 					"step/s                            step in\n"
 					;
-				m_pBase->Output( szHelp, -1 );
+				m_pHandler->Output( szHelp, -1 );
 			}
 			else if( !strcmp( szBuf, "continue" ) || !strcmp( szBuf, "c" ) )
 			{
@@ -978,7 +1033,7 @@ namespace XS
 				szBuf = ReadWord();
 				if( !szBuf )
 					GetFrameInfo( m_nCurFrame, nullptr, nullptr, &szBuf );
-				m_pBase->RunFile( szBuf );
+				m_pHandler->RunFile( szBuf );
 			}
 			else if( !strcmp( szBuf, "next" ) || !strcmp( szBuf, "n" ) )
 			{
@@ -1015,7 +1070,7 @@ namespace XS
 				if( !szBuf || !IsNumber( *szBuf ) || 
 					( nFrame = SwitchFrame( atoi( szBuf ) ) ) < 0 )
 				{
-					m_pBase->Output( "Invalid stack index.\n", -1 );
+					m_pHandler->Output( "Invalid stack index.\n", -1 );
 					continue;
 				}
 				m_nCurFrame = nFrame;
@@ -1029,14 +1084,14 @@ namespace XS
 				szBuf = ReadWord();
 				if( ( !szBuf || !szBuf[0] ) && m_strLastVarName.empty() )
 				{
-					m_pBase->Output( "Variable not specified.\n", -1 );
+					m_pHandler->Output( "Variable not specified.\n", -1 );
 					continue;
 				}
 				szBuf = szBuf && szBuf[0] ? szBuf : m_strLastVarName.c_str();
 				m_strLastVarName = szBuf;
 				SValueInfo Info = GetVariable( EvaluateExpression( m_nCurFrame, szBuf ) );
-				m_pBase->Output( Info.strValue.c_str(), -1 );
-				m_pBase->Output( "\n", -1 );
+				m_pHandler->Output( Info.strValue.c_str(), -1 );
+				m_pHandler->Output( "\n", -1 );
 			}
 			else if( !strcmp( szBuf, "enable" ) )
 			{
@@ -1058,7 +1113,7 @@ namespace XS
 			}
 			else if( strlen ( szBuf ) )
 			{
-				m_pBase->Output( "Invalid command!\n", -1 );
+				m_pHandler->Output( "Invalid command!\n", -1 );
 			}
 		}
 	}
@@ -1081,12 +1136,12 @@ namespace XS
 		}
 		else if( ( pColon = (char*)strchr( szBuf, ':' ) ) == nullptr )
 		{
-			m_pBase->Output( "Filename and line number must be provided.\n", -1 );
+			m_pHandler->Output( "Filename and line number must be provided.\n", -1 );
 			return;
 		}
 		else if( !IsNumber( *( pColon + 1 ) ) )
 		{
-			m_pBase->Output( "Line number must be provided.\n", -1 );
+			m_pHandler->Output( "Line number must be provided.\n", -1 );
 			return;
 		}
 		else
@@ -1098,7 +1153,7 @@ namespace XS
 
 		if( AddBreakPoint( szSource, nBreakLine ) != INVALID_32BITID )
 			return;
-		m_pBase->Output( "Break location not found.\n", -1 );
+		m_pHandler->Output( "Break location not found.\n", -1 );
 	}
 
 	void CDebugBase::PrintBreakInfo()
@@ -1110,7 +1165,7 @@ namespace XS
 			char szBreakInfo[1024];
 			sprintf( szBreakInfo, "%d\t%s:%d\n", BreakPoint.GetBreakPointID(),
 				BreakPoint.GetModuleName(), BreakPoint.GetLineNum() );
-			m_pBase->Output( szBreakInfo, -1 );
+			m_pHandler->Output( szBreakInfo, -1 );
 		}
 	}
 

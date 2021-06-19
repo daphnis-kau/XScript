@@ -6,9 +6,7 @@ extern "C"
 {
 	#include "lua.h"
 	#include "lauxlib.h"
-	#include "lstate.h"
-	#include "lualib.h"
-	#include "ltable.h"
+	//#include "lstate.h"
 }
 
 #include "common/Help.h"
@@ -84,12 +82,12 @@ namespace XS
 				luaL_error( pL, "GetFromVM error id:%d", nStkId );
 				return;
 			}
-			
-			auto pClassInfo = (const CClassInfo*)( ( eType >> 1 ) << 1 );
-			lua_getfield( pL, nStkId, pClassInfo->GetObjectIndex().c_str() );
-			if( lua_isnil( pL, -1 ) )
+
+			lua_pushstring( pL, "(cppobjs)" );
+			lua_rawget( pL, nStkId );
+			if( !lua_istable( pL, -1 ) )
 			{
-				lua_pushstring( pL, s_szLuaBufferInfo );
+				lua_pushlightuserdata( pL, (void*)s_szLuaBufferInfo );
 				lua_rawget( pL, nStkId );
 				if( lua_islightuserdata( pL, -1 ) || lua_type( pL, -1 ) == LUA_TUSERDATA )
 				{
@@ -104,9 +102,12 @@ namespace XS
 				}
 				return;
 			}
-
+			
+			auto pClassInfo = (const CClassInfo*)( ( eType >> 1 ) << 1 );
+			lua_pushlightuserdata( pL, (void*)pClassInfo );
+			lua_rawget( pL, -2 );
             *(void**)( pDataBuf ) = lua_touserdata( pL, -1 );
-            lua_pop( pL, 1 );
+            lua_pop( pL, 2 );
         }
     }
 
@@ -119,7 +120,7 @@ namespace XS
             return;
         }
 
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTableKey );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTable );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		if( lua_isnil( pL, -1 ) )
 		{
@@ -133,17 +134,22 @@ namespace XS
 		auto pClassInfo = (const CClassInfo*)( ( eType >> 1 ) << 1 );
         if( !lua_isnil( pL, -1 ) )
 		{
-            const const_string& sObjectIndex = pClassInfo->GetObjectIndex();
-            lua_getfield( pL, -1, sObjectIndex.c_str() );
-            bool bNil = lua_isnil( pL, -1 );
-            lua_pop( pL, 1 );
-            if( !bNil )
-            {
-                lua_remove( pL, -2 );
-                return;
-            }
-
-            CScriptLua::GetScript( pL )->UnlinkCppObjFromScript( pObj );
+			lua_pushstring( pL, "(cppobjs)" );
+			lua_rawget( pL, -2 );
+			if( !lua_isnil( pL, -1 ) )
+			{
+				lua_pushlightuserdata( pL, (void*)pClassInfo );
+				lua_rawget( pL, -2 );
+				bool bNil = lua_isnil( pL, -1 );
+				lua_pop( pL, 2 );
+				if( !bNil )
+				{
+					lua_remove( pL, -2 );
+					return;
+				}
+			}
+			lua_pop( pL, 1 );
+			CScriptLua::GetScript( pL )->UnlinkCppObjFromScript( pObj );
         }
 
         lua_pop( pL, 2 );
@@ -160,10 +166,12 @@ namespace XS
 
 		lua_setmetatable( pL, -2 );
 
-		// 绑定ObjectIndex
-		lua_pushstring( pL, pClassInfo->GetObjectIndex().c_str() );
+		// (cppobjs) 绑定ObjectIndex
+		lua_newtable( pL );
+		lua_pushlightuserdata( pL, (void*)pClassInfo );
 		lua_pushlightuserdata( pL, *(void**)( pDataBuf ) );
 		lua_rawset( pL, -3 );
+		lua_setfield( pL, -2, "(cppobjs)" );
 
 		CScriptLua::RegisterObject( pL, pClassInfo, *(void**)( pDataBuf ), false );
 		ConstructLua( pL );
@@ -192,6 +200,8 @@ namespace XS
 	{
 		// Table 在Lua栈顶
 		lua_newtable( pL );// Obj
+		lua_newtable( pL );
+		lua_setfield( pL, -2, "(cppobjs)" );
 		int32 nStkId = ToAbsStackIndex( pL, -1 );
 
 		auto pClassInfo = (const CClassInfo*)( ( eType >> 1 ) << 1 );
@@ -288,7 +298,7 @@ namespace XS
 
 		if( pInfo == nullptr || pInfo->pBuffer == nullptr || nTotalSize > pInfo->nCapacity )
 		{
-			lua_pushstring( pL, s_szLuaBufferInfo );
+			lua_pushlightuserdata( pL, (void*)s_szLuaBufferInfo );
 			uint32 nLen = std::max<uint32>( nTotalSize, 16 );
 			uint32 nCapacity = nLen + nLen/2;
 			uint32 nAlocSize = nCapacity + sizeof(SBufferInfo);
@@ -312,42 +322,11 @@ namespace XS
 	inline SBufferInfo* CLuaBuffer::GetBufferInfo( lua_State* pL, int32 nStkID )
 	{
 		nStkID = ToAbsStackIndex(pL, nStkID);
-		TValue* v = pL->base + (nStkID - 1);
-		if (v->tt != LUA_TTABLE)
-			return nullptr;
-
-		static unsigned int s_keyHash = 0;
-		static size_t s_keyLen = strlen(s_szLuaBufferInfo);
-		if (s_keyHash == 0)
-		{
-			lua_pushstring(pL, s_szLuaBufferInfo);
-			TString* key = rawtsvalue(pL->top - 1);
-			s_keyHash = key->tsv.hash;
-			lua_pop(pL, 1);
-		}
-
-		lua_lock(pL);
-		Table* t = hvalue(v);
-		Node* n = (gnode(t, lmod((s_keyHash), sizenode(t))));
-		for (; n; n = gnext(n))
-		{
-			if (!ttisstring(gkey(n)))
-				continue;
-			if ((gkey(n))->value.gc->ts.tsv.len != s_keyLen)
-				continue;
-			const char* key = (const char*)(&(gkey(n))->value.gc->ts + 1);
-			if (strcmp(key, s_szLuaBufferInfo))
-				continue;
-			break;
-		}
-		lua_unlock(pL);
-
-		if (n && n->i_val.tt == LUA_TLIGHTUSERDATA)
-			return (SBufferInfo*)n->i_val.value.p;
-		if (n && n->i_val.tt == LUA_TUSERDATA)
-			return (SBufferInfo*)(&n->i_val.value.gc->u + 1);
-
-		return nullptr;
+		lua_pushlightuserdata( pL, (void*)s_szLuaBufferInfo );
+		lua_rawget( pL, nStkID );
+		SBufferInfo* pInfo = (SBufferInfo*)lua_touserdata( pL, -1 );
+		lua_pop( pL, 1 );
+		return pInfo;
 	}
 
 	template<class Type>
@@ -582,9 +561,17 @@ namespace XS
 			SBufferInfo* pInfoDes = GetBufferInfo( pL, 2 );
 			uint32 nOffset = nArg >= 3 ? (uint32)GetNumFromLua( pL, 3 ) : 0;
 			uint32 nReadCount = nArg >= 4 ? (uint32)GetNumFromLua( pL, 4 ) : INVALID_32BITID;
+			tbyte* pDesBuf = nullptr;
+			uint32 nMaxSize = 0;
 
 			if( nReadCount == INVALID_32BITID )
 				nReadCount = pInfoSrc->nDataSize - pInfoSrc->nPosition;
+
+			if( pInfoSrc->nPosition + nReadCount > pInfoSrc->nDataSize )
+			{
+				luaL_error( pL, "invalid buffer" );
+				return 0;
+			}
 
 			if( nReadCount > 200*1024*1024 )
 			{
@@ -592,19 +579,47 @@ namespace XS
 				return 0;
 			}
 
-			pInfoSrc = pInfoSrc == pInfoDes ? nullptr : pInfoSrc;
-			pInfoDes = CheckBufferSpace( pInfoDes, nOffset + nReadCount, pL, 2 );
-			lua_settop( pL, 0 );
-
-			pInfoSrc = pInfoSrc == nullptr ? pInfoDes : pInfoSrc;
-			memmove( pInfoDes->pBuffer + nOffset, pInfoSrc->pBuffer + pInfoSrc->nPosition, nReadCount );
-			if( pInfoSrc->nPosition + nReadCount > pInfoSrc->nDataSize )
+			if( lua_isnil( pL, 2 ) )
 			{
-				luaL_error( pL, "invalid buffer" );
-				return 0;
+				pInfoSrc = CheckBufferSpace( pInfoSrc, nOffset + nReadCount, pL, 2 );
+				pDesBuf = pInfoSrc->pBuffer;
+				nMaxSize = pInfoSrc->nDataSize;
+				pInfoSrc->nDataSize = std::max<uint32>( nOffset + nReadCount, pInfoSrc->nDataSize );
 			}
+			else if( pInfoDes && pInfoDes->pBuffer )
+			{
+				pInfoDes = CheckBufferSpace( pInfoDes, nOffset + nReadCount, pL, 2 );
+				pDesBuf = pInfoDes->pBuffer;
+				nMaxSize = pInfoDes->nDataSize;
+				pInfoDes->nDataSize = std::max<uint32>( nOffset + nReadCount, pInfoDes->nDataSize );
+			}
+			else
+			{
+				lua_pushstring( pL, "(cppobjs)" );
+				lua_rawget( pL, 2 );
+				if( lua_istable( pL, -1 ) )
+				{
+					lua_pushlightuserdata( pL, CScriptLua::ms_pFirstClassInfo );
+					lua_gettable( pL, 2 );
+					if( lua_isuserdata( pL, -1 ) )
+					{
+						auto pClassInfo = (const CClassInfo*)lua_touserdata( pL, -1 );
+						nMaxSize = pClassInfo->GetClassSize();
+						if( nOffset + nReadCount > nMaxSize ) 
+						{
+							luaL_error( pL, "invalid size" );
+							return 0;
+						}
+						lua_rawget( pL, -2 );
+						pDesBuf = (tbyte*)lua_touserdata( pL, -1 );
+						lua_pop( pL, 2 );
+					}
+				}
+			}
+
+			lua_settop( pL, 0 );
+			memmove( pDesBuf + nOffset, pInfoSrc->pBuffer + pInfoSrc->nPosition, nReadCount );
 			pInfoSrc->nPosition += nReadCount;
-			pInfoDes->nDataSize = std::max<uint32>( nOffset + nReadCount, pInfoDes->nDataSize );
 			return 0;
 		}
 	}
@@ -786,33 +801,57 @@ namespace XS
 			SBufferInfo* pInfoSrc = GetBufferInfo( pL, 2 );
 			uint32 nOffset = nArg >= 3 ? (uint32)(int64)GetNumFromLua( pL, 3 ) : 0;
 			uint32 nWriteCount = nArg >= 4 ? (uint32)(int64)GetNumFromLua( pL, 4 ) : INVALID_32BITID;
+			const tbyte* pSrcBuf = nullptr;
+			uint32 nMaxSize = 0;
+
+			if( lua_isnil( pL, 2 ) )
+			{
+				pSrcBuf = pInfoDes->pBuffer;
+				nMaxSize = pInfoDes->nDataSize;
+			}
+			else if( pInfoSrc && pInfoSrc->pBuffer )
+			{
+				pSrcBuf = pInfoSrc->pBuffer;
+				nMaxSize = pInfoSrc->nDataSize;
+			}
+			else
+			{
+				lua_pushstring( pL, "(cppobjs)" );
+				lua_rawget( pL, 2 );
+				if( lua_istable( pL, -1 ) )
+				{
+					lua_pushlightuserdata( pL, CScriptLua::ms_pFirstClassInfo );
+					lua_gettable( pL, 2 );
+					if( lua_isuserdata( pL, -1 ) )
+					{
+						auto pClassInfo = (const CClassInfo*)lua_touserdata( pL, -1 );
+						nMaxSize = pClassInfo->GetClassSize();
+						lua_rawget( pL, -2 );
+						pSrcBuf = (const tbyte*)lua_touserdata( pL, -1 );
+						lua_pop( pL, 2 );
+					}
+				}
+			}
 
 			if( nWriteCount == INVALID_32BITID )
-				nWriteCount = pInfoSrc->nDataSize - nOffset;
+				nWriteCount = nMaxSize - nOffset;
 
-			if( !pInfoSrc || !pInfoSrc->pBuffer )
+			if( pSrcBuf == nullptr || nOffset + nWriteCount > nMaxSize)
 			{
 				luaL_error( pL, "invalid buffer" );
 				return 0;
 			}
 
-			if( nWriteCount > 200*1024*1024 )
+			if( nWriteCount > 200 * 1024 * 1024 )
 			{
 				luaL_error( pL, "invalid size" );
 				return 0;
 			}
 
-			pInfoSrc = pInfoSrc == pInfoDes ? nullptr : pInfoSrc;
-			pInfoDes = CheckBufferSpace( pInfoDes, ( pInfoDes ? pInfoDes->nPosition : 0 ) + nWriteCount, pL, 1 );
+			pInfoDes = CheckBufferSpace( pInfoDes, (pInfoDes ? pInfoDes->nPosition : 0) + nWriteCount, pL, 1 );
 			lua_settop( pL, 0 );
 
-			pInfoSrc = pInfoSrc == nullptr ? pInfoDes : pInfoSrc;
-			memmove( pInfoDes->pBuffer + pInfoDes->nPosition, pInfoSrc->pBuffer + nOffset, nWriteCount );
-			if( nOffset + nWriteCount > pInfoSrc->nDataSize )
-			{
-				luaL_error( pL, "invalid buffer" );
-				return 0;
-			}
+			memmove( pInfoDes->pBuffer + pInfoDes->nPosition, pSrcBuf + nOffset, nWriteCount );
 			pInfoDes->nPosition += nWriteCount;
 			pInfoDes->nDataSize = std::max<uint32>( pInfoDes->nPosition, pInfoDes->nDataSize );
 			return 0;
@@ -998,24 +1037,64 @@ namespace XS
 		nStkId = ToAbsStackIndex( pL, nStkId );
 		if (nStkId > lua_gettop(pL))
 			return nullptr;
-		TValue* v = pL->base + (nStkId - 1);
-		if( v->tt == LUA_TNIL || v->tt == LUA_TNONE || v->tt == LUA_TNUMBER )
+		int32 nType = lua_type( pL, nStkId );
+		if( nType == LUA_TNIL || nType == LUA_TNONE || 
+			nType == LUA_TBOOLEAN || nType == LUA_TNUMBER )
 			return nullptr;
-		if( v->tt == LUA_TSTRING )
-			return (void*)lua_tostring( pL, nStkId );
 
-		SBufferInfo* pInfo = nullptr;
-		if( v->tt == LUA_TTABLE &&
-			( pInfo = CLuaBuffer::GetBufferInfo( pL, nStkId ) ) )
-			return pInfo->pBuffer;
+		bool bDone = false;
+		void* pPointer = nullptr;
+		if( nType == LUA_TSTRING )
+		{
+			pPointer = (void*)lua_tostring( pL, nStkId );
+			bDone = true;
+		}
+		else if( nType == LUA_TUSERDATA || nType == LUA_TLIGHTUSERDATA )
+		{
+			pPointer = lua_touserdata( pL, nStkId );
+			bDone = true;
+		}
+		else if( nType == LUA_TTABLE )
+		{
+			SBufferInfo* pInfo = nullptr;
+			if( (pInfo = CLuaBuffer::GetBufferInfo( pL, nStkId )) )
+			{
+				pPointer = pInfo->pBuffer;
+				bDone = true;
+			}
+			else
+			{
+				lua_pushstring( pL, "(cppobjs)" );
+				lua_rawget( pL, nStkId );
+				if( lua_istable( pL, -1 ) )
+				{
+					lua_pushlightuserdata( pL, CScriptLua::ms_pFirstClassInfo );
+					lua_gettable( pL, nStkId );
+					if( lua_isuserdata( pL, -1 ) )
+					{
+						lua_rawget( pL, -2 );
+						pPointer = lua_touserdata( pL, -1 );
+					}
+					lua_pop( pL, 1 );
+					bDone = true;
+				}
+				lua_pop( pL, 1 );
+			}
+		}
 
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTableKey );
+		if( bDone && pPointer == nullptr )
+			return pPointer;
+
+		if( pPointer == nullptr )
+			pPointer = (pL->base + (nStkId - 1))->value.gc;
+
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTable );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
-		lua_pushlightuserdata( pL, v->value.gc );
-		lua_pushvalue( pL, -3 );
+		lua_pushlightuserdata( pL, pPointer );
+		lua_pushvalue( pL, nStkId );
 		lua_rawset( pL, -3 );
 		lua_pop( pL, 1 );
-		return v->value.gc;
+		return pPointer;
 	}
 
 	bool PushPointerToLua( lua_State* pL, void* pBuffer, bool bCreateStreamBuff )
@@ -1026,7 +1105,7 @@ namespace XS
 			return false;
 		}
 
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTableKey );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTable );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		if( lua_isnil( pL, -1 ) )
 		{
@@ -1053,7 +1132,6 @@ namespace XS
 				}
 			}
 
-			TValue* v = pL->top - 1;
 			if (type == LUA_TTABLE || type == LUA_TUSERDATA ||
 				type == LUA_TFUNCTION || type == LUA_TTHREAD)
 			{
@@ -1085,7 +1163,7 @@ namespace XS
 		lua_setmetatable( pL, nStkId );
 
 		// 设置数据到table上
-		lua_pushstring( pL, s_szLuaBufferInfo );
+		lua_pushlightuserdata( pL, (void*)s_szLuaBufferInfo );
 		SBufferInfo* pInfo = (SBufferInfo*)lua_newuserdata( pL, sizeof( SBufferInfo ) );
 		pInfo->nDataSize = (uint32)INVALID_32BITID;
 		pInfo->nCapacity = (uint32)INVALID_32BITID;
@@ -1094,7 +1172,7 @@ namespace XS
 		lua_rawset( pL, nStkId );
 
 		// 挂到全局表上
-		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTableKey );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTable );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		lua_pushlightuserdata( pL, pBuffer );
 		lua_pushvalue( pL, nStkId );

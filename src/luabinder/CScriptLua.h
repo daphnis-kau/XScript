@@ -24,6 +24,7 @@ namespace XS
 		std::wstring			m_szTempUcs2;
 		std::string				m_szTempUtf8;
 
+
 		std::vector<void*>		m_pAllAllocBlock;
 		CMemoryBlockList		m_aryBlockByClass;
 		bool					m_bPreventExeInRunBuffer;
@@ -57,8 +58,8 @@ namespace XS
         void					AddLoader();
 		void					IO_Replace();
 
-        static void             RegistToLua( lua_State* pL, const CClassInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
-        static void             RemoveFromLua( lua_State* pL, const CClassInfo* pInfo, void* pObj, int32 nObjTable, int32 nObj );
+		static void             RegistToLua( lua_State* pL, const CClassInfo* pInfo, void* pObj, 
+									int32 nObj, int32 nGlobalWeakTable, int32 nCppObjTable );
 
 		virtual bool			CallVM( const CCallbackInfo* pCallBase, void* pRetBuf, void** pArgArray );
 		virtual void			DestrucVM( const CCallbackInfo* pCallBase, SVirtualObj* pObject );
@@ -69,23 +70,26 @@ namespace XS
 		virtual bool			Get( void* pObject, const char* szName, void* pResultBuf, const STypeInfo& TypeInfo );
 		virtual bool        	Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg );
 		virtual bool        	Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, void* pFunction, void** aryArg );
-		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForceBuild = false );
+		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForce = false );
+
+		virtual void*			GetVM();
+		virtual const char*		PresentValue( void* pValue, void* pContext );
 
 		friend class CDebugLua;
 		friend class CLuaBuffer;
 
     public:
-        CScriptLua(const char* strDebugHost, uint16 nDebugPort = 0 );
+        CScriptLua(const char* strDebugHost, uint16 nDebugPort = 0, bool bWaitForDebugger = false );
 		~CScriptLua(void);
 
 		//==============================================================================
 		// built keys
 		//==============================================================================
-		static void*			ms_pGlobObjectWeakTableKey;
-		static void*			ms_pGlobObjectTableKey;
-		static void*			ms_pRegistScriptLuaKey;
-		static void*			ms_pErrorHandlerKey;
-		static void*			ms_pClassInfoKey;
+		static void*			ms_pGlobObjectWeakTable;
+		static void*			ms_pGlobObjectTable;
+		static void*			ms_pRegistScriptLua;
+		static void*			ms_pFirstClassInfo;
+		static void*			ms_pErrorHandler;
 
         //==============================================================================
         // common function

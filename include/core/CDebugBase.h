@@ -22,7 +22,6 @@
 namespace XS
 {
 	class CDebugCmd;
-	class CScriptBase;
 	class CBreakPoint;
 	typedef std::set<CBreakPoint> CBreakPointList;
 	typedef std::vector<std::string> CFileLines;
@@ -30,6 +29,20 @@ namespace XS
 	typedef TList<CDebugCmd> CDebugCmdList;
 	typedef CDebugCmdList::CListNode CDebugNode;
 	class CDebugCmd : public CDebugNode, public CJson{};
+
+	class IDebugHandler
+	{
+	public:
+		virtual void*		GetVM() = 0;
+		virtual const char* PresentValue( void* pValue, void* pContext ) = 0;
+
+		virtual int32		Input( char* szBuffer, int nCount ) = 0;
+		virtual int32		Output( const char* szBuffer, int nCount, bool bError = false ) = 0;
+		virtual void*		OpenFile( const char* szFileName ) = 0;
+		virtual int32		ReadFile( void* pContext, char* szBuffer, int32 nCount ) = 0;
+		virtual void		CloseFile( void* pContext ) = 0;
+		virtual bool		RunFile( const char* szFileName, bool bForce = false ) = 0;
+	};
 
 	struct SException 
 	{ 
@@ -77,7 +90,7 @@ namespace XS
 			eAT_Attach 
 		};
 
-		CScriptBase*		m_pBase;
+		IDebugHandler*		m_pHandler;
 		std::thread			m_hThread;
 		std::mutex			m_hCmdLock;
 		intptr_t			m_nRemoteListener;
@@ -91,6 +104,7 @@ namespace XS
 		CFileMap			m_mapFileBuffer;
 
 		EAttachType			m_eAttachType;
+		bool				m_bQuit;
 		bool				m_bLoopOnPause;
 		bool				m_bAllExceptionsBreak;
 		bool				m_bUncaughtExceptionsBreak;
@@ -140,16 +154,17 @@ namespace XS
 		//=================================================================
 		// Implement other debug protocol by override next two function
 		//=================================================================
-		virtual bool		ReciveRemoteData( char(&szBuffer)[2048], int32 nCurSize );
+		virtual bool		ReciveRemoteData(char(&szBuffer)[2048], int32 nCurSize);
 		virtual bool		CheckRemoteCmd();
 
 	protected:
-		CScriptBase*		GetScriptBase() const { return m_pBase; }
+		IDebugHandler*		GetDebugHandler() const { return m_pHandler; }
 		virtual uint32		GenBreakPointID( const char* szFileName, int32 nLine ) = 0;
 		bool				HaveBreakPoint() const { return !m_setBreakPoint.empty(); }
+		std::string			ReadEntirFile( const char* szFileName );
 
     public:
-        CDebugBase( CScriptBase* pBase, const char* strDebugHost, uint16 nDebugPort );
+        CDebugBase( IDebugHandler* pHandler, const char* strDebugHost, uint16 nDebugPort );
 		virtual ~CDebugBase(void);
 
 		void				Debug();
@@ -159,7 +174,8 @@ namespace XS
 		bool				HasLoadFile(const char* szFile);
 		bool				RemoteDebugEnable() const;
 		bool				RemoteCmdValid() const { return !m_listDebugCmd.IsEmpty(); }
-		void				CheckEnterRemoteDebug();
+		bool				CheckEnterRemoteDebug();
+		int32				GetDebuggerState();
 
 		virtual uint32		AddBreakPoint( const char* szFileName, int32 nLine );
 		virtual void		DelBreakPoint( uint32 nBreakPointID );

@@ -9,6 +9,7 @@
 #define __SCRIPT_BASE_H__
 #include "common/TList.h"
 #include "CClassInfo.h"
+#include "CDebugBase.h"
 #include <stdarg.h>
 #include <vector>
 #include <list>
@@ -25,7 +26,7 @@ namespace XS
 	typedef std::map<const CClassInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
 	typedef std::map<SFunctionTable*, SFunctionTable*> CFunctionTableMap;
 
-    class CScriptBase
+    class CScriptBase : public IDebugHandler
 	{
 		friend class CCallbackInfo;
 	protected:
@@ -46,7 +47,7 @@ namespace XS
 		virtual bool			Get( void* pObject, const char* szName, void* pResultBuf, const STypeInfo& TypeInfo ) = 0;
 		virtual bool        	Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg ) = 0;
 		virtual bool			Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, void* pFunction, void** aryArg ) = 0;
-		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForceBuild = false ) = 0;
+		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForce = false ) = 0;
     public:
         CScriptBase(void);
 		virtual ~CScriptBase( void );
@@ -76,7 +77,7 @@ namespace XS
         void                	AddSearchPath( const char* szPath );
 
 		virtual int32			Input( char* szBuffer, int nCount );
-		virtual int32			Output( const char* szBuffer, int nCount );
+		virtual int32			Output( const char* szBuffer, int nCount, bool bError = false );
 
 		virtual void*			OpenFile( const char* szFileName );
 		virtual int32			ReadFile( void* pContext, char* szBuffer, int32 nCount );
@@ -85,12 +86,12 @@ namespace XS
 		virtual int32			IncRef( void* pObj ) = 0;
 		virtual int32			DecRef( void* pObj ) = 0;
 		virtual void			UnlinkCppObjFromScript( void* pObj ) = 0;
-		virtual bool			IsValid( void* pObject ) = 0;
 		virtual void        	GC() = 0;
 		virtual void        	GCAll() = 0;
+		virtual bool			IsValid( void* pObject ) = 0;
 
-		bool        			RunFile( const char* szFileName, bool bForce = false);
-		bool        			RunString( const char* szString );
+		virtual bool			RunFile( const char* szFileName, bool bForce = false);
+		virtual bool			RunString( const char* szString );
 
 		template<typename Type>
 		bool					Evaluate( const char* szExpression, Type& nValue );
@@ -103,8 +104,6 @@ namespace XS
 		bool					RunFunction( RetType* pRetBuf, FunType pFun, Param ... p );
 		template<typename FunType, typename... Param>
 		bool					RunFunction( nullptr_t, FunType pFun, Param ... p );
-
-		std::string				ReadEntirFile( const char* szFileName );
 	};
 
 	template<typename Type>
@@ -149,20 +148,6 @@ namespace XS
 		static STypeInfo aryInfo[] = { GetTypeInfo<Param>()..., GetTypeInfo<void>() };
 		static STypeInfoArray TypeInfo = { aryInfo, sizeof( aryInfo )/sizeof( STypeInfo ) };
 		return Call( TypeInfo, nullptr, pFun, aryParam );
-	}
-	
-	inline std::string CScriptBase::ReadEntirFile( const char* szFileName )
-	{
-		std::string strBuffer;
-		void* pContext = OpenFile( szFileName );
-		if( !pContext )
-			return strBuffer;
-		char szBuffer[1024];
-		int32 nReadSize = 0;
-		while( ( nReadSize = ReadFile( pContext, szBuffer, 1024 ) ) > 0 )
-			strBuffer.append( szBuffer, nReadSize );
-		CloseFile( pContext );
-		return strBuffer;
 	}
 }
 

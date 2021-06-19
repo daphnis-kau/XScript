@@ -34,6 +34,7 @@ namespace XS
 
 		struct SVariableInfo : public CVariableMap::CRBTreeNode
 		{
+			uint32			m_nParentID;
 			uint32			m_nVariableID;
 			CFieldMap		m_mapFields[2];
 			operator const uint32( ) const { return m_nVariableID; }
@@ -49,16 +50,18 @@ namespace XS
 		uint32				m_nValueID;
 		CVariableMap		m_mapVariable;
 		std::string			m_szFunctionName;
+		std::string			m_strLastSorece;
+		int32				m_nLastLine;
 
         static void			DebugHook( lua_State *pState, lua_Debug* pDebug );
+		static CDebugLua*	GetDebugger( lua_State* pState );
 		void				Debug( lua_State* pState );
 
 		void				ClearVariables();
 		uint32				TouchVariable( const char* szField, uint32 nParentID );
 		virtual uint32		GenBreakPointID( const char* szFileName, int32 nLine );
-		const char*			GetFuncName( void* pGC, lua_TValue* vTable, std::set<void*>& setReached );
     public:
-        CDebugLua( CScriptBase* pBase, const char* strDebugHost, uint16 nDebugPort );
+        CDebugLua( IDebugHandler* pHandler, const char* strDebugHost, uint16 nDebugPort );
         ~CDebugLua(void);
 
 		void				SetCurState( lua_State* pL );
@@ -80,7 +83,6 @@ namespace XS
 		virtual void		StepNext();
 		virtual void		StepOut();
     };
-
 }
 
 #endif

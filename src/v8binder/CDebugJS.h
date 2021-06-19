@@ -110,7 +110,7 @@ namespace XS
 		uint32				AddFrameObject( SFrameInfo& FrameInfo, SObjectInfo& ObjInfo, 
 								std::string strField, std::string strParentID = "" );
 	public:
-		CDebugJS(CScriptBase* pBase, const char* strDebugHost, uint16 nDebugPort);
+		CDebugJS(IDebugHandler* pHandler, const char* strDebugHost, uint16 nDebugPort);
 		~CDebugJS(void);
 
 		void				AddScriptInfo(int32 nID, const char* szFileName);
