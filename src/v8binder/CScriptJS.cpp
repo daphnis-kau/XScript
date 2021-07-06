@@ -466,6 +466,11 @@ namespace XS
 		return true;
 	}
 
+	void* CScriptJS::GetVM()
+	{
+		return m_pV8Context->m_pIsolate;
+	}
+
 	bool CScriptJS::Set( void* pObject, int32 nIndex, void* pArgBuf, const STypeInfo& TypeInfo )
 	{
 		return false;

@@ -41,7 +41,10 @@ namespace XS
 		virtual bool        	Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, const char* szFunction, void** aryArg );
 		virtual bool			Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, void* pFunction, void** aryArg );
 		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForceBuild = false );
-    public:
+		
+		virtual void*			GetVM();
+
+	public:
 		CScriptJS( const char* strDebugHost, uint16 nDebugPort );
 		~CScriptJS( void );
 		friend class CJSObject;

@@ -8,7 +8,6 @@
 #ifndef __SCRIPT_BASE_H__
 #define __SCRIPT_BASE_H__
 #include "common/TList.h"
-#include "CClassInfo.h"
 #include "CDebugBase.h"
 #include <stdarg.h>
 #include <vector>
@@ -22,6 +21,8 @@ namespace XS
 	class CDebugBase;
 	class CCallInfo;
 	class CCallbackInfo;
+	struct SVirtualObj;
+	struct SFunctionTable;
 	typedef std::pair<SFunctionTable*, uint32> CVMObjVTableInfo;
 	typedef std::map<const CClassInfo*, CVMObjVTableInfo> CNewFunctionTableMap;
 	typedef std::map<SFunctionTable*, SFunctionTable*> CFunctionTableMap;

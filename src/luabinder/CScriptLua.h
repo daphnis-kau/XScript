@@ -32,6 +32,7 @@ namespace XS
         //==============================================================================
         // aux function
 		//==============================================================================
+		static void				PushCppObjAndWeakTable( lua_State* pL );
 		static int32			GetIndexClosure( lua_State* pL );
 		static int32			GetNewIndexClosure( lua_State* pL );
 		static int32			GetInstanceField( lua_State* pL );
@@ -94,8 +95,9 @@ namespace XS
         //==============================================================================
         // common function
         //==============================================================================
-        static void*			NewLuaObj( lua_State* pL, const CClassInfo* pInfo );
-		static void				RegisterObject( lua_State* pL, const CClassInfo* pInfo, void* pObj, bool bGC );
+        static void*			NewLuaObj( lua_State* pL, const CClassInfo* pInfo, int32 nCppObjs );
+		static void				RegisterObject( lua_State* pL, const CClassInfo* pInfo, 
+									void* pObj, bool bGC, int32 nCppObjStr, int32 nWeakTable );
 		static void				NewUnicodeString( lua_State* pL, const wchar_t* szStr );
 		static const wchar_t*	ConvertUtf8ToUcs2( lua_State* pL, int32 nStkId );
 

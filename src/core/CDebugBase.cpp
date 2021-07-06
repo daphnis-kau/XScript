@@ -258,8 +258,8 @@ namespace XS
 		}
 
 		sockaddr_in Address;
-		memset( &Address, 0, sizeof(Address) );
-		Address.sin_addr.s_addr = strDebugHost ? inet_addr(strDebugHost) : 0;
+		memset( &Address, 0, sizeof( Address ) );
+		Address.sin_addr.s_addr = strDebugHost ? inet_addr( strDebugHost ) : 0;
 		Address.sin_port = htons( nDebugPort );
 		Address.sin_family = AF_INET;
 
@@ -569,12 +569,17 @@ namespace XS
 		}
 		else if( !StrCaseCmp( szCommand, "attach" ) )
 		{
+			m_mapRedirectPath.clear();
 			m_eAttachType = eAT_Attach;
 			CJson* pArg = pCmd->GetChild("arguments");
-			m_strCWD = pArg->At<std::string>("cwd");
-			if (m_strCWD == "local")
+			std::string strPaths = pArg->At<std::string>("cwd");
+			auto listPaths = SeparateString( strPaths.c_str(), '|' );
+			for( auto strPathPair : listPaths )
 			{
-				m_strCWD.clear();
+				auto vecPathPair = SeparateString( strPathPair.c_str(), '<' );
+				if( vecPathPair.size() != 2 )
+					continue;
+				m_mapRedirectPath[vecPathPair[0]] = vecPathPair[1];
 			}
 			SendRespone( nullptr, szSequence, true, szCommand );
 			return true;
@@ -588,15 +593,15 @@ namespace XS
 			{
 				CJson* pSource = pSourceArray->AddChild( "" );
 				std::string strpath = it->first.c_str();
-				if (m_strCWD.length() > 0)
+				for (auto Path : m_mapRedirectPath)
 				{
-					const char* pstr = strstr(strpath.c_str(), "/Lua/");
-					if (pstr)
-					{
-						strpath = pstr + 4;
-						strpath = m_strCWD + strpath;
-					}
+					const char* pstr = strstr(strpath.c_str(), Path.first.c_str());
+					if(!pstr)
+						continue; 
+					strpath = Path.second + (pstr + Path.first.length());
+					break;
 				}
+
 				pSource->AddChild( "path", strpath.c_str() );
 				pSource->AddChild( "name", GetFileNameFromPath( it->first.c_str() ) );
 				if( it->first.c_str()[0] != '/' && it->first.find(':') == INVALID_32BITID )
@@ -742,15 +747,15 @@ namespace XS
 
 				szSource = szSource ? szSource : "<now valid source>";
 				std::string strpath = szSource;
-				if (m_strCWD.length() > 0)
+				for( auto Path : m_mapRedirectPath )
 				{
-					const char* pstr = strstr(strpath.c_str(), "/Lua/");
-					if (pstr)
-					{
-						strpath = pstr + 4;
-						strpath = m_strCWD + strpath;
-					}
+					const char* pstr = strstr( strpath.c_str(), Path.first.c_str() );
+					if( !pstr )
+						continue;
+					strpath = Path.second + (pstr + Path.first.length());
+					break;
 				}
+
 				pSource->AddChild( "path", strpath);
 				pSource->AddChild( "name", GetFileNameFromPath( szSource ) );
 				if( szSource[0] != '/' && !::strchr( szSource, ':' ) )

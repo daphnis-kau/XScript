@@ -26,6 +26,7 @@ namespace XS
 	typedef std::set<CBreakPoint> CBreakPointList;
 	typedef std::vector<std::string> CFileLines;
 	typedef std::map<std::string, CFileLines> CFileMap;
+	typedef std::map<std::string, std::string> CPathRedirectMap;
 	typedef TList<CDebugCmd> CDebugCmdList;
 	typedef CDebugCmdList::CListNode CDebugNode;
 	class CDebugCmd : public CDebugNode, public CJson{};
@@ -99,7 +100,7 @@ namespace XS
 
 		char*				m_pBuf;
 		char				m_szBuffer[1024];
-		std::string			m_strCWD;
+		CPathRedirectMap	m_mapRedirectPath;
 		CBreakPointList		m_setBreakPoint;
 		CFileMap			m_mapFileBuffer;
 
@@ -170,6 +171,7 @@ namespace XS
 		void				Debug();
 		bool				Error( const char* szException, bool bBeCaught );
 		void				BTrace( int32 nFrameCount );
+
 		void				AddFileContent( const char* szSource, const char* szData );
 		bool				HasLoadFile(const char* szFile);
 		bool				RemoteDebugEnable() const;

@@ -7,6 +7,7 @@
 
 #pragma once
 #include <array>
+#include "common/CVirtualFun.h"
 #include "core/CScriptBase.h"
 
 namespace XS

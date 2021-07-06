@@ -1,4 +1,5 @@
 ﻿#include "core/CCallInfo.h"
+#include "core/CClassInfo.h"
 #include "core/CScriptBase.h"
 #include "common/Help.h"
 #include <iostream>

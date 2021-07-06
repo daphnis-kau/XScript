@@ -1,4 +1,5 @@
 ﻿#include "core/CTypeBase.h"
+#include "core/CClassInfo.h"
 #include "core/CScriptBase.h"
 
 namespace XS

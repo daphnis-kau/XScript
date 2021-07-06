@@ -1,7 +1,6 @@
 ﻿#include "common/Help.h"
 #include "common/TStrStream.h"
 #include "CDebugLua.h"
-#include "CScriptLua.h"
 #include <list>
 #include <vector>
 #include <sstream>
@@ -464,6 +463,18 @@ namespace XS
 					const char* szName = GetDebugHandler()->PresentValue( nObjectIndex, m_pState );
 					lua_pop( m_pState, 1 );
 					TouchVariable( szName, nParentID );
+				}
+			}
+			else if( lua_isfunction( m_pState, -1 ) )
+			{
+				for (int i = 0; i < 256; i++)
+				{
+					const char* szName = lua_getupvalue(m_pState, -1, i + 1);
+					if(szName == nullptr)
+						continue;
+					char szIndex[256];
+					char_stream(szIndex) << "upvalue_" << i + 1;
+					TouchVariable(szName[0] ? szName : szIndex, nParentID);
 				}
 			}
 

@@ -1,6 +1,6 @@
 ﻿#include "core/CCallInfo.h"
-#include "core/CScriptBase.h"
 #include "core/CClassInfo.h"
+#include "core/CScriptBase.h"
 
 namespace XS
 {

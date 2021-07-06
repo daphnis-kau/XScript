@@ -17,9 +17,9 @@ extern "C"
 }
 
 #include "common/CodeCvs.h"
+#include "CScriptLua.h"
 #include "CTypeLua.h"
 #include "CDebugLua.h"
-#include "CScriptLua.h"
 #include "core/CCallInfo.h"
 #include "core/CClassInfo.h"
 #include "MemoryUnit.h"
@@ -99,8 +99,9 @@ namespace XS
 			"	if rawget( child_vtable, key ) == orgFun then\n"
 			"		rawset( child_vtable, key, value )\n"
 			"	end\n"
-			"	for k, v in ipairs(child.__derive_list) do\n"
-			"		__derive_to_child( v, key, value, orgFun )\n"
+			"	local derive_list = child.__derive_list"
+			"	for i = 1, #derive_list do\n"
+			"		__derive_to_child( derive_list[i], key, value, orgFun )\n"
 			"	end\n"
 			"end\n"
 
@@ -108,13 +109,16 @@ namespace XS
 			"local function __inherit_from_base( child, base )\n"
 			"	local base_vtable = rawget( base, \"__virtual_table\" )\n"
 			"	local child_vtable = rawget( child, \"__virtual_table\" )\n"
-			"	for k, v in pairs( base_vtable ) do\n"
+			"	local k, v = next( base_vtable )\n"
+			"	while k do\n"
 			"		if rawget( child_vtable, k ) == nil then\n"
 			"			rawset( child_vtable, k, v )\n"
 			"		end\n"
+			"		k, v = next( base_vtable, k )\n"
 			"	end\n"
-			"	for k, v in ipairs(base.__base_list) do\n"
-			"		__inherit_from_base( child, v )\n"
+			"	local base_list = base.__base_list\n"
+			"	for i = 1, #base_list do\n"
+			"		__inherit_from_base( child, base_list[i] )\n"
 			"	end\n"
 			"end\n"
 
@@ -125,8 +129,8 @@ namespace XS
 			"	end\n"
 
 			"	local base_list = rawget( cur_node, \"__base_list\")\n"
-			"	for k, v in pairs( base_list ) do\n"
-			"	    if( SearchClassNode( v, check_node ) ) then\n"
+			"	for i = 1, #base_list do\n"
+			"	    if( SearchClassNode( base_list[i], check_node ) ) then\n"
 			"	        return true\n"
 			"	    end\n"
 			"	end\n"
@@ -140,7 +144,8 @@ namespace XS
 			"function class( ... )\n"
 			"	local NewClass = {}\n"
 			"	local VirtualTable = {}\n"
-			"	NewClass.__base_list = { ... }\n"
+			"	local BaseList = { ... }\n"
+			"	NewClass.__base_list = BaseList\n"
 			"	NewClass.__derive_list = {}\n"
 			"	NewClass.__virtual_table = VirtualTable\n"
 			"	NewClass.__index = GetIndexClosure(VirtualTable)\n"
@@ -155,21 +160,22 @@ namespace XS
 			"	    return NewInstance\n"
 			"	end\n"
 
-			"	NewClass.GetSuperClass = function( n )\n"
-			"		return NewClass.__base_list[n or 1];\n"
+			"	NewClass.__GetSuperClass = function( n )\n"
+			"		return BaseList[n or 1];\n"
 			"	end\n"
-			"	function VirtualTable.IsInheritFrom( self, class )\n"
+			"	function VirtualTable.__IsInheritFrom( self, class )\n"
 			"	    return SearchClassNode( NewClass, class )\n"
 			"	end\n"
-			"	function VirtualTable.GetClass( self )\n"
+			"	function VirtualTable.__GetClass( self )\n"
 			"	    return NewClass\n"
 			"	end\n"
 
 			"	VirtualTable.class = NewClass\n"
 
-			"	for k, v in ipairs(NewClass.__base_list) do\n"
-			"	    table.insert( v.__derive_list, NewClass )\n"
-			"		__inherit_from_base( NewClass, v )\n"
+			"	local nBaseCount = #BaseList\n"
+			"	for i = 1, nBaseCount do\n"
+			"	    table.insert( BaseList[i].__derive_list, NewClass )\n"
+			"		__inherit_from_base( NewClass, BaseList[i] )\n"
 			"	end\n"
 
 			// class的metatable
@@ -201,9 +207,9 @@ namespace XS
 			"    local FoundCount = 0\n"
 			"    local BaseCppClass = nil\n"
 
-			"	for k, v in ipairs(BaseList) do\n"
-			"		local IsBaseCppClass = rawget( v, \"__class_info\")\n"
-			"		local re, base = CheckClassNode( v, check_node )\n"
+			"	for i = 1, #BaseList do\n"
+			"		local IsBaseCppClass = rawget( BaseList[i], \"_info\")\n"
+			"		local re, base = CheckClassNode( BaseList[i], check_node )\n"
 			//不能进行类型转换
 			"		if( re == -1 ) then\n"
 			"			return -1, nil\n"
@@ -308,9 +314,15 @@ namespace XS
 		{
 			if( GetDebugger() )
 				GetDebugger()->AddFileContent( "#DefClass", szDefClass );
-			lua_pushcfunction( pL, &CScriptLua::GetIndexClosure );
-			lua_pushcfunction( pL, &CScriptLua::GetNewIndexClosure );
-			lua_pushcfunction( pL, &CScriptLua::ClassCast );
+
+			PushCppObjAndWeakTable( pL );
+			lua_pushcclosure( pL, &CScriptLua::GetIndexClosure, 2 );
+
+			PushCppObjAndWeakTable( pL );
+			lua_pushcclosure( pL, &CScriptLua::GetNewIndexClosure, 2 );
+
+			PushCppObjAndWeakTable( pL );
+			lua_pushcclosure( pL, CScriptLua::ClassCast, 2 );
 			lua_call( pL, 3, 0 );
 		}
 
@@ -414,9 +426,12 @@ namespace XS
 
 	CScriptLua* CScriptLua::GetScript(lua_State* pL)
 	{
+		CScriptLua* pScriptLua = nullptr;
+		if( lua_getallocf( pL, (void**)&pScriptLua ) )
+			return pScriptLua;
 		lua_pushlightuserdata(pL, ms_pRegistScriptLua);
 		lua_rawget(pL, LUA_REGISTRYINDEX);
-		CScriptLua* pScriptLua = (CScriptLua*)lua_touserdata(pL, -1);
+		pScriptLua = (CScriptLua*)lua_touserdata(pL, -1);
 		lua_pop(pL, 1);
 		return pScriptLua;
 	}
@@ -425,12 +440,16 @@ namespace XS
 	{
 		assert( pObj );
 		lua_State* pL = GetLuaState();
+		int32 nTop = lua_gettop( pL );
+		PushCppObjAndWeakTable( pL );
+
 		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTable );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		assert( lua_istable( pL, -1 ) );
-		if( !PushPointerToLua( pL, pObj, false ) )
+
+		if( !PushPointerToLua( pL, pObj, nTop + 1, nTop + 2, false ) )
 		{
-			lua_pop( pL, 2 );
+			lua_pop( pL, 4 );
 			return 0;
 		}
 
@@ -440,7 +459,7 @@ namespace XS
 		lua_pushlightuserdata( pL, pObj );
 		lua_pushnumber( pL, ++nPreRef );
 		lua_rawset( pL, -3 );
-		lua_pop( pL, 1 );
+		lua_pop( pL, 3 );
 		return nPreRef;
 	}
 
@@ -448,12 +467,16 @@ namespace XS
 	{
 		assert( pObj );
 		lua_State* pL = GetLuaState();
+		int32 nTop = lua_gettop( pL );
+		PushCppObjAndWeakTable( pL );
+
 		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectTable );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		assert( lua_istable( pL, -1 ) );
-		if( !PushPointerToLua( pL, pObj, false ) )
+
+		if( !PushPointerToLua( pL, pObj, nTop + 1, nTop + 2, false ) )
 		{
-			lua_pop( pL, 2 );
+			lua_pop( pL, 4 );
 			return 0;
 		}
 
@@ -464,31 +487,34 @@ namespace XS
 		lua_pushlightuserdata( pL, pObj );
 		--nPreRef ? lua_pushnumber( pL, nPreRef ) : lua_pushnil( pL );
 		lua_rawset( pL, -3 );
-		lua_pop( pL, 1 );
+		lua_pop( pL, 3 );
 		return nPreRef;
 	}
 
 	bool CScriptLua::CallVM( const CCallbackInfo* pCallBase, void* pRetBuf, void** pArgArray )
 	{
 		lua_State* pL = GetLuaState();
+		int32 nTop = lua_gettop(pL);
 
 		lua_pushlightuserdata(pL, CScriptLua::ms_pErrorHandler);
 		lua_rawget(pL, LUA_REGISTRYINDEX);
-		int32 nErrFunIndex = lua_gettop(pL);		// 1
+		int32 nErrFunIndex = nTop + 1;		// 1
 
-		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
-		lua_rawget(pL, LUA_REGISTRYINDEX);		// 2	
+		PushCppObjAndWeakTable( pL );				// 3	
+		int32 nCppObjStr = nErrFunIndex + 1;
+		int32 nWeakTable = nCppObjStr + 1;
 
 		lua_pushlightuserdata(pL, *(void**)pArgArray[0]);
-		lua_gettable(pL, -2);						// 3
+		lua_gettable(pL, -2);						// 4
 
-		if (lua_isnil(pL, -1))
+		int32 nType = lua_type( pL, -1 );
+		if (nType == LUA_TNIL)
 		{
-			lua_pop(pL, 3);            //Error occur
+			lua_settop(pL, nTop);            //Error occur
 			return false;                //*******表不存在时，此代码有问题************
 		}
 
-		lua_getfield(pL, -1, pCallBase->GetFunctionName().c_str()); // 4
+		lua_getfield(pL, -1, pCallBase->GetFunctionName().c_str()); // 5
 
 		if (lua_tocfunction(pL, -1) == &CScriptLua::CallByLua)
 		{
@@ -496,14 +522,14 @@ namespace XS
 			if (pCallBase == lua_touserdata(pL, -1))
 			{
 				// call self
-				lua_pop(pL, 5);
+				lua_settop(pL, nTop);
 				return false;
 			}
 		}
 		else if (lua_isnil(pL, -1))
 		{
 			//Error occur
-			lua_pop(pL, 4);
+			lua_settop(pL, nTop);
 			return false;
 		}
 
@@ -514,7 +540,8 @@ namespace XS
 		{
 			DataType nType = listParam[nArgIndex];
 			CLuaTypeBase* pParamType = GetLuaTypeBase(nType);
-			pParamType->PushToVM(nType, pL, (char*)pArgArray[nArgIndex]);
+			pParamType->PushToVM(nType, pL, 
+				(char*)pArgArray[nArgIndex], nCppObjStr, nWeakTable);
 		}
 
 		int32 nArg = (int32)(listParam.size());
@@ -523,16 +550,20 @@ namespace XS
 		{
 			CLuaTypeBase* pReturnType = GetLuaTypeBase(nResultType);
 			if (!IsValueClass(nResultType))
-				pReturnType->GetFromVM(nResultType, pL, (char*)pRetBuf, -1);
+			{
+				pReturnType->GetFromVM( nResultType, pL, 
+					(char*)pRetBuf, -1, nCppObjStr, nWeakTable );
+			}
 			else
 			{
 				void* pObject = nullptr;
-				pReturnType->GetFromVM(nResultType, pL, (char*)&pObject, -1);
+				pReturnType->GetFromVM(nResultType, pL,
+					(char*)&pObject, -1, nCppObjStr, nWeakTable );
 				auto pClassInfo = (const CClassInfo*)((nResultType >> 1) << 1);
 				pClassInfo->Assign(this, pRetBuf, pObject);
 			}
 		}
-		lua_settop(pL, nErrFunIndex - 1);
+		lua_settop(pL, nTop);
 		return true;
 	}
 
@@ -556,7 +587,7 @@ namespace XS
 			return;                //*******表不存在时，此代码有问题************
 		}
 
-		lua_getfield(pL, -1, "Deconstruction"); // 4
+		lua_getfield(pL, -1, "deconstruction"); // 4
 
 		if (lua_tocfunction(pL, -1) == &CScriptLua::CallByLua)
 		{
@@ -584,9 +615,9 @@ namespace XS
 	// 通用函数
 	//--------------------------------------------------------------------------------
 	// Lua stack 堆栈必须只有一个值，类（表,在栈底）.调用后， stack top = 1, 对象对应的表在栈顶
-	void* CScriptLua::NewLuaObj(lua_State* pL, const CClassInfo* pInfo)
+	void* CScriptLua::NewLuaObj(lua_State* pL, const CClassInfo* pInfo, int32 nCppObjs)
 	{
-		lua_pushstring( pL, "(cppobjs)" );
+		lua_pushvalue( pL, nCppObjs );
 		lua_rawget( pL, -2 );
 		assert( lua_istable( pL, -1 ) );
 		lua_pushlightuserdata( pL, (void*)pInfo );
@@ -638,7 +669,8 @@ namespace XS
 		}
 	}
 
-	void CScriptLua::RegisterObject(lua_State* pL, const CClassInfo* pInfo, void* pObj, bool bGC)
+	void CScriptLua::RegisterObject(lua_State* pL, const CClassInfo* pInfo, 
+		void* pObj, bool bGC, int32 nCppObjStr, int32 nWeakTable)
 	{
 		//In C++, stack top = 1, 返回Obj, 留在堆栈里
 		if (pInfo->IsCallBack())
@@ -646,14 +678,12 @@ namespace XS
 
 		int32 nObj = lua_gettop(pL);
 		//设置全局对象表 CScriptLua::ms_pGlobObjectWeakTableKey    
-		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
-		lua_rawget( pL, LUA_REGISTRYINDEX );
-		lua_pushstring( pL, "(cppobjs)" );
+		lua_pushvalue( pL, nCppObjStr );
 		lua_rawget( pL, nObj );
 		assert( lua_istable( pL, -1 ) );
-		RegistToLua(pL, pInfo, pObj, nObj, nObj + 1, nObj + 2);
-		//弹出CScriptLua::ms_pGlobObjectWeakTableKey和nObj[(cppobjs)]
-		lua_pop( pL, 2 );        
+		RegistToLua(pL, pInfo, pObj, nObj, nWeakTable, nObj + 1);
+		//弹出nObj[(cppobjs)]
+		lua_pop( pL, 1 );        
 	}
 
 	void CScriptLua::NewUnicodeString(lua_State* pL, const wchar_t* szStr)
@@ -701,17 +731,19 @@ namespace XS
 		CScriptLua* pScriptLua = GetScript(pL);
 		pInfo->RecoverVirtualTable(pScriptLua, pObject);
 		pInfo->Destruct(pScriptLua, pObject);
-		lua_pop(pL, 2);
+		lua_pop(pL, 1);
 		return 0;
 	}
 
 	int32 CScriptLua::ObjectConstruct(lua_State* pL)
 	{
-		void* pUpValue = lua_touserdata(pL, lua_upvalueindex(1));
-		const CClassInfo* pInfo = (const CClassInfo*)pUpValue;
+		int32 nCallBase = lua_upvalueindex( 1 );
+		int32 nCppObjs = lua_upvalueindex( 2 );
+		int32 nWeakTable = lua_upvalueindex( 3 );		
+		auto pInfo = (const CClassInfo*)lua_touserdata(pL, nCallBase);
 
 		// 如果c++对象已经构造则跳过（当将一个c++对象cast成lua对象时会有这种情况）
-		lua_pushstring( pL, "(cppobjs)" );
+		lua_pushvalue( pL, nCppObjs );
 		lua_rawget( pL, 1 );
 		lua_pushlightuserdata( pL, (void*)pInfo );
 		lua_rawget( pL, -2 );
@@ -739,7 +771,7 @@ namespace XS
 		{
 			DataType nType = listParam[nArgIndex];
 			CLuaTypeBase* pParamType = GetLuaTypeBase(nType);
-			pParamType->GetFromVM(nType, pL, pDataBuf, nStkId++);
+			pParamType->GetFromVM(nType, pL, pDataBuf, nStkId++, nCppObjs, nWeakTable);
 			pArgArray[nArgIndex] = IsValueClass(nType) ? *(void**)pDataBuf : pDataBuf;
 			pDataBuf += listParamSize[nArgIndex];
 		}
@@ -747,12 +779,12 @@ namespace XS
 		// 清掉除了table以外的参数
 		lua_settop(pL, 1);
 
-		void* pNewObj = NewLuaObj(pL, pInfo);
+		void* pNewObj = NewLuaObj(pL, pInfo, nCppObjs);
 		CScriptLua* pScriptLua = GetScript(pL);
 		pScriptLua->PushLuaState(pL);
 		pInfo->Construct(pScriptLua, pNewObj, pArgArray);
 		pScriptLua->PopLuaState();
-		RegisterObject(pL, pInfo, pNewObj, true);
+		RegisterObject(pL, pInfo, pNewObj, true, nCppObjs, nWeakTable);
 		return 1;
 	}
 
@@ -802,7 +834,10 @@ namespace XS
 	//=====================================================================
 	int32 CScriptLua::CallByLua(lua_State* pL)
 	{
-		CCallInfo* pCallBase = (CCallInfo*)lua_touserdata(pL, lua_upvalueindex(1));
+		int32 nCallBase = lua_upvalueindex( 1 );
+		int32 nCppObjs = lua_upvalueindex( 2 );
+		int32 nWeakTable = lua_upvalueindex( 3 );
+		CCallInfo* pCallBase = (CCallInfo*)lua_touserdata(pL, nCallBase);
 		uint32 nTop = lua_gettop(pL);
 
 		CScriptLua* pScript = CScriptLua::GetScript(pL);
@@ -829,7 +864,7 @@ namespace XS
 			{
 				DataType nType = listParam[nArgIndex];
 				CLuaTypeBase* pParamType = GetLuaTypeBase(nType);
-				pParamType->GetFromVM(nType, pL, pDataBuf, nStkId++);
+				pParamType->GetFromVM(nType, pL, pDataBuf, nStkId++, nCppObjs, nWeakTable);
 				pArgArray[nArgIndex] = IsValueClass(nType) ? *(void**)pDataBuf : pDataBuf;
 				pDataBuf += listParamSize[nArgIndex];
 			}
@@ -840,7 +875,7 @@ namespace XS
 			if( nResultType )
 			{
 				CLuaTypeBase* pReturnType = GetLuaTypeBase( nResultType );
-				pReturnType->PushToVM( nResultType, pL, pResultBuf );
+				pReturnType->PushToVM( nResultType, pL, pResultBuf, nCppObjs, nWeakTable );
 				if( IsValueClass( nResultType ) )
 				{
 					auto pClassInfo = (const CClassInfo*)((nResultType >> 1) << 1);
@@ -873,15 +908,26 @@ namespace XS
 	//=========================================================================
 	// 获取设置对象属性                                              
 	//=========================================================================
+	void CScriptLua::PushCppObjAndWeakTable( lua_State* pL )
+	{
+		lua_pushstring( pL, "(cppobjs)" );
+		lua_pushlightuserdata( pL, CScriptLua::ms_pGlobObjectWeakTable );
+		lua_rawget( pL, LUA_REGISTRYINDEX );
+	}
+
 	int32 CScriptLua::GetIndexClosure( lua_State* pL )
 	{
-		lua_pushcclosure( pL, CScriptLua::GetInstanceField, 1 );
+		lua_pushvalue( pL, lua_upvalueindex( 1 ) );
+		lua_pushvalue( pL, lua_upvalueindex( 2 ) );
+		lua_pushcclosure( pL, CScriptLua::GetInstanceField, 3 );
 		return 1;
 	}
 
 	int32 CScriptLua::GetNewIndexClosure( lua_State* pL )
 	{
-		lua_pushcclosure( pL, CScriptLua::SetInstanceField, 1 );
+		lua_pushvalue( pL, lua_upvalueindex( 1 ) );
+		lua_pushvalue( pL, lua_upvalueindex( 2 ) );
+		lua_pushcclosure( pL, CScriptLua::SetInstanceField, 3 );
 		return 1;
 	}
 
@@ -900,6 +946,8 @@ namespace XS
 			return 1;
 		}
 
+		int32 nCppObjs = lua_upvalueindex( 2 );
+		int32 nWeakTable = lua_upvalueindex( 3 );
 		CScriptLua* pScript = CScriptLua::GetScript( pL );
 		pScript->PushLuaState( pL );
 		auto& listParam = pCallBase->GetParamList();
@@ -916,13 +964,13 @@ namespace XS
 		// 获取this指针
 		DataType nType = listParam[0];
 		CLuaTypeBase* pParamType = GetLuaTypeBase( listParam[0] );
-		pParamType->GetFromVM( nType, pL, pDataBuf, 1 );
+		pParamType->GetFromVM( nType, pL, pDataBuf, 1, nCppObjs, nWeakTable );
 		pArgArray[0] = IsValueClass( nType ) ? *(void**)pDataBuf : pDataBuf;
 		lua_settop( pL, 0 );
 
 		pCallBase->Call( pResultBuf, pArgArray, *pScript );
 		CLuaTypeBase* pReturnType = GetLuaTypeBase( nResultType );
-		pReturnType->PushToVM( nResultType, pL, pResultBuf );
+		pReturnType->PushToVM( nResultType, pL, pResultBuf, nCppObjs, nWeakTable );
 		if( IsValueClass( nResultType ) )
 		{
 			auto pClassInfo = (const CClassInfo*)((nResultType >> 1) << 1);
@@ -955,6 +1003,8 @@ namespace XS
 		}
 
 		lua_remove( pL, 2 );
+		int32 nCppObjs = lua_upvalueindex( 2 );
+		int32 nWeakTable = lua_upvalueindex( 3 );
 		CScriptLua* pScript = CScriptLua::GetScript( pL );
 		pScript->PushLuaState( pL );
 		auto& listParam = pCallBase->GetParamList();
@@ -974,7 +1024,7 @@ namespace XS
 		{
 			DataType nType = listParam[nArgIndex];
 			CLuaTypeBase* pParamType = GetLuaTypeBase( nType );
-			pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++ );
+			pParamType->GetFromVM( nType, pL, pDataBuf, nStkId++, nCppObjs, nWeakTable );
 			pArgArray[nArgIndex] = IsValueClass( nType ) ? *(void**)pDataBuf : pDataBuf;
 			pDataBuf += listParamSize[nArgIndex];
 		}
@@ -990,25 +1040,30 @@ namespace XS
 	//=========================================================================
 	int32 CScriptLua::ClassCast(lua_State* pL)
 	{
+		int32 nCppObjs = lua_upvalueindex( 1 );
+		int32 nWeakTable = lua_upvalueindex( 2 );
+
+		// arg1:obj, arg2:newClass
 		lua_getfield(pL, -1, "__class_info");
 		const CClassInfo* pNewInfo = (const CClassInfo*)lua_touserdata(pL, -1);
 		lua_pop(pL, 1);
 
-		lua_pushstring( pL, "(cppobjs)" );
-		lua_rawget( pL, -3 );
+		lua_pushvalue( pL, nCppObjs ); 
+		lua_rawget( pL, -3 );					// obj, newClass, tblCppObjs
+		assert( !lua_isnil( pL, -1 ) );
 		lua_pushlightuserdata( pL, (void*)pNewInfo );
-		lua_rawget( pL, -2 );
+		lua_rawget( pL, -2 );					// obj, newClass, tblCppObjs, c++obj
 		if (!lua_isnil(pL, -1))
 		{
-			lua_pop(pL, 3);
+			lua_pop(pL, 3);						// obj
 			return 1;
 		}
-		lua_pop(pL, 2);
+		lua_pop(pL, 2);							// obj, newClass
 
-		lua_getfield(pL, -2, "class");
-		lua_getfield(pL, -1, "__class_info");
+		lua_getfield(pL, -2, "class");			// obj, newClass, orgClass
+		lua_getfield(pL, -1, "__class_info");	// obj, newClass, orgClass, orgClassInfo
 		const CClassInfo* pOrgInfo = (const CClassInfo*)lua_touserdata(pL, -1);
-		lua_pop(pL, 2);
+		lua_pop(pL, 2);							// obj, newClass
 
 		int32 nOffset = pNewInfo->GetBaseOffset(pOrgInfo);
 		if (nOffset >= 0)
@@ -1024,13 +1079,13 @@ namespace XS
 			}
 		}
 
-		lua_setmetatable(pL, -2);
+		lua_setmetatable(pL, -2);				// obj
 
-		lua_pushstring( pL, "(cppobjs)" );
-		lua_rawget( pL, -2 );
+		lua_pushvalue( pL, nCppObjs );
+		lua_rawget( pL, -2 );					// obj, tblCppObjs
 		lua_pushlightuserdata( pL, (void*)pNewInfo );
 		lua_pushlightuserdata( pL, (void*)pOrgInfo );
-		lua_rawget( pL, -3 );
+		lua_rawget( pL, -3 );					// obj, tblCppObjs, newInfo, orgObj
 		void* pObj = (void*)lua_touserdata(pL, -1);
 
 		CScriptLua* pScriptLua = GetScript(pL);
@@ -1040,12 +1095,12 @@ namespace XS
 		{
 			pObj = ((char*)pObj) + nOffset;
 			lua_pop(pL, 1);
-			lua_pushlightuserdata(pL, pObj);
+			lua_pushlightuserdata(pL, pObj);	// obj, tblCppObjs, newInfo, newObj
 		}
 
 		lua_rawset(pL, -3);
 		lua_pop( pL, 1 );
-		RegisterObject(pL, pNewInfo, pObj, false);
+		RegisterObject(pL, pNewInfo, pObj, false, nCppObjs, nWeakTable);
 		return 1;
 	}
 
@@ -1358,7 +1413,7 @@ namespace XS
 		return true;
 	}
 
-	bool CScriptLua::GetGlobObject(lua_State* pL, const char* szKey)
+	bool CScriptLua::GetGlobObject( lua_State* pL, const char* szKey )
 	{
 		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
 		lua_rawget(pL, LUA_REGISTRYINDEX);
@@ -1432,8 +1487,9 @@ namespace XS
 					lua_pushcfunction(pL, ObjectGC);
 					lua_rawset(pL, nClassIdx);
 
-					lua_pushlightuserdata(pL, (void*)pInfo);
-					lua_pushcclosure(pL, CScriptLua::ObjectConstruct, 1);
+					lua_pushlightuserdata( pL, (void*)pInfo );
+					PushCppObjAndWeakTable( pL );
+					lua_pushcclosure(pL, CScriptLua::ObjectConstruct, 3);
 					lua_setfield(pL, nClassIdx, "construction");
 				}
 				else
@@ -1443,18 +1499,19 @@ namespace XS
 
 				assert(!lua_isnil(pL, -1));
 
-				for (auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext())
+				for( auto pCall = mapFunction.GetFirst(); pCall; pCall = pCall->GetNext() )
 				{
 					if( pCall->GetFunctionIndex() == eCT_Value )
 						lua_pushinteger( pL, (int32)pCall->GetFunctionOrg() );
 					else
 					{
 						lua_pushlightuserdata( pL, pCall );
-						lua_pushcclosure( pL, CScriptLua::CallByLua, 1 );
+						PushCppObjAndWeakTable( pL );
+						lua_pushcclosure( pL, CScriptLua::CallByLua, 3 );
 					}
 					lua_setfield( pL, -2, pCall->GetFunctionName().c_str() );
 				}
-				lua_pop(pL, 1);
+				lua_pop( pL, 1 );
 			}
 		} 
 		RegisterClass;
@@ -1499,6 +1556,8 @@ namespace XS
 
 		lua_State* pL = GetLuaState();
 		int nTop = lua_gettop( pL );
+		PushCppObjAndWeakTable( pL );
+
 		if( pObject == nullptr )
 		{
 			const char* szFun = "return %s";
@@ -1514,7 +1573,7 @@ namespace XS
 		}
 		else
 		{
-			if( !PushPointerToLua( pL, pObject, false ) )
+			if( !PushPointerToLua( pL, pObject, nTop + 1, nTop + 2, false ) )
 			{
 				lua_settop( pL, nTop );
 				return false;
@@ -1523,7 +1582,8 @@ namespace XS
 		}
 
 		bool IsNil = lua_isnil( pL, -1 );
-		GetLuaTypeBase( nResultType )->GetFromVM( nResultType, pL, (char*)pResultBuf, -1 );
+		GetLuaTypeBase( nResultType )->GetFromVM( nResultType, pL, 
+			(char*)pResultBuf, -1, nTop + 1, nTop + 2 );
 		lua_settop( pL, nTop );
 		return !IsNil;
 	}
@@ -1536,7 +1596,9 @@ namespace XS
 
 		lua_State* pL = GetLuaState();
 		int nTop = lua_gettop( pL );
-		if( !PushPointerToLua( pL, pObject, false ) )
+		PushCppObjAndWeakTable( pL );
+
+		if( !PushPointerToLua( pL, pObject, nTop + 1, nTop + 2, false ) )
 		{
 			lua_settop( pL, nTop );
 			return false;
@@ -1545,7 +1607,9 @@ namespace XS
 		lua_pushinteger( pL, nIndex );
 		lua_gettable( pL, -2 );
 		bool IsNil = lua_isnil( pL, -1 );
-		GetLuaTypeBase( nResultType )->GetFromVM( nResultType, pL, (char*)pResultBuf, -1 );
+
+		GetLuaTypeBase( nResultType )->GetFromVM( nResultType, pL,
+			(char*)pResultBuf, -1, nTop + 1, nTop + 2 );
 		lua_settop( pL, nTop );
 		return !IsNil;
 	}
@@ -1558,10 +1622,12 @@ namespace XS
 
 		lua_State* pL = GetLuaState();
 		int nTop = lua_gettop( pL );
+		PushCppObjAndWeakTable( pL );
+
 		if( pObject == nullptr )
 		{
 			CLuaTypeBase* pParamType = GetLuaTypeBase( nParamType );
-			pParamType->PushToVM( nParamType, pL, (char*)pArgBuf );
+			pParamType->PushToVM( nParamType, pL, (char*)pArgBuf, nTop + 1, nTop + 2 );
 			const char* szFun = "%s = select( 1, ... )";
 			char szFuncBuf[256];
 			sprintf( szFuncBuf, szFun, szName );
@@ -1575,13 +1641,13 @@ namespace XS
 		}
 		else
 		{
-			if( !PushPointerToLua( pL, pObject, false ) )
+			if( !PushPointerToLua( pL, pObject, nTop + 1, nTop + 2, false ) )
 			{
 				lua_settop( pL, nTop );
 				return false;
 			}
 			CLuaTypeBase* pParamType = GetLuaTypeBase( nParamType );
-			pParamType->PushToVM( nParamType, pL, (char*)pArgBuf );
+			pParamType->PushToVM( nParamType, pL, (char*)pArgBuf, nTop + 1, nTop + 2 );
 			lua_setfield( pL, -2, szName );
 		}
 
@@ -1597,14 +1663,16 @@ namespace XS
 
 		lua_State* pL = GetLuaState();
 		int nTop = lua_gettop( pL );
-		if( !PushPointerToLua( pL, pObject, false ) )
+		PushCppObjAndWeakTable( pL );
+
+		if( !PushPointerToLua( pL, pObject, nTop + 1, nTop + 2, false ) )
 		{
 			lua_settop( pL, nTop );
 			return false;
 		}
 		lua_pushinteger( pL, nIndex );
 		CLuaTypeBase* pParamType = GetLuaTypeBase( nParamType );
-		pParamType->PushToVM( nParamType, pL, (char*)pArgBuf );
+		pParamType->PushToVM( nParamType, pL, (char*)pArgBuf, nTop + 1, nTop + 2 );
 		lua_settable( pL, -3 );
 
 		lua_settop( pL, nTop );
@@ -1619,16 +1687,23 @@ namespace XS
 		return Call( aryTypeInfo, pResultBuf, pFunction, aryArg );
 	}
 
-	bool CScriptLua::Call( const STypeInfoArray& aryTypeInfo, void* pResultBuf, void* pFunction, void** aryArg )
+	bool CScriptLua::Call( const STypeInfoArray& aryTypeInfo, 
+		void* pResultBuf, void* pFunction, void** aryArg )
 	{
 		lua_State* pL = GetLuaState();
+
 		lua_pushlightuserdata( pL, ms_pErrorHandler );
 		lua_rawget( pL, LUA_REGISTRYINDEX );
 		int32 nErrFunIndex = lua_gettop( pL );
 
-		if( !PushPointerToLua( pL, pFunction, false ) || !lua_isfunction( pL, -1 ) )
+		PushCppObjAndWeakTable( pL );// 3	
+		int32 nCppObjStr = nErrFunIndex + 1;	
+		int32 nWeakTable = nCppObjStr + 1;
+
+		if( !PushPointerToLua( pL, pFunction, nCppObjStr, nWeakTable, false ) || 
+			!lua_isfunction( pL, -1 ) )
 		{
-			lua_pop( pL, 2 );
+			lua_pop( pL, 4 );
 			return false;
 		}
 
@@ -1637,7 +1712,8 @@ namespace XS
 		{
 			DataType nType = ToDataType( aryTypeInfo.aryInfo[nArgIndex] );
 			CLuaTypeBase* pParamType = GetLuaTypeBase( nType );
-			pParamType->PushToVM( nType, pL, (char*)aryArg[nArgIndex] );
+			pParamType->PushToVM( nType, pL, 
+				(char*)aryArg[nArgIndex], nCppObjStr, nWeakTable );
 		}
 
 		DataType nResultType = ToDataType( aryTypeInfo.aryInfo[nParamCount] );;
@@ -1645,11 +1721,12 @@ namespace XS
 
 		if( nResultType && pResultBuf )
 		{
-			GetLuaTypeBase( nResultType )->GetFromVM( nResultType, pL, (char*)pResultBuf, -1 );
-			lua_pop( pL, 1 );
+			GetLuaTypeBase( nResultType )->GetFromVM( nResultType, pL,
+				(char*)pResultBuf, -1, nCppObjStr, nWeakTable );
+			lua_pop( pL, 3 );
 		}
 
-		lua_pop( pL, 1 );
+		lua_pop( pL, 3 );
 		return true;
 	}
 
@@ -1709,14 +1786,14 @@ namespace XS
 		lua_State* pL = GetLuaState();
 		int32 nTop = lua_gettop(pL);
 
-		lua_pushlightuserdata(pL, CScriptLua::ms_pGlobObjectWeakTable);
-		lua_rawget(pL, LUA_REGISTRYINDEX);			//[WeakTable]
-		assert(!lua_isnil(pL, -1));
-		int32 nWeakTable = lua_gettop( pL );
+		PushCppObjAndWeakTable( pL );
+		int32 nCppObj = nTop + 1;
+		int32 nWeakTable = nCppObj + 1;
+		assert(!lua_isnil(pL, nWeakTable));
 
 		lua_pushlightuserdata(pL, pObj);	
-		lua_gettable( pL, -2 );						//[WeakTable,tblObj]
-		int32 nObjTable = lua_gettop( pL );
+		lua_gettable( pL, -2 );						//[strCppObj,WeakTable,tblObj]
+		int32 nObjTable = nWeakTable + 1;
 
 		if (lua_isnil(pL, -1))
 		{
@@ -1724,22 +1801,24 @@ namespace XS
 			return;
 		}
 
-		lua_getfield( pL, nObjTable, "(cppobjs)" );	//[WeakTable,tblObj,cppObjs]
+		lua_pushvalue( pL, nCppObj );
+		lua_rawget( pL, nObjTable );				//[strCppObj,WeakTable,tblObj,cppObjs]
 		if( !lua_istable( pL, -1 ) )
 		{
 			lua_settop( pL, nTop );
 			return;
 		}
 
-		lua_pushnil( pL );							//[WeakTable,tblObj,cppObjs,nil]
+		lua_pushnil( pL );							//[strCppObj,WeakTable,tblObj,cppObjs,nil]
 		while( lua_next( pL, -2 ) )
 		{	
-			lua_pushnil( pL );						//[WeakTable,tblObj,cppObjs,key,value,nil]
-			lua_rawset( pL, nWeakTable );			//[WeakTable,tblObj,cppObjs,key]
+			lua_pushnil( pL );						//[strCppObj,WeakTable,tblObj,cppObjs,key,value,nil]
+			lua_rawset( pL, nWeakTable );			//[strCppObj,WeakTable,tblObj,cppObjs,key]
 		}
 
+		lua_pushvalue( pL, nCppObj );
 		lua_pushnil( pL );
-		lua_setfield( pL, nObjTable, "(cppobjs)" );
+		lua_rawset( pL, nObjTable );
 		lua_settop(pL, nTop);
 	}
 
@@ -1758,8 +1837,10 @@ namespace XS
 	bool CScriptLua::IsValid( void* pObject )
 	{
 		lua_State* pL = GetLuaState();
-		bool bIsValid = PushPointerToLua( pL, pObject, false );
-		lua_pop( pL, 1 );
+		int32 nTop = lua_gettop( pL );
+		PushCppObjAndWeakTable( pL );
+		bool bIsValid = PushPointerToLua( pL, pObject, nTop + 1, nTop + 2, false );
+		lua_pop( pL, 3 );
 		return bIsValid;
 	}
 

@@ -2,6 +2,7 @@
 #include "CScriptJS.h"
 #include "CDebugJS.h"
 #include "CTypeJS.h"
+#include "core/CClassInfo.h"
 #include "core/CCallInfo.h"
 
 #define MAX_STRING_BUFFER_SIZE	65536

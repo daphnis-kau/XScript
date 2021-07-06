@@ -8,6 +8,8 @@
 #define __XS_HELP_H__
 
 #include "common/CommonType.h"
+#include <string>
+#include <vector>
 #include <assert.h>
 #ifdef _WIN32
 #include <malloc.h>
@@ -281,6 +283,34 @@ namespace XS
 			ret = 1 ;
 
 		return ret;
+	}
+
+	template< class _Elem >
+	inline std::vector< std::basic_string<_Elem> > SeparateString( const _Elem* szSrc, _Elem nSeparator )
+	{
+		std::vector< std::basic_string<_Elem> > vecStr;
+
+		size_t nSize = 1;
+		for( int32 i = 0; szSrc[i]; i++ )
+			if( szSrc[i] == nSeparator )
+				nSize++;
+
+		vecStr.resize( nSize );
+		int32 nPreItem = 0;
+		for( int32 i = 0, n = 0; ; i++ )
+		{
+			if( szSrc[i] == nSeparator )
+			{
+				vecStr[n++].assign( szSrc + nPreItem, i - nPreItem );
+				nPreItem = i + 1;
+			}
+			else if( szSrc[i] == 0 )
+			{
+				vecStr[n++].assign( szSrc + nPreItem, i - nPreItem );
+				break;
+			}
+		}
+		return vecStr;
 	}
 }
 #endif
