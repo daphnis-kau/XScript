@@ -92,6 +92,7 @@ namespace XS
 		lua_atpanic(pL, &CScriptLua::Panic);
 		//Redirect2Console( stdin, stdout, stderr );
 
+		// 尽量不使用ipair或者pair，luajit很容易优化失败
 		const char* szDefClass =
 			// 新加的类派生给子类
 			"local function __derive_to_child( child, key, value, orgFun )\n"
@@ -1769,16 +1770,6 @@ namespace XS
 		}
 
 		return false;
-	}
-
-	const char* CScriptLua::PresentValue( void* pValue, void* pContext )
-	{
-		lua_State* pL = (lua_State*)pContext;
-		lua_pushvalue( pL, (int32)(ptrdiff_t)pValue );
-		ToString( pL );
-		const char* szValue = lua_tostring( (lua_State*)pContext, -1 );
-		lua_pop( pL, 1 );
-		return szValue;
 	}
 
 	void CScriptLua::UnlinkCppObjFromScript( void* pObj )

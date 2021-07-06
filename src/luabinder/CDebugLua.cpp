@@ -1,5 +1,6 @@
 ﻿#include "common/Help.h"
 #include "common/TStrStream.h"
+#include "CScriptLua.h"
 #include "CDebugLua.h"
 #include <list>
 #include <vector>
@@ -51,6 +52,7 @@ namespace XS
 
 	CDebugLua::~CDebugLua( void )
 	{
+		ClearVariables();
 		lua_State* pL = (lua_State*)GetDebugHandler()->GetVM();
 		lua_sethook( pL, &CDebugLua::DebugHook, 0, 0 );
 	}
@@ -109,6 +111,15 @@ namespace XS
 	{
 		static uint32 s_nBreakPointID = 1;
 		return s_nBreakPointID++;
+	}
+
+	const char* CDebugLua::PresentValue( void* pValue )
+	{
+		lua_pushvalue( m_pState, (int32)(ptrdiff_t)pValue );
+		static_cast<CScriptLua*>(GetDebugHandler())->ToString( m_pState );
+		const char* szValue = lua_tostring( m_pState, -1 );
+		lua_pop( m_pState, 1 );
+		return szValue;
 	}
 
 	void CDebugLua::DebugHook( lua_State* pState, lua_Debug* pDebug )
@@ -413,7 +424,7 @@ namespace XS
 			lua_pushnumber( m_pState, pNode->m_nRegisterID );
 			lua_rawget( m_pState, -2 );
 			void* nObjectIndex = (void*)(ptrdiff_t)lua_gettop( m_pState );
-			const char* s = GetDebugHandler()->PresentValue( nObjectIndex, m_pState );
+			const char* s = PresentValue( nObjectIndex );
 			Info.strValue = s ? s : "nil";
 			lua_pop( m_pState, 2 );
 		}
@@ -460,7 +471,7 @@ namespace XS
 				{
 					lua_pushvalue( m_pState, -2 );
 					void* nObjectIndex = (void*)(ptrdiff_t)lua_gettop( m_pState );
-					const char* szName = GetDebugHandler()->PresentValue( nObjectIndex, m_pState );
+					const char* szName = PresentValue( nObjectIndex );
 					lua_pop( m_pState, 1 );
 					TouchVariable( szName, nParentID );
 				}
@@ -472,6 +483,11 @@ namespace XS
 					const char* szName = lua_getupvalue(m_pState, -1, i + 1);
 					if(szName == nullptr)
 						continue;
+					if(lua_isnil(m_pState, -1))
+					{
+						lua_pop( m_pState, 1 );
+						continue;
+					}
 					char szIndex[256];
 					char_stream(szIndex) << "upvalue_" << i + 1;
 					TouchVariable(szName[0] ? szName : szIndex, nParentID);

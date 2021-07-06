@@ -60,6 +60,8 @@ namespace XS
 		void				ClearVariables();
 		uint32				TouchVariable( const char* szField, uint32 nParentID );
 		virtual uint32		GenBreakPointID( const char* szFileName, int32 nLine );
+		const char*			PresentValue( void* pValue );
+
     public:
         CDebugLua( IDebugHandler* pHandler, const char* strDebugHost, uint16 nDebugPort );
         ~CDebugLua(void);

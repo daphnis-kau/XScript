@@ -35,8 +35,6 @@ namespace XS
 	{
 	public:
 		virtual void*		GetVM() = 0;
-		virtual const char* PresentValue( void* pValue, void* pContext ) = 0;
-
 		virtual int32		Input( char* szBuffer, int nCount ) = 0;
 		virtual int32		Output( const char* szBuffer, int nCount, bool bError = false ) = 0;
 		virtual void*		OpenFile( const char* szFileName ) = 0;

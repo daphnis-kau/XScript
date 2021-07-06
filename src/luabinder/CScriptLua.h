@@ -74,7 +74,6 @@ namespace XS
 		virtual bool        	RunBuffer( const void* pBuffer, size_t nSize, const char* szFileName, bool bForce = false );
 
 		virtual void*			GetVM();
-		virtual const char*		PresentValue( void* pValue, void* pContext );
 
 		friend class CDebugLua;
 		friend class CLuaBuffer;
