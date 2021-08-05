@@ -20,10 +20,15 @@ extern "C" {
 #endif
 	typedef struct lua_State lua_State;
 	typedef struct lua_Debug lua_Debug;
-	DEBUG_API void debugger_hook_wrap(lua_State* pState, lua_Debug* pDebug);
+
+	/*create debugger*/
 	DEBUG_API void* new_debugger(lua_State* pState, const char* strDebugHost, uint16 nDebugPort, bool bWaitDebug);
+
+	/*destroy debugger*/
 	DEBUG_API void del_debugger(void* _pDebugger );
-	DEBUG_API int  check_debug_cmd(void* _pDebugger );
+
+	/*call every frame to check debugger's command*/
+	DEBUG_API int check_debug_cmd(void* _pDebugger );
 
 #ifdef __cplusplus
 };

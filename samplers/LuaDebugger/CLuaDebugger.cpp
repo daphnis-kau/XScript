@@ -133,11 +133,6 @@ bool CDebugHandler::RunFile( const char* szFileName, bool bForce /*= false */ )
 extern "C" {
 #endif
 
-DEBUG_API void debugger_hook_wrap(lua_State* pState, lua_Debug* pDebug)
-{
-	//XS::CDebugLua::DebugHook(pState, pDebug);
-}
-
 DEBUG_API void* new_debugger(lua_State* pState, const char* strDebugHost, uint16 nDebugPort, bool bWaitDebug)
 {
 	return new CDebugHandler(pState, strDebugHost, nDebugPort, bWaitDebug);
