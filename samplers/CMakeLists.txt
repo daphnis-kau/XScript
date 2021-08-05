@@ -1,2 +1,3 @@
-add_subdirectory(SimpleTest) 
-add_subdirectory(XScriptDll) 
+﻿add_subdirectory(SimpleTest)
+add_subdirectory(LuaDebugger)
+add_subdirectory(XScriptDll)
