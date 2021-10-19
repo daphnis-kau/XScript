@@ -1213,7 +1213,10 @@ namespace XS
 				s = szDouble;
 			}
 			else
-				s = lua_tostring( pL, -1 );
+			{
+				sprintf(szDouble, "%lld", (int64)n);
+				s = szDouble;
+			}
 		}
 		else if( type == LUA_TSTRING )
 			return 1;
