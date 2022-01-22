@@ -252,12 +252,15 @@ namespace XS
 		static int32		SetBit( lua_State* pL );
 		static int32		WriteBoolean( lua_State* pL );
 		static int32		WriteInt8( lua_State* pL );
+		static int32		WriteUint8( lua_State* pL );
 		static int32		WriteDouble( lua_State* pL );
 		static int32		WriteFloat( lua_State* pL );
 		static int32		WriteInt32( lua_State* pL );
+		static int32		WriteUint32( lua_State* pL );
 		static int32		WriteInt64( lua_State* pL );
 		static int32		WriteUint64( lua_State* pL );
 		static int32		WriteInt16( lua_State* pL );
+		static int32		WriteUint16( lua_State* pL );
 		static int32		WriteUTF( lua_State* pL );
 		static int32		WriteUTFBytes( lua_State* pL );
 		static int32		WriteBytes( lua_State* pL );
@@ -675,6 +678,12 @@ namespace XS
 		return 0;
 	}
 
+	int32 CLuaBuffer::WriteUint8( lua_State* pL )
+	{
+		WriteData( pL, (uint8)(int64)GetNumFromLua( pL, 2 ) );
+		return 0;
+	}
+
 	int32 CLuaBuffer::WriteDouble( lua_State* pL )
 	{
 		WriteData( pL, GetNumFromLua( pL, 2 ) );
@@ -699,6 +708,12 @@ namespace XS
 		return 0;
 	}
 
+	int32 CLuaBuffer::WriteUint32( lua_State* pL )
+	{
+		WriteData( pL, (uint32)(int64)GetNumFromLua( pL, 2 ) );
+		return 0;
+	}
+
 	int32 CLuaBuffer::WriteUint64( lua_State* pL )
 	{
 		WriteData( pL, (uint64)GetNumFromLua( pL, 2 ) );
@@ -708,6 +723,12 @@ namespace XS
 	int32 CLuaBuffer::WriteInt16( lua_State* pL )
 	{
 		WriteData( pL, (int16)(int64)GetNumFromLua( pL, 2 ) );
+		return 0;
+	}
+
+	int32 CLuaBuffer::WriteUint16( lua_State* pL )
+	{
+		WriteData( pL, (uint16)(int64)GetNumFromLua( pL, 2 ) );
 		return 0;
 	}
 
@@ -959,11 +980,14 @@ namespace XS
 		REGISTER( WriteBoolean );
 		REGISTER( WriteInt8 );
 		REGISTER( WriteDouble );
+		REGISTER( WriteUint8 );
 		REGISTER( WriteFloat );
 		REGISTER( WriteInt64 );
 		REGISTER( WriteInt32 );
 		REGISTER( WriteUint64 );
+		REGISTER( WriteUint32 );
 		REGISTER( WriteInt16 );
+		REGISTER( WriteUint16 );
 		REGISTER( WriteUTF );
 		REGISTER( WriteUTFBytes );
 		REGISTER( WriteBytes );

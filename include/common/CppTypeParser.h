@@ -256,6 +256,7 @@ namespace XS
 	template<> struct TTypeInfo<const ulong		&> : public TTypeInfo<ulong		> {};
 	template<> struct TTypeInfo<const float		&> : public TTypeInfo<float		> {};
 	template<> struct TTypeInfo<const double	&> : public TTypeInfo<double	> {};
+	template<> struct TTypeInfo<decltype(nullptr)> : public TTypeInfo<void*		> {};
 
 	struct STypeInfo
 	{
