@@ -19,12 +19,14 @@ namespace XS
 	{
 		struct SMemoryBlock	{ SMemoryBlock* m_pNext; };
 		typedef std::vector<SMemoryBlock*> CMemoryBlockList;
+		typedef void* (*AllocFun) (void*, void*, size_t, size_t);
 
 		std::vector<lua_State*>	m_vecLuaState;
 		std::wstring			m_szTempUcs2;
 		std::string				m_szTempUtf8;
 
-
+		AllocFun				m_pOrgAlloc;
+		void*					m_pOrgUserData;
 		std::vector<void*>		m_pAllAllocBlock;
 		CMemoryBlockList		m_aryBlockByClass;
 		bool					m_bPreventExeInRunBuffer;
@@ -50,6 +52,7 @@ namespace XS
 		static void*			Realloc( void* pContex, void* pPreBuff, size_t nOldSize, size_t nNewSize );	
 		static int32			Print( lua_State* pL );
 		static int32			ToString( lua_State* pL );
+		static CScriptLua*		ToScriptLua( lua_State* pL );
 
 		static void				DebugHookProc( lua_State *pState, lua_Debug* pDebug );
 		static bool				GetGlobObject( lua_State* pL, const char* szKey );

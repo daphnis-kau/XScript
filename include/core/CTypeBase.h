@@ -17,10 +17,14 @@ namespace XS
 	typedef ptrdiff_t DataType;
 	class CTypeBase { protected: virtual ~CTypeBase() {} };
 
-	bool			IsValueClass( DataType nType );
 	DataType		ToDataType( const STypeInfo& argTypeInfo );
 	size_t			GetSizeOfType( DataType nType );
 	size_t			GetAligenSizeOfType( DataType nType );
+
+	inline bool IsValueClass( DataType nType )
+	{
+		return nType > eDT_enum && !( nType & 1 );
+	}
 
 	class CGlobalTypes
 	{
@@ -48,7 +52,17 @@ namespace XS
 			CTypeBase* pClassPointType,
 			CTypeBase* pClassValueType );
 
-		CTypeBase*	GetTypeBase( DataType eType );
+		CTypeBase* GetTypeBase( DataType eType )
+		{
+			if( eType == eDT_void )
+				return nullptr;
+			if( eType < eDT_count )
+				return m_aryTypes[eType - 1];
+			if( eType & 1 )
+				return m_aryTypes[eDT_count - 2];
+			return m_aryTypes[eDT_count - 1];
+		}
+
 		template<class ImpClass>
 		ImpClass* GetTypeImp( DataType eType )
 		{
@@ -56,7 +70,8 @@ namespace XS
 		}
 	};
 
-#define GlobalTypeTemplateArgs( Template, ClassPointerType, ClassValueType ) \
+	#define GlobalTypeTemplateArgs( \
+		Template, ClassPointerType, ClassValueType ) \
 		&Template<char>::GetInst(), \
 		&Template<int8>::GetInst(), \
 		&Template<int16>::GetInst(), \

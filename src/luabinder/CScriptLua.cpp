@@ -76,11 +76,30 @@ namespace XS
 
 	CScriptLua::CScriptLua( const char* strDebugHost, uint16 nDebugPort, bool bWaitForDebugger )
 		: m_bPreventExeInRunBuffer(false)
+		, m_pOrgUserData( nullptr )
+		, m_pOrgAlloc( nullptr )
 	{
 		m_aryBlockByClass.resize(eMemoryConst_AllocateCount);
-		lua_State* pL = lua_newstate(&CScriptLua::Realloc, this);
+		lua_State* pL = nullptr;// lua_newstate( &CScriptLua::Realloc, this );
+
+		// luajit not allow useralloc on some platforms
 		if (!pL)
+		{
+			struct SOverride
+			{
+				static void* Realloc( void* pContex, void* pPreBuff, 
+					size_t nOldSize, size_t nNewSize )
+				{
+					CScriptLua* pThis = (CScriptLua*)pContex;
+					return pThis->m_pOrgAlloc( pThis->m_pOrgUserData,
+						pPreBuff, nOldSize, nNewSize );
+				}
+			};
 			pL = luaL_newstate();
+			m_pOrgAlloc = lua_getallocf( pL, (void**)&m_pOrgUserData );
+			lua_setallocf( pL, &SOverride::Realloc, this );
+		}
+
 		m_vecLuaState.push_back(pL);
 		luaL_openlibs(pL);
 
@@ -364,9 +383,16 @@ namespace XS
 		m_vecLuaState.pop_back();
 	}
 
+	inline CScriptLua* CScriptLua::ToScriptLua(lua_State* pL)
+	{
+		CScriptLua* pScriptLua = nullptr;
+		lua_getallocf( pL, (void**)&pScriptLua );
+		return pScriptLua;
+	}
+
 	int32 CScriptLua::Panic(lua_State* pL)
 	{
-		CScriptLua* pScriptLua = GetScript(pL);
+		CScriptLua* pScriptLua = ToScriptLua(pL);
 		pScriptLua->Output("PANIC: unprotected error in call to Lua API : ", -1);
 		pScriptLua->Output(lua_tostring(pL, -1), -1);
 		pScriptLua->Output("\n", -1);
@@ -427,14 +453,7 @@ namespace XS
 
 	CScriptLua* CScriptLua::GetScript(lua_State* pL)
 	{
-		CScriptLua* pScriptLua = nullptr;
-		if( lua_getallocf( pL, (void**)&pScriptLua ) )
-			return pScriptLua;
-		lua_pushlightuserdata(pL, ms_pRegistScriptLua);
-		lua_rawget(pL, LUA_REGISTRYINDEX);
-		pScriptLua = (CScriptLua*)lua_touserdata(pL, -1);
-		lua_pop(pL, 1);
-		return pScriptLua;
+		return ToScriptLua( pL );
 	}
 
 	int32 CScriptLua::IncRef( void* pObj )
@@ -675,7 +694,7 @@ namespace XS
 	{
 		//In C++, stack top = 1, 返回Obj, 留在堆栈里
 		if (pInfo->IsCallBack())
-			pInfo->ReplaceVirtualTable(GetScript(pL), pObj, bGC, 0);
+			pInfo->ReplaceVirtualTable(ToScriptLua(pL), pObj, bGC, 0);
 
 		int32 nObj = lua_gettop(pL);
 		//设置全局对象表 CScriptLua::ms_pGlobObjectWeakTableKey    
@@ -691,7 +710,7 @@ namespace XS
 	{
 		if (szStr == nullptr)
 			return lua_pushnil(pL);
-		CScriptLua* pScript = CScriptLua::GetScript(pL);
+		CScriptLua* pScript = CScriptLua::ToScriptLua(pL);
 		uint32 nSize = (uint32)wcslen(szStr);
 		pScript->m_szTempUtf8.resize(nSize * 6 + 1);
 		uint32 nLen = UcsToUtf8(&pScript->m_szTempUtf8[0], nSize * 6 + 1, szStr);
@@ -707,7 +726,7 @@ namespace XS
 			return nullptr;
 		if (szStr[0] == 0)
 			return L"";
-		CScriptLua* pScript = CScriptLua::GetScript(pL);
+		CScriptLua* pScript = CScriptLua::ToScriptLua(pL);
 		uint32 nSize = (uint32)strlen(szStr);
 		pScript->m_szTempUcs2.resize(nSize + 1);
 		uint32 nLen = Utf8ToUcs(&pScript->m_szTempUcs2[0], nSize + 1, szStr);
@@ -729,7 +748,7 @@ namespace XS
 		// 不需要调用UnRegisterObject，仅仅恢复虚表即可，
 		// 因为已经被回收，所以不存在还有任何地方会引用到此对象
 		// 调用UnRegisterObject反而会导致gc问题（table[obj] = nil 会crash）
-		CScriptLua* pScriptLua = GetScript(pL);
+		CScriptLua* pScriptLua = ToScriptLua(pL);
 		pInfo->RecoverVirtualTable(pScriptLua, pObject);
 		pInfo->Destruct(pScriptLua, pObject);
 		lua_pop(pL, 1);
@@ -781,7 +800,7 @@ namespace XS
 		lua_settop(pL, 1);
 
 		void* pNewObj = NewLuaObj(pL, pInfo, nCppObjs);
-		CScriptLua* pScriptLua = GetScript(pL);
+		CScriptLua* pScriptLua = ToScriptLua(pL);
 		pScriptLua->PushLuaState(pL);
 		pInfo->Construct(pScriptLua, pNewObj, pArgArray);
 		pScriptLua->PopLuaState();
@@ -797,7 +816,7 @@ namespace XS
 		const char* szWhat = lua_tostring(pState, -1);
 		szWhat = szWhat ? szWhat : "(unknown error)";
 		lua_pop(pState, 1);
-		CScriptLua* pScript = GetScript(pState);
+		CScriptLua* pScript = ToScriptLua(pState);
 		CDebugBase* pDebugger = pScript->GetDebugger();
 		static_cast<CDebugLua*>(pDebugger)->SetCurState(pState);
 		static_cast<CDebugLua*>(pDebugger)->Error(szWhat, true);
@@ -809,7 +828,7 @@ namespace XS
 	//=========================================================================
 	int32 CScriptLua::DebugBreak(lua_State* pState)
 	{
-		CScriptLua* pScript = GetScript(pState);
+		CScriptLua* pScript = ToScriptLua(pState);
 		CDebugBase* pDebugger = pScript->GetDebugger();
 		static_cast<CDebugLua*>(pDebugger)->SetCurState(pState);
 		static_cast<CDebugLua*>(pDebugger)->StepOut();
@@ -823,7 +842,7 @@ namespace XS
 	{
 		uint32 n = lua_isnil(pState, -1)
 			? INVALID_32BITID : (uint32)lua_tonumber(pState, -1);
-		CScriptLua* pScript = GetScript(pState);
+		CScriptLua* pScript = ToScriptLua(pState);
 		CDebugBase* pDebugger = pScript->GetDebugger();
 		static_cast<CDebugLua*>(pDebugger)->SetCurState(pState);
 		static_cast<CDebugLua*>(pDebugger)->BTrace(n);
@@ -841,7 +860,7 @@ namespace XS
 		CCallInfo* pCallBase = (CCallInfo*)lua_touserdata(pL, nCallBase);
 		uint32 nTop = lua_gettop(pL);
 
-		CScriptLua* pScript = CScriptLua::GetScript(pL);
+		CScriptLua* pScript = CScriptLua::ToScriptLua(pL);
 		pScript->PushLuaState(pL);
 
 		try
@@ -949,7 +968,7 @@ namespace XS
 
 		int32 nCppObjs = lua_upvalueindex( 2 );
 		int32 nWeakTable = lua_upvalueindex( 3 );
-		CScriptLua* pScript = CScriptLua::GetScript( pL );
+		CScriptLua* pScript = CScriptLua::ToScriptLua( pL );
 		pScript->PushLuaState( pL );
 		auto& listParam = pCallBase->GetParamList();
 		auto& listParamSize = pCallBase->GetParamSize();
@@ -1006,7 +1025,7 @@ namespace XS
 		lua_remove( pL, 2 );
 		int32 nCppObjs = lua_upvalueindex( 2 );
 		int32 nWeakTable = lua_upvalueindex( 3 );
-		CScriptLua* pScript = CScriptLua::GetScript( pL );
+		CScriptLua* pScript = CScriptLua::ToScriptLua( pL );
 		pScript->PushLuaState( pL );
 		auto& listParam = pCallBase->GetParamList();
 		auto& listParamSize = pCallBase->GetParamSize();
@@ -1089,7 +1108,7 @@ namespace XS
 		lua_rawget( pL, -3 );					// obj, tblCppObjs, newInfo, orgObj
 		void* pObj = (void*)lua_touserdata(pL, -1);
 
-		CScriptLua* pScriptLua = GetScript(pL);
+		CScriptLua* pScriptLua = ToScriptLua(pL);
 		pOrgInfo->RecoverVirtualTable(pScriptLua, pObj);
 
 		if (nOffset)
@@ -1167,7 +1186,7 @@ namespace XS
 
 	int32 CScriptLua::Print(lua_State* pL)
 	{
-		CScriptLua* pScriptLua = GetScript(pL);
+		CScriptLua* pScriptLua = ToScriptLua(pL);
 		int n = lua_gettop(pL);  /* number of arguments */
 		int i;
 		lua_getglobal(pL, "tostring");
@@ -1372,7 +1391,7 @@ namespace XS
 			memcpy(szNewBuffer + nLen, ".lua", 5);
 		
 		lua_pop(pL, 1);
-		CScriptLua* pScript = CScriptLua::GetScript(pL);
+		CScriptLua* pScript = CScriptLua::ToScriptLua(pL);
 		pScript->PushLuaState(pL);
 		pScript->m_bPreventExeInRunBuffer = true;
 		bool bResult = pScript->RunFile(szFileName);
@@ -1397,7 +1416,7 @@ namespace XS
 			memcpy(szNewBuffer + nLen, ".lua", 5);
 
 		int n = lua_gettop(pL);
-		CScriptLua* pScript = CScriptLua::GetScript(pL);
+		CScriptLua* pScript = CScriptLua::ToScriptLua(pL);
 		pScript->PushLuaState(pL);
 		bool bResult = pScript->RunFile(szFileName);
 		pScript->PopLuaState();

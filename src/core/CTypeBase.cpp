@@ -45,11 +45,6 @@ namespace XS
 		}
 	}
 
-	bool IsValueClass( DataType nType )
-	{
-		return nType > eDT_enum && !( nType & 1 );
-	}
-
 	size_t GetSizeOfType( DataType nType )
 	{
 		static const size_t s_aryOrgSize[] =
@@ -160,15 +155,4 @@ namespace XS
 		}
 	{
 	}
-
-	XS::CTypeBase* CGlobalTypes::GetTypeBase( DataType eType )
-	{
-		if( eType == eDT_void )
-			return nullptr;
-		if( eType < eDT_count )
-			return m_aryTypes[eType - 1];
-		if( eType & 1 )
-			return m_aryTypes[eDT_count - 2];
-		return m_aryTypes[eDT_count - 1];
-	}
-}
+};
