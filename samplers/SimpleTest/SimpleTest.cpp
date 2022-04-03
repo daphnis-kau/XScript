@@ -61,9 +61,7 @@ CScriptBase* CreateScript(const char* szFilePath)
 int main( int argc, const char* argv[] )
 {
 	auto szFilePath = __FILE__;
-	auto szFileName = strrchr( szFilePath, '/' );
-	if( szFileName == nullptr )
-		szFileName = strrchr( szFilePath, '\\' );
+	auto szFileName = GetFileNameFromPath( szFilePath );
 
 	if( szFileName != nullptr )
 	{

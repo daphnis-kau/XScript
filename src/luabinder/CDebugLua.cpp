@@ -402,6 +402,12 @@ namespace XS
 	{
 		SValueInfo Info;
 		Info.nID = nID;
+		if( nID == INVALID_32BITID )
+		{
+			Info.strValue = "nil";
+			return Info;
+		}
+
 		if( nID == ePDVID_Scopes )
 		{
 			Info.strName = "scope";
@@ -523,8 +529,12 @@ namespace XS
 	{
 		if (szName == nullptr)
 			return INVALID_32BITID;
-		const_string strKey(szName, true);
 
+		const char* szEnd = szName;
+		while( *szEnd && *szEnd != '.' && *szEnd != ':' )
+			szEnd++;
+
+		const_string strKey( szName, (uint32)(szEnd - szName), true );
 		uint32 aryID[] = { ePDVID_Local, ePDVID_UpValue, ePDVID_Global };
 		for (uint32 i = 0; i < ELEM_COUNT(aryID); i++)
 		{
@@ -536,7 +546,33 @@ namespace XS
 			SFieldInfo* pField = pInfo->m_mapFields[0].Find(strKey);
 			if (!pField)
 				continue;
-			return static_cast<SVariableNode*>(pField)->m_nVariableID;
+			uint32 nID = static_cast<SVariableNode*>(pField)->m_nVariableID;
+			while( *szEnd == '.' || *szEnd == ':' )
+			{
+				szName = szEnd + 1; szEnd = szName;
+				while( *szEnd && *szEnd != '.' && *szEnd != ':' )
+					szEnd++;
+				char szField[256];
+				memcpy( szField, szName, szEnd - szName );
+				szField[szEnd - szName] = 0;
+				lua_pushlightuserdata( m_pState, s_szID2Value );
+				lua_rawget( m_pState, LUA_REGISTRYINDEX );
+				lua_pushnumber( m_pState, nID );
+				lua_rawget( m_pState, -2 );
+				lua_remove( m_pState, -2 );
+				lua_getfield( m_pState, -1, szField );
+				lua_remove( m_pState, -2 );
+				if( lua_isnil( m_pState, -1 ) )
+				{
+					lua_pop( m_pState, -1 );
+					return INVALID_32BITID;
+				}
+				auto ChildInfo = GetVariable( TouchVariable( szField, nID ) );
+				if( ChildInfo.strValue == "nil" )
+					break;
+				nID = ChildInfo.nID;
+			}
+			return nID;
 		}
 
 		return INVALID_32BITID;

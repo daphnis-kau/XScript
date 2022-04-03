@@ -798,7 +798,7 @@ namespace XS
 			//CJson* pFormat = pArg->GetChild( "format" );
 			//bool bHex = pFormat && pFormat->At<bool>( "hex" );
 			uint32 nID = EvaluateExpression( nFrame, szExpression );
-			SValueInfo Value = nID == INVALID_32BITID ? SValueInfo() : GetVariable( nID );
+			SValueInfo Value = GetVariable( nID );
 			CJson* pBody = new CJson( "body" );
 			const char* szValue = Value.strValue.c_str();
 			if( !Value.nNameValues && !Value.nIndexValues )

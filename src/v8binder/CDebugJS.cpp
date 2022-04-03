@@ -681,6 +681,12 @@ namespace XS
 		SFrameInfo& CurFrame = m_aryFrame[m_nCurFrame];
 		SValueInfo Info;
 		Info.nID = nID;
+		if( nID == INVALID_32BITID )
+		{
+			Info.strValue = "undefined";
+			return Info;
+		}
+
 		if (nID == eScopeID)
 		{
 			Info.strName = "Scopes";
