@@ -60,6 +60,20 @@ CScriptBase* CreateScript(const char* szFilePath)
 
 int main( int argc, const char* argv[] )
 {
+	auto szFilePath = __FILE__;
+	auto szFileName = strrchr( szFilePath, '/' );
+	if( szFileName == nullptr )
+		szFileName = strrchr( szFilePath, '\\' );
+
+	if( szFileName != nullptr )
+	{
+		char szDir[256];
+		auto nLength = szFileName - szFilePath;
+		memcpy( szDir, szFilePath, nLength );
+		szDir[nLength] = 0;
+		chdir( szDir );
+	}
+
 	while(true)
 	{
 		FILE* fp = fopen( "lua/test.lua", "rb" );
