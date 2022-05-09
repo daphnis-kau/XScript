@@ -5,7 +5,7 @@
 一、脚本类可以直接从C++类派生
 二、脚本类可以调用C++基类的函数，访问基类的成员
 三、脚本类可以重载C++基类的虚函数
-四、支持VSCode的调试协议，可以使用VSCode直接进行调试脚本语言（下载VSCode的Debugger for Chrome插件，并且在插件目录下的package.json文件的breakpoints数组中加入对应的语言即可）。
+四、支持VSCode的调试协议，可以使用VSCode直接进行调试脚本语言（将vscode_extensions/script-debugger目录复制到vscode的插件目录下即可）。
 
 This is a library for interaction between C + + and scripting languages.
 A very perfect C++ reflection mechanism is implemented independently inside.
@@ -14,4 +14,4 @@ It is very convenient to export C++ classes to scripts, and it is allowed to der
 1、 Script classes can be derived directly from C++ classes
 2、 The script class can call the functions of the C++ base class and access the members of the base class
 3、 Script classes can overload virtual functions of C++ base classes
-4、 Support the debugging protocol of vscode. You can use vscode to directly debug the script language (download the debugger for chrome plug-in of vscode, and add the corresponding language into the breakpoints array of the package.json file under the plug-in directory).
+4、 Support the debugging protocol of vscode. You can use vscode to directly debug the script language (Please copy the vscode_extensions/script-debugger to the extensions directory of vscode).

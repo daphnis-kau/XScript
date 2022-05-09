@@ -553,15 +553,18 @@ namespace XS
 				while( *szEnd && *szEnd != '.' && *szEnd != ':' )
 					szEnd++;
 				char szField[256];
-				memcpy( szField, szName, szEnd - szName );
+				size_t nLen = szEnd - szName;
+				if( nLen >= ELEM_COUNT(szField) )
+					return INVALID_32BITID;
+				memcpy( szField, szName, nLen );
 				szField[szEnd - szName] = 0;
-				lua_pushlightuserdata( m_pState, s_szID2Value );
-				lua_rawget( m_pState, LUA_REGISTRYINDEX );
-				lua_pushnumber( m_pState, nID );
-				lua_rawget( m_pState, -2 );
-				lua_remove( m_pState, -2 );
-				lua_getfield( m_pState, -1, szField );
-				lua_remove( m_pState, -2 );
+				lua_pushlightuserdata( m_pState, s_szID2Value );	// [s_szID2Value]
+				lua_rawget( m_pState, LUA_REGISTRYINDEX );			// [tblID2Value]
+				lua_pushnumber( m_pState, nID );					// [tblID2Value, nID]
+				lua_rawget( m_pState, -2 );							// [tblID2Value, tblValue]
+				lua_remove( m_pState, -2 );							// [tblValue]
+				lua_getfield( m_pState, -1, szField );				// [tblValue, FieldValue]
+				lua_remove( m_pState, -2 );							// [FieldValue]
 				if( lua_isnil( m_pState, -1 ) )
 				{
 					lua_pop( m_pState, -1 );
