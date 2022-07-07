@@ -51,32 +51,44 @@ namespace XS
 	};
 
 	template<typename T>
-	struct STypeID 
+	struct TTypeID 
 	{
 		enum
 		{ 
 			eTypeID = std::is_enum<T>::value ? eDT_enum : eDT_class,
 			eSize = sizeof(T) 
 		};
+	}; 
+
+	template<typename T>
+	const char* TName()
+	{
+	#ifdef __FUNCSIG__
+		return __FUNCSIG__;
+	#elif defined( __PRETTY_FUNCTION__ )
+		return __PRETTY_FUNCTION__;
+	#else
+		#error "Unsupported compiler"
+	#endif
 	};
 
 	///< Builtin type of c++
-	template<> struct STypeID<void>		{ enum{ eTypeID = eDT_void	, eSize = 0					}; };
-	template<> struct STypeID<char>		{ enum{ eTypeID = eDT_char	, eSize = sizeof(char)		}; };
-	template<> struct STypeID<int8>		{ enum{ eTypeID = eDT_int8	, eSize = sizeof(int8)		}; };
-	template<> struct STypeID<int16>	{ enum{ eTypeID = eDT_int16	, eSize = sizeof(int16)		}; };
-	template<> struct STypeID<int32>	{ enum{ eTypeID = eDT_int32	, eSize = sizeof(int32)		}; };
-	template<> struct STypeID<long>		{ enum{ eTypeID = eDT_long	, eSize = sizeof(long)		}; };
-	template<> struct STypeID<int64>	{ enum{ eTypeID = eDT_int64	, eSize = sizeof(int64)		}; };
-	template<> struct STypeID<uint8>	{ enum{ eTypeID = eDT_uint8	, eSize = sizeof(uint8)		}; };
-	template<> struct STypeID<uint16>	{ enum{ eTypeID = eDT_uint16, eSize = sizeof(uint16)	}; };
-	template<> struct STypeID<uint32>	{ enum{ eTypeID = eDT_uint32, eSize = sizeof(uint32)	}; };
-	template<> struct STypeID<uint64>	{ enum{ eTypeID = eDT_uint64, eSize = sizeof(uint64)	}; };
-	template<> struct STypeID<ulong>	{ enum{ eTypeID = eDT_ulong	, eSize = sizeof(ulong)		}; };
-	template<> struct STypeID<wchar_t>	{ enum{ eTypeID = eDT_wchar	, eSize = sizeof(wchar_t)	}; };
-	template<> struct STypeID<bool>		{ enum{ eTypeID = eDT_bool	, eSize = sizeof(bool)		}; };
-	template<> struct STypeID<float>	{ enum{ eTypeID = eDT_float	, eSize = sizeof(float)		}; };
-	template<> struct STypeID<double>	{ enum{ eTypeID = eDT_double, eSize = sizeof(double)	}; };
+	template<> struct TTypeID<void>		{ enum{ eTypeID = eDT_void	, eSize = 0					}; };
+	template<> struct TTypeID<char>		{ enum{ eTypeID = eDT_char	, eSize = sizeof(char)		}; };
+	template<> struct TTypeID<int8>		{ enum{ eTypeID = eDT_int8	, eSize = sizeof(int8)		}; };
+	template<> struct TTypeID<int16>	{ enum{ eTypeID = eDT_int16	, eSize = sizeof(int16)		}; };
+	template<> struct TTypeID<int32>	{ enum{ eTypeID = eDT_int32	, eSize = sizeof(int32)		}; };
+	template<> struct TTypeID<long>		{ enum{ eTypeID = eDT_long	, eSize = sizeof(long)		}; };
+	template<> struct TTypeID<int64>	{ enum{ eTypeID = eDT_int64	, eSize = sizeof(int64)		}; };
+	template<> struct TTypeID<uint8>	{ enum{ eTypeID = eDT_uint8	, eSize = sizeof(uint8)		}; };
+	template<> struct TTypeID<uint16>	{ enum{ eTypeID = eDT_uint16, eSize = sizeof(uint16)	}; };
+	template<> struct TTypeID<uint32>	{ enum{ eTypeID = eDT_uint32, eSize = sizeof(uint32)	}; };
+	template<> struct TTypeID<uint64>	{ enum{ eTypeID = eDT_uint64, eSize = sizeof(uint64)	}; };
+	template<> struct TTypeID<ulong>	{ enum{ eTypeID = eDT_ulong	, eSize = sizeof(ulong)		}; };
+	template<> struct TTypeID<wchar_t>	{ enum{ eTypeID = eDT_wchar	, eSize = sizeof(wchar_t)	}; };
+	template<> struct TTypeID<bool>		{ enum{ eTypeID = eDT_bool	, eSize = sizeof(bool)		}; };
+	template<> struct TTypeID<float>	{ enum{ eTypeID = eDT_float	, eSize = sizeof(float)		}; };
+	template<> struct TTypeID<double>	{ enum{ eTypeID = eDT_double, eSize = sizeof(double)	}; };
 
 	/**@struct template of type information
 	* @brief Fetch typeinfo by template, default type is class, \n
@@ -89,8 +101,8 @@ namespace XS
 
 		enum
 		{
-			m_eSize = STypeID<T>::eSize,
-			m_eType = STypeID<T>::eTypeID,
+			m_eSize = TTypeID<T>::eSize,
+			m_eType = TTypeID<T>::eTypeID,
 			m_eTypeEx0 = eDTE_Value,
 			m_eTypeEx1 = 0,
 			m_eTypeEx2 = 0,
@@ -275,7 +287,7 @@ namespace XS
 		STypeInfo Info;
 		Info.m_nSize = TTypeInfo<T>::m_eSize;
 		Info.m_nType = TTypeInfo<T>::m_eTotalType;
-		Info.m_szTypeName = typeid(typename TTypeInfo<T>::Type).name();
+		Info.m_szTypeName = TName<typename TTypeInfo<T>::Type>();
 		return Info;
 	}
 }

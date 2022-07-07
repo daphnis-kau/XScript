@@ -1,3 +1,16 @@
 projects/win32/.vs/
 projects/win32/x64/
 *.user
+.vs/
+bins/
+CMakeFiles/
+libs/
+Debug/
+Release/
+RelWithDebInfo/
+*.vcxproj
+*.filters
+*.cmake
+CMakeCache.txt
+/*.sln
+/*.proj

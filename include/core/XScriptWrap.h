@@ -264,7 +264,7 @@ namespace XS
 
 		static void GetTypes( const char** ary )
 		{
-			*ary = typeid( First ).name();
+			*ary = TName<First>();
 			TBaseClassOffset<Derive, Base...>::GetTypes( ++ary );
 		}
 	};
@@ -286,7 +286,7 @@ namespace XS
 		template<typename _Derive>
 		static std::array<const char*, size + 1> Types()
 		{
-			std::array<const char*, size + 1> result = { typeid( _Derive ).name() };
+			std::array<const char*, size + 1> result = { TName<_Derive>() };
 			TBaseClassOffset<_Derive, _Base...>::GetTypes( &result[1] );
 			return result;
 		}

@@ -34,7 +34,7 @@
 	static XS::SGlobalExe _class_fun_register( listRegister.GetFirst() && listRegister.GetFirst()->Register() ); \
 	typedef XS::TConstruct<org_class, _last, ConstructParamsType, eConstructType> ConstructType; \
 	static XS::SGlobalExe _class_construct_register( \
-	XS::CScriptBase::RegisterConstruct( ConstructType::Inst(), typeid( org_class ).name() ) ); } }
+	XS::CScriptBase::RegisterConstruct( ConstructType::Inst(), TName<org_class>() ) ); } }
 
 
 #define REGIST_CONSTRUCTOR( ... )\
@@ -192,7 +192,7 @@
 		{ \
 			typedef decltype ( (_function_type)nullptr ) _fun_type;\
 			XS::CreateGlobalFunWrap( (_fun_type)(&org_class::_function), \
-			typeid( org_class ).name(), #_function_name );\
+			TName<org_class>(), #_function_name );\
 		} \
 		static XS::CScriptRegisterNode RegisterNode( listRegister, &Register ); \
 	};  \
@@ -217,11 +217,11 @@
 #define REGIST_ENUM_BEGIN_IMPLEMENT( EnumType, EnumName ) \
     namespace EnumType##_namespace{ typedef EnumType InternalEnumType;\
 	static XS::SGlobalExe EnumType##_register( \
-    XS::CScriptBase::RegisterEnumType( typeid( InternalEnumType ).name(), #EnumName, (int32)sizeof(EnumType) ) );
+    XS::CScriptBase::RegisterEnumType( TName<InternalEnumType>(), #EnumName, (int32)sizeof(EnumType) ) );
 
 #define REGIST_ENUMVALUE( EnumValue ) \
     static XS::SGlobalExe EnumValue##_register( \
-    XS::CScriptBase::RegisterEnumValue( typeid( InternalEnumType ).name(), #EnumValue, (int32)(InternalEnumType::EnumValue) ) );
+    XS::CScriptBase::RegisterEnumValue( TName<InternalEnumType>(), #EnumValue, (int32)(InternalEnumType::EnumValue) ) );
 #define REGIST_ENUM_END() }
 
 
